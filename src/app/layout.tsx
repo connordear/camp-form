@@ -1,15 +1,15 @@
 import { type Metadata } from 'next'
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { ThemeProvider } from 'next-themes'
 import './globals.css'
 import { currentUser } from '@clerk/nextjs/server'
+import NavSignedIn from '@/components/nav/signed-in'
+import NavSignedOut from '@/components/nav/signed-out'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,31 +32,26 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const user = await currentUser();
-  const role = user?.publicMetadata.role;
+  const role = user?.publicMetadata.role as string;
 
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <header className="flex justify-end items-center p-4 gap-4 h-16">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
             <SignedIn>
-              <UserButton />
-              {role === "admin" &&
-                <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Admin
-                </button>
-              }
+              <NavSignedIn role={role} />
             </SignedIn>
-          </header>
-          {children}
+            <SignedOut>
+              <NavSignedOut />
+            </SignedOut>
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
