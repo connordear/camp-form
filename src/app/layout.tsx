@@ -7,7 +7,6 @@ import {
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import './globals.css'
-import { currentUser } from '@clerk/nextjs/server'
 import NavSignedIn from '@/components/nav/signed-in'
 import NavSignedOut from '@/components/nav/signed-out'
 
@@ -31,8 +30,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const user = await currentUser();
-  const role = user?.publicMetadata.role as string;
 
   return (
     <ClerkProvider>
@@ -45,7 +42,7 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <SignedIn>
-              <NavSignedIn role={role} />
+              <NavSignedIn />
             </SignedIn>
             <SignedOut>
               <NavSignedOut />

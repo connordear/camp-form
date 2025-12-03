@@ -1,14 +1,14 @@
 import { UserButton } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
 
-type NavSignedInProps = {
-	role: string
-}
 
-export default function NavSignedIn({ role }: NavSignedInProps) {
+export default async function NavSignedIn() {
+	const clerkUser = await currentUser();
+	const role = clerkUser?.publicMetadata.role as string;
 	return (
 		<header className="flex justify-between items-center p-4 gap-4 h-16 w-full">
 			<NavigationMenu>
