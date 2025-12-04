@@ -40,5 +40,4 @@ export const campersRelations = relations(campers, ({ one, many }) => ({
 export const registrationsRelations = relations(registrations, ({ one }) => ({
   camper: one(campers, { fields: [registrations.camperId], references: [campers.id] }),
   camps: one(camps, { fields: [registrations.campId], references: [camps.id] })
-
 }))

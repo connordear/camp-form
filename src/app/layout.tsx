@@ -41,13 +41,17 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SignedIn>
-              <NavSignedIn />
-            </SignedIn>
-            <SignedOut>
-              <NavSignedOut />
-            </SignedOut>
-            {children}
+            <nav>
+              <SignedIn>
+                <NavSignedIn />
+              </SignedIn>
+              <SignedOut>
+                <NavSignedOut />
+              </SignedOut>
+            </nav>
+            <main className='px-4'>
+              {children}
+            </main>
           </ThemeProvider>
         </body>
       </html>
