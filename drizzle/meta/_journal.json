@@ -15,6 +15,13 @@
       "when": 1764739210829,
       "tag": "0001_square_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764827446837,
+      "tag": "0002_whole_madrox",
+      "breakpoints": true
     }
   ]
 }

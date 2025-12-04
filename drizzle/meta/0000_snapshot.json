@@ -44,12 +44,8 @@
           "name": "campers_user_id_users_id_fk",
           "tableFrom": "campers",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -137,12 +133,8 @@
           "name": "registrations_camper_id_campers_id_fk",
           "tableFrom": "registrations",
           "tableTo": "campers",
-          "columnsFrom": [
-            "camper_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["camper_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -200,9 +192,7 @@
         "users_clerk_id_unique": {
           "name": "users_clerk_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_id"
-          ]
+          "columns": ["clerk_id"]
         }
       },
       "policies": {},

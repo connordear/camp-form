@@ -1,6 +1,6 @@
 {
-  "id": "fb9d01b0-09f5-45a1-99dd-29c2c15dd610",
-  "prevId": "d151159e-3d33-4cbc-9873-bf0c4eeb7a59",
+  "id": "1716a68c-0425-4391-9cff-a9c5e8809991",
+  "prevId": "fb9d01b0-09f5-45a1-99dd-29c2c15dd610",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -38,14 +38,40 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "unique_user_camper_name": {
+          "name": "unique_user_camper_name",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "campers_user_id_users_id_fk": {
           "name": "campers_user_id_users_id_fk",
           "tableFrom": "campers",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -139,8 +165,12 @@
           "name": "registrations_camp_id_camps_id_fk",
           "tableFrom": "registrations",
           "tableTo": "camps",
-          "columnsFrom": ["camp_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "camp_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -148,8 +178,12 @@
           "name": "registrations_camper_id_campers_id_fk",
           "tableFrom": "registrations",
           "tableTo": "campers",
-          "columnsFrom": ["camper_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "camper_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -207,7 +241,9 @@
         "users_clerk_id_unique": {
           "name": "users_clerk_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["clerk_id"]
+          "columns": [
+            "clerk_id"
+          ]
         }
       },
       "policies": {},

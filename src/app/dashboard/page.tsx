@@ -8,7 +8,5 @@ export default async function DashboardPage() {
 
   if (!user) return "Not Found";
 
-  return (
-    <RegistrationForm user={user} />
-  )
+  return <RegistrationForm user={user} />;
 }
