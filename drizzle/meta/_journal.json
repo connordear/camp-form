@@ -22,6 +22,27 @@
       "when": 1764827446837,
       "tag": "0002_whole_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764908380120,
+      "tag": "0003_yummy_black_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764908843842,
+      "tag": "0004_spicy_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1764909026785,
+      "tag": "0005_hard_makkari",
+      "breakpoints": true
     }
   ]
 }

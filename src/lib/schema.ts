@@ -1,13 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  pgTable,
-  serial,
-  text,
-  boolean,
-  foreignKey,
-  integer,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, integer, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -22,23 +14,27 @@ export const camps = pgTable("camps", {
 });
 
 export const campers = pgTable("campers", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().primaryKey().generatedByDefaultAsIdentity(),
   name: text().notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-}, (table) => ({
-  uniqueUserCamperName: uniqueIndex("unique_user_camper_name").on(table.userId, table.name),
-}));
-
-export const registrations = pgTable("registrations", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  campId: integer("camp_id").references(() => camps.id, {
-    onDelete: "cascade",
-  }),
-  camperId: integer("camper_id").references(() => campers.id, {
-    onDelete: "cascade",
-  }),
-  isPaid: boolean("is_paid").default(false),
+  userId: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
 });
+
+export const registrations = pgTable(
+  "registrations",
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    campId: integer("camp_id").references(() => camps.id, {
+      onDelete: "cascade",
+    }),
+    camperId: integer("camper_id").references(() => campers.id, {
+      onDelete: "cascade",
+    }),
+    isPaid: boolean("is_paid").default(false),
+  },
+  (t) => [unique().on(t.camperId, t.campId)],
+);
 
 export const userRelations = relations(users, ({ many }) => ({
   campers: many(campers),

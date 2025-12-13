@@ -22,30 +22,31 @@ import {
 import { XIcon } from "lucide-react";
 import type { CampFormUser } from "@/lib/types/user-types";
 import { saveRegistrationsForUser } from "./actions";
+import { Camp } from "@/lib/types/camp-types";
 
 type RegistrationFormProps = {
   user: CampFormUser;
+  camps: Camp[];
 };
 
-export default function RegistrationForm({ user }: RegistrationFormProps) {
-  const [currentUser, setCurrentUser] = useState(user);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+export default function RegistrationForm({
+  user,
+  camps,
+}: RegistrationFormProps) {
   const form = useForm({
     defaultValues: {
-      campers: currentUser.campers,
+      campers: user.campers,
     },
     onSubmit: async ({ value }) => {
-      setIsSubmitting(true);
       try {
-        const updatedUser = await saveRegistrationsForUser(currentUser.clerkId, value.campers);
-        setCurrentUser(updatedUser);
-        form.reset({ campers: updatedUser.campers });
+        const updatedUser = await saveRegistrationsForUser(
+          user.id,
+          value.campers,
+        );
+        console.log("updating with, ", updatedUser.campers);
+        form.reset({ ...form.state.values, campers: updatedUser.campers });
       } catch (error) {
         console.error("Failed to save registrations:", error);
-        // You could add toast notification here
-      } finally {
-        setIsSubmitting(false);
       }
     },
   });
@@ -68,9 +69,21 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
               <FieldGroup className="flex flex-col gap-3">
                 {field.state.value.map((camper, i) => {
                   return (
-                    <FieldSet key={camper.id} className="flex flex-col gap-3">
+                    <FieldSet key={i} className="flex flex-col gap-3">
                       <Field>
-                        <FieldLabel>Camper Name</FieldLabel>
+                        <div className="flex justify-between">
+                          <FieldLabel>Camper Name</FieldLabel>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              field.removeValue(i);
+                            }}
+                          >
+                            <XIcon />
+                          </Button>
+                        </div>
                         <FieldContent>
                           <form.Field name={`campers[${i}].name`}>
                             {(camperNameField) => (
@@ -117,15 +130,14 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
                                                 <SelectValue placeholder="Camp" />
                                               </SelectTrigger>
                                               <SelectContent>
-                                                <SelectItem value="1">
-                                                  Children's Camp
-                                                </SelectItem>
-                                                <SelectItem value="2">
-                                                  Youth Camp
-                                                </SelectItem>
-                                                <SelectItem value="3">
-                                                  Family Camp
-                                                </SelectItem>
+                                                {camps.map((c) => (
+                                                  <SelectItem
+                                                    key={c.id}
+                                                    value={c.id.toString()}
+                                                  >
+                                                    {c.name}
+                                                  </SelectItem>
+                                                ))}
                                               </SelectContent>
                                             </Select>
                                           )}
@@ -133,9 +145,10 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
                                         <Button
                                           variant="outline"
                                           size="icon"
-                                          onClick={() =>
-                                            registrationsField.removeValue(j)
-                                          }
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            registrationsField.removeValue(j);
+                                          }}
                                         >
                                           <XIcon />
                                         </Button>
@@ -145,6 +158,7 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
                                 )}
                                 <Button
                                   className="w-fit"
+                                  type="button"
                                   onClick={() =>
                                     registrationsField.pushValue({
                                       id: -(camper.id + Date.now()),
@@ -169,7 +183,7 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
                   onClick={() =>
                     field.pushValue({
                       id: -Date.now(),
-                      userId: currentUser.id,
+                      userId: user.id,
                       name: "",
                       registrations: [],
                     })
@@ -178,9 +192,7 @@ export default function RegistrationForm({ user }: RegistrationFormProps) {
                 >
                   Add Camper
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Registrations"}
-                </Button>
+                <Button type="submit">Save Registrations</Button>
               </FieldGroup>
             )}
           </form.Field>
