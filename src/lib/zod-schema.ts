@@ -4,14 +4,12 @@ import { campers, camps, registrations, users } from "./schema";
 
 export const campSchema = createSelectSchema(camps);
 export const registrationSchema = createSelectSchema(registrations);
-export const camperSchema = createSelectSchema(campers);
+export const camperSchema = createSelectSchema(campers).extend({
+  registrations: z.array(registrationSchema),
+});
 
 export const userSchema = createSelectSchema(users).extend({
-  campers: z.array(
-    camperSchema.extend({
-      registrations: z.array(registrationSchema),
-    }),
-  ),
+  campers: z.array(camperSchema),
 });
 
 const insertRegistrationSchema = createInsertSchema(registrations).pick({
