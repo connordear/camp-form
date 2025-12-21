@@ -41,7 +41,7 @@ export default function RegistrationForm({
 
   return (
     <div>
-      <Card>
+      <Card className="mb-4">
         <CardHeader>
           <CardTitle>Camper Registration</CardTitle>
         </CardHeader>
