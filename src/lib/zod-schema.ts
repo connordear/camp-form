@@ -4,11 +4,11 @@ import { campers, camps, registrations, users } from "./schema";
 
 export const campSchema = createSelectSchema(camps);
 export const registrationSchema = createSelectSchema(registrations).extend({
-  clientId: z.string(),
+  id: z.optional(z.number()),
 });
 export const camperSchema = createSelectSchema(campers).extend({
+  id: z.optional(z.number()),
   registrations: z.array(registrationSchema),
-  clientId: z.string(), // for UI Save tracking
 });
 
 export const formSchema = z.object({
@@ -21,15 +21,15 @@ export const userSchema = createSelectSchema(users).extend({
 
 const insertRegistrationSchema = createInsertSchema(registrations).pick({
   campId: true,
-  isPaid: true,
+  clientId: true,
 });
 
 // Camper Input: We pick ID and Name, and enforce min length
 const insertCamperSchema = createInsertSchema(campers, {
   name: (schema) => schema.min(1, "Name is required"),
 }).pick({
-  id: true,
   name: true,
+  clientId: true,
 });
 
 // The final array schema for the Server Action

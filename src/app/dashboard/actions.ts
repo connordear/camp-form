@@ -1,7 +1,7 @@
 "use server";
 
 import type { User } from "@clerk/nextjs/server";
-import { and, eq, notInArray, sql } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { campers, registrations, users } from "@/lib/schema";
 import type { CampFormUser } from "@/lib/types/user-types";
@@ -72,6 +72,7 @@ export async function saveRegistrationsForUser(
       const {
         id: _id,
         registrations: camperRegistrations,
+        clientId,
         ...camperData
       } = camper;
 
@@ -84,10 +85,11 @@ export async function saveRegistrationsForUser(
           ...camperData,
           id: camper.id && camper.id > 0 ? camper.id : undefined,
           userId: user.id,
+          clientId,
         })
         .onConflictDoUpdate({
           target: [campers.id],
-          set: { name: camper.name.trim() },
+          set: { ...camperData },
         })
         .returning({ id: campers.id }); // Return ID so we can use it for relations
 
@@ -97,13 +99,10 @@ export async function saveRegistrationsForUser(
       // --- PROCESS REGISTRATIONS (Nested) ---
 
       // Filter valid registrations from the form
-      const validRegs = (camperRegistrations || []).filter(
-        (r) => r.campId != null,
-      );
 
-      const activeCampIds = validRegs.map((r) => r.campId!);
+      const activeRegIds = camper.registrations?.map((r) => r.campId!);
 
-      if (activeCampIds.length > 0) {
+      if (activeRegIds?.length) {
         // B1. Delete registrations that were removed in the UI
         // "Delete where camperId is X AND campId is NOT IN the new list"
         await tx
@@ -111,22 +110,23 @@ export async function saveRegistrationsForUser(
           .where(
             and(
               eq(registrations.camperId, upsertedCamper.id),
-              notInArray(registrations.campId, activeCampIds),
+              notInArray(registrations.id, activeRegIds),
             ),
           );
 
         // B2. Upsert current registrations
-        for (const reg of validRegs) {
+        for (const reg of camper.registrations ?? []) {
+          const { clientId: regClientId, ...updateableRegData } = reg;
           await tx
             .insert(registrations)
             .values({
-              campId: reg.campId!,
+              clientId: regClientId,
               camperId: upsertedCamper.id,
-              isPaid: reg.isPaid ?? false,
+              ...updateableRegData,
             })
             .onConflictDoUpdate({
-              target: [registrations.campId, registrations.camperId],
-              set: { isPaid: sql`excluded.is_paid` },
+              target: [registrations.id],
+              set: { ...updateableRegData },
             });
         }
       } else {

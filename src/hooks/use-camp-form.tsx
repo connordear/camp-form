@@ -32,7 +32,7 @@ export function TextInput({
         <Input
           {...props}
           className="flex-1 border p-2 rounded"
-          value={field.state.value}
+          value={field.state.value ?? ""}
           onChange={(e) => field.handleChange(e.target.value)}
           onBlur={field.handleBlur}
         />

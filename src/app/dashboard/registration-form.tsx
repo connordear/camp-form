@@ -24,6 +24,7 @@ export default function RegistrationForm({
       campers: user.campers,
     },
     onSubmit: async ({ value }) => {
+      // not actually used since we have the autosave
       try {
         const updatedUser = await saveRegistrationsForUser(
           user.id,
@@ -57,18 +58,16 @@ export default function RegistrationForm({
                 <FieldGroup className="flex flex-col gap-3">
                   {field.state.value.map((camper, i) => (
                     <CamperFieldGroup
+                      key={`${camper.clientId}-${i}`}
                       form={form}
-                      key={camper.id}
                       camps={camps}
                       onRemove={() => field.removeValue(i)}
-                      index={i}
                       fields={`campers[${i}]`}
                     />
                   ))}
                   <Button
                     onClick={() =>
                       field.pushValue({
-                        id: -Date.now(),
                         clientId: crypto.randomUUID(),
                         userId: user.id,
                         name: "",
@@ -79,7 +78,6 @@ export default function RegistrationForm({
                   >
                     Add Camper
                   </Button>
-                  <Button type="submit">Save Registrations</Button>
                 </FieldGroup>
               )}
             </form.Field>

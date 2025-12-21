@@ -19,8 +19,8 @@ export function useAutoSave(
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const lastSavedRef = useRef<string>("");
 
-  const values = useStore(form.store, (state: any) => state.values);
-  const isDirty = useStore(form.store, (state: any) => state.isDirty);
+  const values = useStore(form.store, (state) => state.values);
+  const isDirty = useStore(form.store, (state) => state.isDirty);
   const isMounted = useRef(false);
 
   useEffect(() => {
@@ -32,6 +32,7 @@ export function useAutoSave(
 
     if (!isDirty) return;
 
+    // Check against Ref to prevent loop from our own updates
     const currentJson = JSON.stringify(values);
     if (currentJson === lastSavedRef.current) return;
 
@@ -44,75 +45,77 @@ export function useAutoSave(
         // 1. SNAPSHOT: What we are sending
         const valuesToSend = form.state.values;
 
-        // 2. SEND: Server deletes missing IDs, Upserts the rest
+        // 2. SEND
         const res = await saveRegistrationsForUser(
           userId,
           valuesToSend.campers,
         );
 
-        // 3. SNAPSHOT: Current Live Form (User might have deleted items during save!)
+        // 3. SNAPSHOT: Live Form (Capture BEFORE we modify anything)
         const liveValues = form.state.values;
 
-        // 4. MAPPING STRATEGY (The Fix)
-        // We cannot rely on index 0 == index 0.
-        // We map { clientId -> realDbId } using the data we just SENT.
-        // Assumption: Server returns results in same order as sent (standard for Upsert/Returning)
+        // 4. DRIFT CHECK (Crucial: Do this BEFORE adding IDs)
+        // Did the user type something new while the save was in flight?
+        const hasDrifted =
+          JSON.stringify(valuesToSend) !== JSON.stringify(liveValues);
+
+        // 5. MAPPING (Your clean Map logic)
         const idMap = new Map<string, number>();
-        const regIdMap = new Map<string, number>(); // Nested registrations map
+        const regIdMap = new Map<string, number>();
 
         valuesToSend.campers.forEach((sentCamper, index) => {
           const savedCamper = res.campers[index];
-
-          // Map Camper ClientID -> Real ID
-          if (sentCamper.clientId && savedCamper?.id) {
+          if (savedCamper?.id) {
             idMap.set(sentCamper.clientId, savedCamper.id);
-
-            // Map Nested Registration ClientID -> Real ID
             sentCamper.registrations?.forEach((sentReg, j) => {
               const savedReg = savedCamper.registrations?.[j];
-              if (sentReg.clientId && savedReg?.id) {
+              if (savedReg?.id) {
                 regIdMap.set(sentReg.clientId, savedReg.id);
               }
             });
           }
         });
 
-        // 5. MERGE
-        // Iterate over LIVE values. If they still exist, update their IDs from the Map.
+        // 6. MERGE IN MEMORY (Performant)
+        // Instead of calling setFieldValue 50 times, we build the array once.
         const mergedCampers = liveValues.campers.map((camper) => {
-          // Look up the real ID using our stable clientId
-          const newCamperId = idMap.get(camper.clientId);
+          // Clone the camper to avoid mutating read-only state
+          const newCamper = { ...camper };
 
-          return {
-            ...camper,
-            // If we found a new ID, use it. Otherwise keep existing (or undefined)
-            id: newCamperId ?? camper.id,
+          // Inject Camper ID if missing
+          if (!newCamper.id) {
+            const newId = idMap.get(newCamper.clientId);
+            if (newId) newCamper.id = newId;
+          }
 
-            registrations: camper.registrations?.map((reg) => ({
-              ...reg,
-              id: regIdMap.get(reg.clientId) ?? reg.id,
-            })),
-          };
+          // Inject Registration IDs if missing
+          if (newCamper.registrations) {
+            newCamper.registrations = newCamper.registrations.map((reg) => {
+              if (!reg.id) {
+                const newRegId = regIdMap.get(reg.clientId);
+                if (newRegId) return { ...reg, id: newRegId };
+              }
+              return reg;
+            });
+          }
+          return newCamper;
         });
 
-        // 6. Loop Break Logic
-        const hasDrifted =
-          JSON.stringify(valuesToSend) !== JSON.stringify(liveValues);
-
-        form.setFieldValue("campers", mergedCampers);
-
-        if (hasDrifted) {
-          // User changed something (added/removed/edited) during save
-          // Restart debounce
-          setStatus("debouncing");
-        } else {
-          // Clean save
-          const nextFormState = { ...liveValues, campers: mergedCampers };
-          lastSavedRef.current = JSON.stringify(nextFormState);
-
+        // 7. PREDICT FUTURE REF
+        // We must update the Ref to match what the form *will* be
+        if (!hasDrifted) {
+          const nextState = { ...liveValues, campers: mergedCampers };
+          lastSavedRef.current = JSON.stringify(nextState);
           setStatus("saved");
           setLastSaved(new Date());
+        } else {
+          // If drifted, we DON'T update the Ref.
+          // The effect will run again, see mismatch, and trigger debounce.
+          setStatus("debouncing");
         }
+
+        // 8. SINGLE UPDATE
+        form.setFieldValue("campers", mergedCampers);
       } catch (err) {
         console.error("Autosave failed", err);
         setStatus("error");

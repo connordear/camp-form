@@ -22,13 +22,12 @@ const defaultCamperValues: Camper = {
 export const CamperFieldGroup = withFieldGroup({
   defaultValues: defaultCamperValues,
   props: {
-    index: 0, // Pass index to help with UI labeling
     onRemove: () => {},
     camps: [] as Camp[],
   },
-  render: ({ group, index: i, camps, onRemove }) => {
+  render: ({ group, camps, onRemove }) => {
     return (
-      <FieldSet key={i} className="flex flex-col gap-3">
+      <FieldSet className="flex flex-col gap-3">
         <group.AppField name="name">
           {(field) => (
             <Field>
@@ -42,19 +41,17 @@ export const CamperFieldGroup = withFieldGroup({
         <group.AppField name="registrations" mode="array">
           {(field) => {
             return (
-              <div>
+              <div className="flex flex-col gap-1 ml-5">
                 <Field>
                   <FieldLabel>Registrations</FieldLabel>
                   <FieldContent>
                     {field.state.value?.map((reg, j) => (
                       <group.AppField
-                        key={j}
+                        key={`${reg.clientId}-${j}`}
                         name={`registrations[${j}].campId`}
                       >
                         {(itemField) => (
                           <itemField.Select
-                            key={reg.id}
-                            label="Registrations"
                             options={camps.map((c) => ({
                               value: c.id.toString(),
                               name: c.name,
@@ -71,10 +68,9 @@ export const CamperFieldGroup = withFieldGroup({
                   type="button"
                   onClick={() =>
                     field.pushValue({
-                      id: -(group.state.values.id + Date.now()),
                       clientId: crypto.randomUUID(),
                       campId: 1,
-                      camperId: group.state.values.id,
+                      camperId: group.state.values.id ?? null,
                       isPaid: false,
                     })
                   }

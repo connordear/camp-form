@@ -15,6 +15,7 @@ export const camps = pgTable("camps", {
 
 export const campers = pgTable("campers", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
+  clientId: text().notNull(),
   name: text().notNull(),
   userId: integer("user_id")
     .references(() => users.id)
@@ -25,6 +26,7 @@ export const registrations = pgTable(
   "registrations",
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    clientId: text().notNull(),
     campId: integer("camp_id").references(() => camps.id, {
       onDelete: "cascade",
     }),
