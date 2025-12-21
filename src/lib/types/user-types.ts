@@ -1,4 +1,4 @@
-import z from "zod";
-import { userSchema } from "../zod-schema";
+import type z from "zod";
+import type { userSchema } from "../zod-schema";
 
 export type CampFormUser = z.infer<typeof userSchema>;

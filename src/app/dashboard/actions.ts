@@ -1,11 +1,11 @@
 "use server";
 
-import { db } from "@/lib/data/db";
-import { users, campers, registrations } from "@/lib/schema";
-import type { CampFormUser } from "@/lib/types/user-types";
-import { saveCampersSchema } from "@/lib/zod-schema";
 import type { User } from "@clerk/nextjs/server";
 import { and, eq, notInArray, sql } from "drizzle-orm";
+import { db } from "@/lib/data/db";
+import { campers, registrations, users } from "@/lib/schema";
+import type { CampFormUser } from "@/lib/types/user-types";
+import { saveCampersSchema } from "@/lib/zod-schema";
 
 async function getUserByClerkId(clerkId: string) {
   return await db.query.users.findFirst({

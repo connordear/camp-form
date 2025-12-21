@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
-import { setFaker, fake } from "zod-schema-faker/v4";
+import { fake, setFaker } from "zod-schema-faker/v4";
+import { camps } from "@/lib/schema";
 import { campSchema } from "@/lib/zod-schema";
 import { db } from "./db";
-import { camps } from "@/lib/schema";
 
 setFaker(faker);
 faker.seed(Number(process.env.SEED_VALUE || 1234));

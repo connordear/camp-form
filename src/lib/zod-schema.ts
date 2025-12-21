@@ -1,11 +1,18 @@
-import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 import { campers, camps, registrations, users } from "./schema";
 
 export const campSchema = createSelectSchema(camps);
-export const registrationSchema = createSelectSchema(registrations);
+export const registrationSchema = createSelectSchema(registrations).extend({
+  clientId: z.string(),
+});
 export const camperSchema = createSelectSchema(campers).extend({
   registrations: z.array(registrationSchema),
+  clientId: z.string(), // for UI Save tracking
+});
+
+export const formSchema = z.object({
+  campers: z.array(camperSchema),
 });
 
 export const userSchema = createSelectSchema(users).extend({

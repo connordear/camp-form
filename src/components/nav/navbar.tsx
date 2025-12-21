@@ -1,9 +1,7 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
-
-import { useIsMobile } from "@/hooks/use-mobile";
+import type * as React from "react";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -12,6 +10,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type NavItem = {
   title: string;
