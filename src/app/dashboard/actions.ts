@@ -66,7 +66,6 @@ export async function saveRegistrationsForUser(
 ): Promise<CampFormUser> {
   if (!userId) throw new Error("Unauthorized");
   const campersData = saveCampersSchema.parse(rawCampersData);
-  console.log(campersData.map((c) => c.registrations));
 
   return await db.transaction(async (tx) => {
     // Get the internal User ID first

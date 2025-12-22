@@ -25,6 +25,17 @@ export const CamperFieldGroup = withFieldGroup({
     camps: [] as Camp[],
   },
   render: ({ group, camps, onRemove }) => {
+    const camper = group.state.values;
+    const campLookup = camps.reduce(
+      (acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+      },
+      {} as Record<number, Camp>,
+    );
+    const validCamps = camps.filter(
+      (c) => !camper.registrations.some((r) => r.campId === c.id),
+    );
     return (
       <FieldSet className="flex flex-col gap-3">
         <group.AppField name="name">
@@ -51,10 +62,19 @@ export const CamperFieldGroup = withFieldGroup({
                       >
                         {(itemField) => (
                           <itemField.Select
-                            options={camps.map((c) => ({
-                              value: c.id.toString(),
-                              name: c.name,
-                            }))}
+                            options={[
+                              ...validCamps.map((c) => ({
+                                value: c.id.toString(),
+                                name: c.name,
+                              })),
+                              {
+                                value: (itemField.state.value ?? 0).toString(),
+                                name: itemField.state.value
+                                  ? campLookup[itemField.state.value].name
+                                  : "Unknown",
+                              },
+                            ]}
+                            isNumber
                             onRemove={() => field.removeValue(j)}
                           />
                         )}
@@ -65,10 +85,11 @@ export const CamperFieldGroup = withFieldGroup({
                 <Button
                   className="w-fit"
                   type="button"
+                  disabled={!validCamps.length}
                   onClick={() =>
                     field.pushValue({
                       clientId: crypto.randomUUID(),
-                      campId: 1,
+                      campId: validCamps[0].id,
                       camperId: group.state.values.id ?? null,
                     })
                   }

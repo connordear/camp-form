@@ -8,7 +8,6 @@ export default async function DashboardPage() {
   const userPromise = clerkUser ? getRegistrationsForUser(clerkUser.id) : null;
 
   const [camps, user] = await Promise.all([campsPromise, userPromise]);
-  console.log(camps);
 
   if (!user) return "Not Found";
 

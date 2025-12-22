@@ -67,7 +67,7 @@ export function Select({
     <>
       <div className="flex gap-1">
         <BaseSelect
-          value={(field.state.value ?? 1).toString()}
+          value={(field.state.value ?? 0).toString()}
           onValueChange={(v) =>
             isNumber
               ? field.handleChange(parseInt(v, 10))
