@@ -6,6 +6,9 @@
     "useIgnoreFile": true
   },
   "files": {
+    "includes": [
+      "src/**"
+    ],
     "ignoreUnknown": false
   },
   "formatter": {

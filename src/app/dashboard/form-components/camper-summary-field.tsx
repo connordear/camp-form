@@ -12,7 +12,6 @@ import type { Camper } from "@/lib/types/camper-types";
 
 // These default values are used for mapping keys, not runtime defaults
 const defaultCamperValues: Camper = {
-  id: -1,
   userId: 0,
   clientId: "",
   name: "",
@@ -71,7 +70,6 @@ export const CamperFieldGroup = withFieldGroup({
                       clientId: crypto.randomUUID(),
                       campId: 1,
                       camperId: group.state.values.id ?? null,
-                      isPaid: false,
                     })
                   }
                 >

@@ -41,7 +41,7 @@ function NavBarItem({ title, href, dropdownOptions }: NavBarItem) {
           <ul className="grid w-[200px] gap-4">
             <li>
               {dropdownOptions?.map((opt) => (
-                <NavigationMenuLink asChild>
+                <NavigationMenuLink key={opt.title} asChild>
                   <Link href={opt.href ?? "#"}>{opt.title}</Link>
                 </NavigationMenuLink>
               ))}

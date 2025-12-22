@@ -21,6 +21,7 @@ export function useAutoSave(
 
   const values = useStore(form.store, (state) => state.values);
   const isDirty = useStore(form.store, (state) => state.isDirty);
+  const isValid = useStore(form.store, (state) => state.isValid);
   const isMounted = useRef(false);
 
   useEffect(() => {
@@ -31,6 +32,11 @@ export function useAutoSave(
     }
 
     if (!isDirty) return;
+
+    if (!isValid) {
+      setStatus("error");
+      return;
+    }
 
     // Check against Ref to prevent loop from our own updates
     const currentJson = JSON.stringify(values);
@@ -123,7 +129,7 @@ export function useAutoSave(
     }, debounceMs);
 
     return () => clearTimeout(handler);
-  }, [values, debounceMs, isDirty, userId, form]);
+  }, [values, debounceMs, isDirty, userId, form, isValid]);
 
   return { status, lastSaved };
 }

@@ -1,8 +1,4 @@
-import {
-  createFormHook,
-  createFormHookContexts,
-  type ReactFormExtendedApi,
-} from "@tanstack/react-form";
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
@@ -15,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { RegistrationFormValues } from "@/lib/types/form-types";
+import { formSchema } from "@/lib/zod-schema";
 
 export const { fieldContext, formContext, useFieldContext } =
   createFormHookContexts();
@@ -48,7 +45,9 @@ export function TextInput({
         )}
       </div>
       {field.state.meta.errors ? (
-        <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+        <FieldError>
+          {field.state.meta.errors.map((e) => e.message).join(", ")}
+        </FieldError>
       ) : null}
     </>
   );
@@ -105,30 +104,29 @@ export function Select({
   );
 }
 
+const fieldComponents = {
+  TextInput,
+  Select,
+};
+const formComponents = {};
+
 // 3. Generate the Hook
 // This creates the `useCampForm` hook and the `withFieldGroup` HOC we need for campers
 export const { useAppForm, withFieldGroup, withForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: {
-    TextInput,
-    Select,
-    // Add Select, DatePicker, etc. here
-  },
-  formComponents: {},
+  fieldComponents,
+  formComponents,
 });
 
-export type CampFormApi = ReactFormExtendedApi<
-  RegistrationFormValues,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->;
+// JUST USED TO GET THE TYPE OF form OBJECTS
+const _formInferHelper = () => {
+  return useAppForm({
+    defaultValues: {} as RegistrationFormValues,
+    validators: {
+      onChange: formSchema,
+    },
+  });
+};
+
+export type CampFormApi = ReturnType<typeof _formInferHelper>;

@@ -7,7 +7,7 @@ import { useAutoSave } from "@/hooks/use-auto-save";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/camp-types";
 import type { CampFormUser } from "@/lib/types/user-types";
-import { saveRegistrationsForUser } from "./actions";
+import { formSchema, saveCampersSchema } from "@/lib/zod-schema";
 import { CamperFieldGroup } from "./form-components/camper-summary-field";
 
 type RegistrationFormProps = {
@@ -21,20 +21,10 @@ export default function RegistrationForm({
 }: RegistrationFormProps) {
   const form = useAppForm({
     defaultValues: {
-      campers: user.campers,
+      campers: saveCampersSchema.parse(user.campers),
     },
-    onSubmit: async ({ value }) => {
-      // not actually used since we have the autosave
-      try {
-        const updatedUser = await saveRegistrationsForUser(
-          user.id,
-          value.campers,
-        );
-        console.log("updating with, ", updatedUser.campers);
-        form.reset({ ...form.state.values, campers: updatedUser.campers });
-      } catch (error) {
-        console.error("Failed to save registrations:", error);
-      }
+    validators: {
+      onChange: formSchema,
     },
   });
   const { status, lastSaved } = useAutoSave(user.id, form);
