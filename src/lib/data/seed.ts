@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { fake, setFaker } from "zod-schema-faker/v4";
-import { camps } from "@/lib/schema";
+import { camps, campYears } from "@/lib/schema";
 import { campSchema } from "@/lib/zod-schema";
 import { db } from "./db";
 
@@ -9,13 +9,45 @@ faker.seed(Number(process.env.SEED_VALUE || 1234));
 
 async function seed() {
   console.log("🌱 Starting Drizzle seeding...");
-  const devCamps = Array.from({ length: 10 }, () =>
-    fake(campSchema.omit({ id: true })),
-  );
+  const devCamps = Array.from({ length: 10 }, () => {
+    const base = fake(campSchema.omit({ id: true }));
+    const adjective = faker.commerce.productAdjective(); // e.g., "Silver", "Rustic"
+    const feature = faker.location.streetAddress().split(" ")[0]; // e.g., "Lake", "Ridge"
+    const name = `${adjective} ${feature} Dev Camp`;
+    return {
+      ...base,
+      name,
+    };
+  });
 
+  await db.delete(campYears);
   await db.delete(camps);
 
-  const result = await db.insert(camps).values(devCamps);
+  const campRes = await db
+    .insert(camps)
+    .values(devCamps)
+    .returning({ id: camps.id });
+
+  const currYear = 2025;
+  const cyValues = campRes.map((camp, i) => {
+    const start = new Date("2026-06-01");
+    start.setDate(start.getDate() + i * 7);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const campData = devCamps[i];
+    return {
+      ...campData,
+      startDate: start.toDateString(),
+      endDate: end.toDateString(),
+      campId: camp.id,
+      year: currYear,
+      basePrice: faker.helpers.arrayElement([10000, 20000, 30000]),
+      capacity: faker.helpers.arrayElement([20, 30, 40, 50]),
+    };
+  });
+
+  const result = await db.insert(campYears).values(cyValues);
 
   console.log("✅ Seeding complete!", result);
 }

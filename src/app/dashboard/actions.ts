@@ -3,7 +3,8 @@
 import type { User } from "@clerk/nextjs/server";
 import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
-import { campers, registrations, users } from "@/lib/schema";
+import { campers, camps, campYears, registrations, users } from "@/lib/schema";
+import type { Camp } from "@/lib/types/camp-types";
 import type { CampFormUser } from "@/lib/types/user-types";
 import { saveCampersSchema } from "@/lib/zod-schema";
 
@@ -15,6 +16,20 @@ async function getUserByClerkId(clerkId: string) {
 
 export async function getCamps() {
   return await db.query.camps.findMany();
+}
+
+export async function getCampsForYear(
+  year = new Date().getFullYear(),
+): Promise<Array<Camp>> {
+  const res = await db
+    .select()
+    .from(camps)
+    .innerJoin(campYears, eq(camps.id, campYears.campId))
+    .where(eq(campYears.year, year));
+  return res.map((cy) => ({
+    ...cy.camps,
+    ...cy.camp_years,
+  }));
 }
 
 export async function getUser(clerkUser: User) {
@@ -51,6 +66,7 @@ export async function saveRegistrationsForUser(
 ): Promise<CampFormUser> {
   if (!userId) throw new Error("Unauthorized");
   const campersData = saveCampersSchema.parse(rawCampersData);
+  console.log(campersData.map((c) => c.registrations));
 
   return await db.transaction(async (tx) => {
     // Get the internal User ID first
@@ -100,9 +116,26 @@ export async function saveRegistrationsForUser(
 
       // Filter valid registrations from the form
 
-      const activeRegIds = camper.registrations?.map((r) => r.campId!);
+      const activeRegIds: number[] = [];
 
-      if (activeRegIds?.length) {
+      if (camper.registrations?.length) {
+        // Upsert current registrations
+        for (const reg of camper.registrations) {
+          const { id, camperId: _, ...regData } = reg;
+          const [upsertedReg] = await tx
+            .insert(registrations)
+            .values({
+              id,
+              camperId: upsertedCamper.id,
+              ...regData,
+            })
+            .onConflictDoUpdate({
+              target: [registrations.id],
+              set: { camperId: upsertedCamper.id, ...regData },
+            })
+            .returning({ id: registrations.id });
+          activeRegIds.push(upsertedReg.id);
+        }
         // B1. Delete registrations that were removed in the UI
         // "Delete where camperId is X AND campId is NOT IN the new list"
         await tx
@@ -113,22 +146,6 @@ export async function saveRegistrationsForUser(
               notInArray(registrations.id, activeRegIds),
             ),
           );
-
-        // B2. Upsert current registrations
-        for (const reg of camper.registrations ?? []) {
-          const { clientId: regClientId, ...updateableRegData } = reg;
-          await tx
-            .insert(registrations)
-            .values({
-              clientId: regClientId,
-              camperId: upsertedCamper.id,
-              ...updateableRegData,
-            })
-            .onConflictDoUpdate({
-              target: [registrations.id],
-              set: { ...updateableRegData },
-            });
-        }
       } else {
         // If no camps selected, clear ALL registrations for this camper
         await tx

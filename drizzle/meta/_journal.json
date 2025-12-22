@@ -50,6 +50,13 @@
       "when": 1766353572268,
       "tag": "0006_complete_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1766427742138,
+      "tag": "0007_yellow_lilandra",
+      "breakpoints": true
     }
   ]
 }
