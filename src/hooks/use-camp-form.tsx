@@ -8,6 +8,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  type SelectTriggerProps,
   SelectValue,
 } from "@/components/ui/select";
 import type { RegistrationFormValues } from "@/lib/types/form-types";
@@ -57,11 +58,12 @@ export function Select({
   options,
   isNumber = true,
   onRemove,
+  ...props
 }: {
   isNumber?: boolean;
   onRemove?: () => void;
   options: { value: string; name: string }[];
-} & React.SelectHTMLAttributes<HTMLSelectElement>) {
+} & SelectTriggerProps) {
   const field = useFieldContext<string | number>();
   return (
     <>
@@ -74,7 +76,10 @@ export function Select({
               : field.handleChange(v)
           }
         >
-          <SelectTrigger className="w-[300px]">
+          <SelectTrigger
+            {...props}
+            className={`w-[300px] ${props.className ?? ""}`}
+          >
             <SelectValue placeholder="Camp" />
           </SelectTrigger>
           <SelectContent>

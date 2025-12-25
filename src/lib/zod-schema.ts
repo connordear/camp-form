@@ -18,7 +18,10 @@ export const userSchema = createSelectSchema(users).extend({
 });
 
 const insertRegistrationSchema = createInsertSchema(registrations).omit({
-  isPaid: true, // omit isPaid so we cannot update it here
+  pricePaid: true, // omit checkout fields
+  stripePaymentIntentId: true,
+  stripeSessionId: true,
+  updatedAt: true,
 });
 
 // Camper Input: We pick ID and Name, and enforce min length

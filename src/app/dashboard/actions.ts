@@ -1,18 +1,15 @@
 "use server";
 
-import type { User } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { and, eq, notInArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/data/db";
 import { campers, camps, campYears, registrations, users } from "@/lib/schema";
+import { addNewUser } from "@/lib/services/clerk-service";
+import { getRegistrationsForUser } from "@/lib/services/registration-service";
 import type { Camp } from "@/lib/types/camp-types";
 import type { CampFormUser } from "@/lib/types/user-types";
 import { saveCampersSchema } from "@/lib/zod-schema";
-
-async function getUserByClerkId(clerkId: string) {
-  return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
-  });
-}
 
 export async function getCamps() {
   return await db.query.camps.findMany();
@@ -32,45 +29,47 @@ export async function getCampsForYear(
   }));
 }
 
-export async function getUser(clerkUser: User) {
-  // check if the user exists
-  const user = await getUserByClerkId(clerkUser.id);
-
-  if (!user) {
-    // add them to the db
-    await db.insert(users).values({
-      clerkId: clerkUser.id,
-      email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-    });
-    return getUserByClerkId(clerkUser.id);
+export async function getRegistrations(): Promise<CampFormUser | undefined> {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Must be logged in to view this data.");
   }
-  return user;
-}
 
-export async function getRegistrationsForUser(
-  clerkId: string,
-): Promise<CampFormUser | undefined> {
-  return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
-    with: {
-      campers: {
-        with: { registrations: true },
-      },
-    },
-  });
+  const res = await getRegistrationsForUser(userId);
+
+  // Temporary measure to handle users that don't exist
+  // TODO: remove once webhook is up
+  if (!res) {
+    const user = await currentUser();
+    if (!user) {
+      throw new Error("Must be logged in");
+    }
+    const newUser = await addNewUser(user);
+    return {
+      ...newUser,
+      campers: [],
+    };
+  }
+
+  console.log(res);
+  return res;
 }
 
 export async function saveRegistrationsForUser(
-  userId: number,
   rawCampersData: unknown,
 ): Promise<CampFormUser> {
-  if (!userId) throw new Error("Unauthorized");
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    throw new Error("Must be logged in to submit this.");
+  }
   const campersData = saveCampersSchema.parse(rawCampersData);
+
+  revalidatePath("/dashboard");
 
   return await db.transaction(async (tx) => {
     // Get the internal User ID first
     const user = await tx.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(users.clerkId, clerkId),
       columns: { id: true },
     });
 
@@ -117,10 +116,11 @@ export async function saveRegistrationsForUser(
 
       const activeRegIds: number[] = [];
 
-      if (camper.registrations?.length) {
+      if (camperRegistrations) {
         // Upsert current registrations
-        for (const reg of camper.registrations) {
-          const { id, camperId: _, ...regData } = reg;
+        for (const reg of camperRegistrations) {
+          // dont' allow to overwrite camper id or status here
+          const { id, camperId: _cId, status: _status, ...regData } = reg;
           const [upsertedReg] = await tx
             .insert(registrations)
             .values({
@@ -137,25 +137,31 @@ export async function saveRegistrationsForUser(
         }
         // B1. Delete registrations that were removed in the UI
         // "Delete where camperId is X AND campId is NOT IN the new list"
+        await tx.delete(registrations).where(
+          and(
+            eq(registrations.camperId, upsertedCamper.id),
+            eq(registrations.status, "draft"), // only delete drafts
+            notInArray(registrations.id, activeRegIds),
+          ),
+        );
+      } else {
+        // If no camps selected, clear ALL registrations for this camper
         await tx
           .delete(registrations)
           .where(
             and(
               eq(registrations.camperId, upsertedCamper.id),
-              notInArray(registrations.id, activeRegIds),
+              eq(registrations.status, "draft"),
             ),
           );
-      } else {
-        // If no camps selected, clear ALL registrations for this camper
-        await tx
-          .delete(registrations)
-          .where(eq(registrations.camperId, upsertedCamper.id));
       }
     }
 
     // --- CLEANUP DELETED CAMPERS ---
 
     // Delete any campers belonging to this user that were NOT in the form data
+    //
+
     if (activeCamperIds.length > 0) {
       await tx
         .delete(campers)

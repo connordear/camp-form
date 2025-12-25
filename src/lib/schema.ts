@@ -1,11 +1,12 @@
 import { relations } from "drizzle-orm";
 import {
-  boolean,
   date,
+  foreignKey,
   integer,
   pgTable,
   primaryKey,
   text,
+  timestamp,
   unique,
 } from "drizzle-orm/pg-core";
 
@@ -28,7 +29,7 @@ export const campYears = pgTable(
     campId: integer("camp_id")
       .references(() => camps.id)
       .notNull(),
-    basePrice: integer("base_price").default(0),
+    basePrice: integer("base_price").notNull().default(0),
     capacity: integer(),
     startDate: date("start_date"),
     endDate: date("end_date"),
@@ -50,22 +51,38 @@ export const registrations = pgTable(
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     clientId: text("client_id").notNull(),
-    campId: integer("camp_id").references(() => camps.id, {
-      onDelete: "cascade",
-    }),
+    campId: integer("camp_id").notNull(),
+    campYear: integer("camp_year").notNull(),
     camperId: integer("camper_id").references(() => campers.id, {
       onDelete: "cascade",
     }),
-    isPaid: boolean("is_paid").default(false),
+    pricePaid: integer("price_paid"),
+    status: text("status", {
+      enum: ["draft", "registered", "refunded"],
+    })
+      .notNull()
+      .default("draft"),
+    stripePaymentIntentId: text("stripe_payment_intent_id"),
+    stripeSessionId: text("stripe_session_id"),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
-  (t) => [unique().on(t.camperId, t.campId)],
+  (t) => [
+    foreignKey({
+      columns: [t.campId, t.campYear],
+      foreignColumns: [campYears.campId, campYears.year],
+    }).onDelete("cascade"),
+    unique().on(t.camperId, t.campId, t.campYear),
+  ],
 );
 
-export const campYearRelations = relations(campYears, ({ one }) => ({
+export const campYearRelations = relations(campYears, ({ one, many }) => ({
   camp: one(camps, {
     fields: [campYears.campId],
     references: [camps.id],
   }),
+  registrations: many(registrations),
 }));
 
 export const campRelations = relations(camps, ({ many }) => ({
@@ -86,8 +103,8 @@ export const registrationsRelations = relations(registrations, ({ one }) => ({
     fields: [registrations.camperId],
     references: [campers.id],
   }),
-  camps: one(camps, {
-    fields: [registrations.campId],
-    references: [camps.id],
+  campYear: one(campYears, {
+    fields: [registrations.campId, registrations.campYear],
+    references: [campYears.campId, campYears.year],
   }),
 }));

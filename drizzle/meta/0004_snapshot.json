@@ -1,9 +1,81 @@
 {
-  "id": "e451a7de-49be-4310-9daf-b2f17c873d57",
-  "prevId": "6c8d82fe-e311-4125-a396-d79f9870db9c",
+  "id": "3e33d932-0927-40d6-9e95-5623f10616ec",
+  "prevId": "a0b356c4-6eff-4ed1-a1c3-d823b230b6aa",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.camp_years": {
+      "name": "camp_years",
+      "schema": "",
+      "columns": {
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "camp_id": {
+          "name": "camp_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_price": {
+          "name": "base_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "capacity": {
+          "name": "capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "camp_years_camp_id_camps_id_fk": {
+          "name": "camp_years_camp_id_camps_id_fk",
+          "tableFrom": "camp_years",
+          "columnsFrom": [
+            "camp_id"
+          ],
+          "tableTo": "camps",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "camp_years_camp_id_year_pk": {
+          "name": "camp_years_camp_id_year_pk",
+          "columns": [
+            "camp_id",
+            "year"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.campers": {
       "name": "campers",
       "schema": "",
@@ -14,16 +86,22 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "byDefault",
             "name": "campers_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "2147483647",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "byDefault"
           }
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "name": {
           "name": "name",
@@ -43,11 +121,15 @@
         "campers_user_id_users_id_fk": {
           "name": "campers_user_id_users_id_fk",
           "tableFrom": "campers",
+          "columnsFrom": [
+            "user_id"
+          ],
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -66,15 +148,15 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "always",
             "name": "camps_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "2147483647",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
           }
         },
         "name": {
@@ -102,22 +184,34 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "byDefault",
             "name": "registrations_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "2147483647",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "byDefault"
           }
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "camp_id": {
           "name": "camp_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "camp_year": {
+          "name": "camp_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
         },
         "camper_id": {
           "name": "camper_id",
@@ -125,37 +219,82 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_paid": {
-          "name": "is_paid",
-          "type": "boolean",
+        "price_paid": {
+          "name": "price_paid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "stripe_payment_intent_id": {
+          "name": "stripe_payment_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_session_id": {
+          "name": "stripe_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
-          "default": false
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "registrations_camp_id_camps_id_fk": {
-          "name": "registrations_camp_id_camps_id_fk",
-          "tableFrom": "registrations",
-          "tableTo": "camps",
-          "columnsFrom": ["camp_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "registrations_camper_id_campers_id_fk": {
           "name": "registrations_camper_id_campers_id_fk",
           "tableFrom": "registrations",
+          "columnsFrom": [
+            "camper_id"
+          ],
           "tableTo": "campers",
-          "columnsFrom": ["camper_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "registrations_camp_id_camp_year_camp_years_camp_id_year_fk": {
+          "name": "registrations_camp_id_camp_year_camp_years_camp_id_year_fk",
+          "tableFrom": "registrations",
+          "columnsFrom": [
+            "camp_id",
+            "camp_year"
+          ],
+          "tableTo": "camp_years",
+          "columnsTo": [
+            "camp_id",
+            "year"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "registrations_camper_id_camp_id_camp_year_unique": {
+          "name": "registrations_camper_id_camp_id_camp_year_unique",
+          "columns": [
+            "camper_id",
+            "camp_id",
+            "camp_year"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -170,15 +309,15 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "always",
             "name": "users_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "2147483647",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
           }
         },
         "clerk_id": {
@@ -206,8 +345,10 @@
       "uniqueConstraints": {
         "users_clerk_id_unique": {
           "name": "users_clerk_id_unique",
-          "nullsNotDistinct": false,
-          "columns": ["clerk_id"]
+          "columns": [
+            "clerk_id"
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -217,10 +358,10 @@
   },
   "enums": {},
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

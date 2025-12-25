@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "unique_user_camper_name" ON "campers" USING btree ("user_id","name");

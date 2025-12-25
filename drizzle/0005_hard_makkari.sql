@@ -1,1 +1,0 @@
-ALTER TABLE "registrations" ADD CONSTRAINT "registrations_camper_id_camp_id_unique" UNIQUE("camper_id","camp_id");

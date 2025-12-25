@@ -1,0 +1,1 @@
+ALTER TABLE "registrations" ADD COLUMN "updated_at" timestamp DEFAULT now();

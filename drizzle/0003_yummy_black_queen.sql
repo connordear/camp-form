@@ -1,1 +1,0 @@
-DROP INDEX "unique_user_camper_name";

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import AutoSaveIndicator from "@/components/forms/save-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,7 @@ export default function RegistrationForm({
       onChange: formSchema,
     },
   });
-  const { status, lastSaved } = useAutoSave(user.id, form);
+  const { status, lastSaved } = useAutoSave(form);
 
   return (
     <div>
@@ -74,6 +75,8 @@ export default function RegistrationForm({
           </form>
         </CardContent>
       </Card>
+
+      <Link href="/checkout">Checkout</Link>
       <AutoSaveIndicator status={status} lastSaved={lastSaved} />
     </div>
   );

@@ -26,6 +26,9 @@ export const CamperFieldGroup = withFieldGroup({
   },
   render: ({ group, camps, onRemove }) => {
     const camper = group.state.values;
+    const hasOnlyDrafts = group.state.values.registrations.every(
+      (r) => r.status === "draft",
+    );
     const campLookup = camps.reduce(
       (acc, curr) => {
         acc[curr.id] = curr;
@@ -43,7 +46,9 @@ export const CamperFieldGroup = withFieldGroup({
             <Field>
               <FieldLabel>Camper Name</FieldLabel>
               <FieldContent>
-                <field.TextInput onRemove={onRemove} />
+                <field.TextInput
+                  onRemove={hasOnlyDrafts ? onRemove : undefined}
+                />
               </FieldContent>
             </Field>
           )}
@@ -55,31 +60,44 @@ export const CamperFieldGroup = withFieldGroup({
                 <Field>
                   <FieldLabel>Registrations</FieldLabel>
                   <FieldContent>
-                    {field.state.value?.map((reg, j) => (
-                      <group.AppField
-                        key={`${reg.clientId}-${j}`}
-                        name={`registrations[${j}].campId`}
-                      >
-                        {(itemField) => (
-                          <itemField.Select
-                            options={[
-                              ...validCamps.map((c) => ({
-                                value: c.id.toString(),
-                                name: c.name,
-                              })),
-                              {
-                                value: (itemField.state.value ?? 0).toString(),
-                                name: itemField.state.value
-                                  ? campLookup[itemField.state.value].name
-                                  : "Unknown",
-                              },
-                            ]}
-                            isNumber
-                            onRemove={() => field.removeValue(j)}
-                          />
-                        )}
-                      </group.AppField>
-                    ))}
+                    {field.state.value?.map((reg, j) => {
+                      const isDraft = reg.status === "draft";
+                      return (
+                        <group.AppField
+                          key={`${reg.clientId}-${j}`}
+                          name={`registrations[${j}].campId`}
+                        >
+                          {(itemField) => (
+                            <div className="flex gap-1 items-center justify-between">
+                              <itemField.Select
+                                disabled={!isDraft}
+                                options={[
+                                  ...validCamps.map((c) => ({
+                                    value: c.id.toString(),
+                                    name: c.name,
+                                  })),
+                                  {
+                                    value: (
+                                      itemField.state.value ?? 0
+                                    ).toString(),
+                                    name: itemField.state.value
+                                      ? campLookup[itemField.state.value].name
+                                      : "Unknown",
+                                  },
+                                ]}
+                                isNumber
+                                onRemove={
+                                  isDraft
+                                    ? () => field.removeValue(j)
+                                    : undefined
+                                }
+                              />
+                              {reg.status}
+                            </div>
+                          )}
+                        </group.AppField>
+                      );
+                    })}
                   </FieldContent>
                 </Field>
                 <Button
@@ -91,6 +109,8 @@ export const CamperFieldGroup = withFieldGroup({
                       clientId: crypto.randomUUID(),
                       campId: validCamps[0].id,
                       camperId: group.state.values.id ?? null,
+                      campYear: validCamps[0].year,
+                      status: "draft",
                     })
                   }
                 >

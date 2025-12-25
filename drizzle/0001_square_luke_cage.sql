@@ -1,2 +1,0 @@
-ALTER TABLE "registrations" ADD COLUMN "camp_id" integer;--> statement-breakpoint
-ALTER TABLE "registrations" ADD CONSTRAINT "registrations_camp_id_camps_id_fk" FOREIGN KEY ("camp_id") REFERENCES "public"."camps"("id") ON DELETE cascade ON UPDATE no action;

@@ -10,11 +10,7 @@ export type AutoSaveStatus =
   | "saved"
   | "error";
 
-export function useAutoSave(
-  userId: number,
-  form: CampFormApi,
-  debounceMs = 1500,
-) {
+export function useAutoSave(form: CampFormApi, debounceMs = 1500) {
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const lastSavedRef = useRef<string>("");
@@ -52,10 +48,7 @@ export function useAutoSave(
         const valuesToSend = form.state.values;
 
         // 2. SEND
-        const res = await saveRegistrationsForUser(
-          userId,
-          valuesToSend.campers,
-        );
+        const res = await saveRegistrationsForUser(valuesToSend.campers);
 
         // 3. SNAPSHOT: Live Form (Capture BEFORE we modify anything)
         const liveValues = form.state.values;
@@ -129,7 +122,7 @@ export function useAutoSave(
     }, debounceMs);
 
     return () => clearTimeout(handler);
-  }, [values, debounceMs, isDirty, userId, form, isValid]);
+  }, [values, debounceMs, isDirty, form, isValid]);
 
   return { status, lastSaved };
 }
