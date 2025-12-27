@@ -1,3 +1,3 @@
-export default function CamperPage() {
+export default async function CamperPage() {
   return "Camper Page";
 }

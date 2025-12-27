@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run ./src/lib/data/seed.ts",
-    "db:up": "bun run db:generate && bun run db:migrate"
+    "db:up": "bun run db:generate && bun run db:migrate",
+    "db:reset": "bun ./src/lib/data/reset-db.ts && bun drizzle-kit push && bun run db:seed"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",

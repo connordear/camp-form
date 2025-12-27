@@ -3,12 +3,12 @@ import AutoSaveIndicator from "@/components/forms/save-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
-import { useAutoSave } from "@/hooks/use-auto-save";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/camp-types";
 import type { CampFormUser } from "@/lib/types/user-types";
 import { formSchema, saveCampersSchema } from "@/lib/zod-schema";
-import { CamperFieldGroup } from "./form-components/camper-summary-field";
+import { CamperFieldGroup } from "./camper-summary-field";
+import useOverviewAutoSave from "./use-auto-save-overview";
 
 type RegistrationFormProps = {
   user: CampFormUser;
@@ -27,7 +27,8 @@ export default function RegistrationForm({
       onChange: formSchema,
     },
   });
-  const { status, lastSaved } = useAutoSave(form);
+
+  const { status, lastSaved } = useOverviewAutoSave(form);
 
   return (
     <>

@@ -51,7 +51,6 @@ export async function getRegistrations(): Promise<CampFormUser | undefined> {
     };
   }
 
-  console.log(res);
   return res;
 }
 
@@ -129,7 +128,11 @@ export async function saveRegistrationsForUser(
               ...regData,
             })
             .onConflictDoUpdate({
-              target: [registrations.id],
+              target: [
+                registrations.camperId,
+                registrations.campId,
+                registrations.campYear,
+              ],
               set: { camperId: upsertedCamper.id, ...regData },
             })
             .returning({ id: registrations.id });

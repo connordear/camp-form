@@ -1,6 +1,5 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { getCheckoutRegistrationsForUser } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
@@ -21,7 +20,6 @@ export async function fetchClientSecret() {
   if (!userId) {
     throw new Error("Not logged in");
   }
-  const origin = (await headers()).get("origin");
 
   const user = await getCheckoutRegistrationsForUser(userId);
 
@@ -51,6 +49,10 @@ export async function fetchClientSecret() {
       });
     });
   });
+
+  if (!lineItems.length) {
+    return null;
+  }
 
   const palette = THEMES.dark;
   const session = await stripe.checkout.sessions.create({

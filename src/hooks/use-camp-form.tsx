@@ -11,8 +11,6 @@ import {
   type SelectTriggerProps,
   SelectValue,
 } from "@/components/ui/select";
-import type { RegistrationFormValues } from "@/lib/types/form-types";
-import { formSchema } from "@/lib/zod-schema";
 
 export const { fieldContext, formContext, useFieldContext } =
   createFormHookContexts();
@@ -123,15 +121,3 @@ export const { useAppForm, withFieldGroup, withForm } = createFormHook({
   fieldComponents,
   formComponents,
 });
-
-// JUST USED TO GET THE TYPE OF form OBJECTS
-const _formInferHelper = () => {
-  return useAppForm({
-    defaultValues: {} as RegistrationFormValues,
-    validators: {
-      onChange: formSchema,
-    },
-  });
-};
-
-export type CampFormApi = ReturnType<typeof _formInferHelper>;
