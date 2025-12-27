@@ -1,3 +1,4 @@
+import RegistrationBadge from "@/components/forms/registration-badge";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -92,7 +93,9 @@ export const CamperFieldGroup = withFieldGroup({
                                     : undefined
                                 }
                               />
-                              {reg.status}
+                              <RegistrationBadge
+                                status={reg.status ?? "draft"}
+                              />
                             </div>
                           )}
                         </group.AppField>

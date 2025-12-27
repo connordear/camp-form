@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { getCampsForYear, getRegistrations } from "./actions";
 import RegistrationForm from "./registration-form";
 
-export default async function DashboardPage() {
+export default async function RegistrationPage() {
   const campsPromise = getCampsForYear();
   const clerkUser = await currentUser();
   const userPromise = clerkUser ? getRegistrations() : null;

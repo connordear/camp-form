@@ -64,7 +64,7 @@ export async function saveRegistrationsForUser(
   }
   const campersData = saveCampersSchema.parse(rawCampersData);
 
-  revalidatePath("/dashboard");
+  revalidatePath("/registration");
 
   return await db.transaction(async (tx) => {
     // Get the internal User ID first

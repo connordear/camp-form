@@ -19,18 +19,16 @@ export default function CheckoutForm({
 }) {
   return (
     <ThemeProvider forcedTheme="dark">
-      <div id="checkout">
-        <Card>
-          <CardContent className="">
-            <EmbeddedCheckoutProvider
-              stripe={stripePromise}
-              options={{ clientSecret }}
-            >
-              <EmbeddedCheckout />
-            </EmbeddedCheckoutProvider>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="w-full max-w-[1080px] m-auto">
+        <CardContent>
+          <EmbeddedCheckoutProvider
+            stripe={stripePromise}
+            options={{ clientSecret }}
+          >
+            <EmbeddedCheckout />
+          </EmbeddedCheckoutProvider>
+        </CardContent>
+      </Card>
     </ThemeProvider>
   );
 }

@@ -1,6 +1,6 @@
 import { useStore } from "@tanstack/react-form";
 import { useEffect, useRef, useState } from "react";
-import { saveRegistrationsForUser } from "@/app/dashboard/actions";
+import { saveRegistrationsForUser } from "@/app/registration/actions";
 import type { CampFormApi } from "./use-camp-form";
 
 export type AutoSaveStatus =
