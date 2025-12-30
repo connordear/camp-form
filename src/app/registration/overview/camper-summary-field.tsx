@@ -8,8 +8,8 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { withFieldGroup } from "@/hooks/use-camp-form";
-import type { Camp } from "@/lib/types/camp-types";
-import type { Camper } from "@/lib/types/camper-types";
+import type { Camp } from "@/lib/types/common-types";
+import type { Camper } from "./types";
 
 // These default values are used for mapping keys, not runtime defaults
 const defaultCamperValues: Camper = {

@@ -1,12 +1,12 @@
-import type { Registration } from "@/lib/types/registration-types";
+import type { RegistrationStatus } from "@/lib/types/common-types";
 import { Badge } from "../ui/badge";
 
 type RegistrationBadgeProps = {
-  status: Registration["status"];
+  status: RegistrationStatus;
 };
 
 const statusLookup: Record<
-  Registration["status"],
+  RegistrationStatus,
   "default" | "outline" | "secondary" | "destructive"
 > = {
   draft: "secondary",

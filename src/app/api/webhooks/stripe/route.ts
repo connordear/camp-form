@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/data/db";
-import { registrations } from "@/lib/schema";
+import { registrations } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {

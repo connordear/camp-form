@@ -4,12 +4,18 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { and, eq, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/data/db";
-import { campers, camps, campYears, registrations, users } from "@/lib/schema";
+import {
+  campers,
+  camps,
+  campYears,
+  registrations,
+  users,
+} from "@/lib/data/schema";
 import { addNewUser } from "@/lib/services/clerk-service";
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
-import type { Camp } from "@/lib/types/camp-types";
-import type { CampFormUser } from "@/lib/types/user-types";
-import { saveCampersSchema } from "@/lib/zod-schema";
+import type { Camp } from "@/lib/types/common-types";
+import { saveCampersSchema } from "./schema";
+import type { CampFormUser } from "./types";
 
 export async function getCamps() {
   return await db.query.camps.findMany();
@@ -119,24 +125,45 @@ export async function saveRegistrationsForUser(
         // Upsert current registrations
         for (const reg of camperRegistrations) {
           // dont' allow to overwrite camper id or status here
-          const { id, camperId: _cId, status: _status, ...regData } = reg;
-          const [upsertedReg] = await tx
-            .insert(registrations)
-            .values({
-              id,
-              camperId: upsertedCamper.id,
-              ...regData,
-            })
-            .onConflictDoUpdate({
-              target: [
-                registrations.camperId,
-                registrations.campId,
-                registrations.campYear,
-              ],
-              set: { camperId: upsertedCamper.id, ...regData },
-            })
-            .returning({ id: registrations.id });
-          activeRegIds.push(upsertedReg.id);
+          const {
+            id,
+            camperId: _cId,
+            status: _status,
+            campId,
+            ...regData
+          } = reg;
+
+          if (id) {
+            //  just need to update
+            const [updatedReg] = await tx
+              .update(registrations)
+              .set({
+                ...regData,
+                ...(_status === "draft" && { campId }), // only update the camp id when it's a draft!
+              })
+              .where(eq(registrations.id, id))
+              .returning({ id: registrations.id });
+            activeRegIds.push(updatedReg.id);
+          } else {
+            // no registration id, it's a new one
+            const [upsertedReg] = await tx
+              .insert(registrations)
+              .values({
+                camperId: upsertedCamper.id,
+                campId,
+                ...regData,
+              })
+              .onConflictDoUpdate({
+                target: [
+                  registrations.camperId,
+                  registrations.campId,
+                  registrations.campYear,
+                ],
+                set: { camperId: upsertedCamper.id, ...regData },
+              })
+              .returning({ id: registrations.id });
+            activeRegIds.push(upsertedReg.id);
+          }
         }
         // B1. Delete registrations that were removed in the UI
         // "Delete where camperId is X AND campId is NOT IN the new list"

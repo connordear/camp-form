@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
-import type { Camp } from "@/lib/types/camp-types";
-import type { CampFormUser } from "@/lib/types/user-types";
-import { formSchema, saveCampersSchema } from "@/lib/zod-schema";
+import type { Camp } from "@/lib/types/common-types";
 import { CamperFieldGroup } from "./camper-summary-field";
+import { formSchema, saveCampersSchema } from "./schema";
+import type { CampFormUser } from "./types";
 import useOverviewAutoSave from "./use-auto-save-overview";
 
 type RegistrationFormProps = {

@@ -5,7 +5,7 @@ interface UseAutoSaveOptions<T> {
   isDirty?: boolean;
   isValid?: boolean;
   debounceMs?: number;
-  onSave: (snapshot: T) => Promise<T | void | undefined>;
+  onSave: (snapshot: T) => Promise<T | undefined | undefined>;
   onUpdate: (newValues: T) => void;
 }
 

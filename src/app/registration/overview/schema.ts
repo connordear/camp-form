@@ -1,11 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { campers, camps, campYears, registrations, users } from "./schema";
-
-export const baseCampSchema = createSelectSchema(camps);
-export const campYearSchema = createSelectSchema(campYears);
-
-export const campSchema = baseCampSchema.merge(campYearSchema);
+import { campers, registrations, users } from "@/lib/data/schema";
 
 export const registrationSchema = createSelectSchema(registrations);
 

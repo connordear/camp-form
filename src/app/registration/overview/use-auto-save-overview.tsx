@@ -1,9 +1,9 @@
 import { useStore } from "@tanstack/react-form";
 import { useAutoSave } from "@/hooks/use-auto-save";
 import { useAppForm } from "@/hooks/use-camp-form";
-import type { RegistrationFormValues } from "@/lib/types/form-types";
-import { formSchema } from "@/lib/zod-schema";
 import { saveRegistrationsForUser } from "./actions";
+import { formSchema } from "./schema";
+import type { RegistrationFormValues } from "./types";
 
 const _formInferHelper = () => {
   return useAppForm({

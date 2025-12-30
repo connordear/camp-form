@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/data/db";
-import { registrations, users } from "@/lib/schema";
+import { registrations, users } from "@/lib/data/schema";
 
 export async function getRegistrationsForUser(clerkId: string) {
   return await db.query.users.findFirst({
