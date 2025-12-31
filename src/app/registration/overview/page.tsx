@@ -1,8 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { getCampsForYear, getRegistrations } from "./actions";
-import RegistrationForm from "./registration-form";
+import OverviewForm from "./form";
 
-export default async function RegistrationPage() {
+export default async function OverviewPage() {
   const campsPromise = getCampsForYear();
   const clerkUser = await currentUser();
   const userPromise = clerkUser ? getRegistrations() : null;
@@ -11,5 +11,5 @@ export default async function RegistrationPage() {
 
   if (!user) return "Not Found";
 
-  return <RegistrationForm camps={camps} user={user} />;
+  return <OverviewForm camps={camps} user={user} />;
 }

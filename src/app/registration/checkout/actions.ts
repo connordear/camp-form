@@ -36,11 +36,11 @@ export async function fetchClientSecret() {
           currency: "cad",
           unit_amount: reg.campYear.basePrice,
           product_data: {
-            name: `${camper.name} - ${reg.campYear?.camp.name}`,
+            name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name}`,
             metadata: {
               userId: user.id,
               registrationId: reg.id,
-              camperName: camper.name,
+              camperName: `${camper.firstName} ${camper.lastName}`,
               camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
             },
           },

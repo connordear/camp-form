@@ -63,6 +63,7 @@ export function Select({
   options: { value: string; name: string }[];
 } & SelectTriggerProps) {
   const field = useFieldContext<string | number>();
+  console.error(field.state.meta.errors);
   return (
     <>
       <div className="flex gap-1">
@@ -73,6 +74,7 @@ export function Select({
               ? field.handleChange(parseInt(v, 10))
               : field.handleChange(v)
           }
+          disabled={props.disabled}
         >
           <SelectTrigger
             {...props}
@@ -101,7 +103,9 @@ export function Select({
       </div>
 
       {field.state.meta.errors ? (
-        <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+        <FieldError>
+          {field.state.meta.errors.map((e) => e.message).join(", ")}
+        </FieldError>
       ) : null}
     </>
   );

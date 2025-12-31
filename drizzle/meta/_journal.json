@@ -36,6 +36,27 @@
       "when": 1766611043365,
       "tag": "0004_nostalgic_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767130480585,
+      "tag": "0005_slow_maestro",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767132231297,
+      "tag": "0006_dazzling_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767214392801,
+      "tag": "0007_nifty_vance_astro",
+      "breakpoints": true
     }
   ]
 }

@@ -11,8 +11,8 @@ import {
   registrations,
   users,
 } from "@/lib/data/schema";
-import { addNewUser } from "@/lib/services/clerk-service";
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
+import { addNewUser } from "@/lib/services/user-service";
 import type { Camp } from "@/lib/types/common-types";
 import { saveCampersSchema } from "./schema";
 import type { CampFormUser } from "./types";
@@ -86,8 +86,6 @@ export async function saveRegistrationsForUser(
 
     // --- PROCESS CAMPERS ---
     for (const camper of campersData) {
-      if (!camper.name?.trim()) continue; // Skip empty rows
-
       const {
         id: _id,
         registrations: camperRegistrations,

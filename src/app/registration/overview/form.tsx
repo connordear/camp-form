@@ -15,10 +15,7 @@ type RegistrationFormProps = {
   camps: Camp[];
 };
 
-export default function RegistrationForm({
-  user,
-  camps,
-}: RegistrationFormProps) {
+export default function OverviewForm({ user, camps }: RegistrationFormProps) {
   const form = useAppForm({
     defaultValues: {
       campers: saveCampersSchema.parse(user.campers),
@@ -41,7 +38,7 @@ export default function RegistrationForm({
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              form.handleSubmit();
+              //  form.handleSubmit();
             }}
           >
             <form.Field name="campers" mode="array">
@@ -61,7 +58,9 @@ export default function RegistrationForm({
                       field.pushValue({
                         clientId: crypto.randomUUID(),
                         userId: user.id,
-                        name: "",
+                        firstName: "",
+                        lastName: "",
+                        dateOfBirth: "2000-01-01",
                         registrations: [],
                       })
                     }

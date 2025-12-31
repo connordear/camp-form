@@ -15,7 +15,9 @@ import type { Camper } from "./types";
 const defaultCamperValues: Camper = {
   userId: 0,
   clientId: "",
-  name: "",
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "2000-01-01",
   registrations: [],
 };
 
@@ -42,18 +44,30 @@ export const CamperFieldGroup = withFieldGroup({
     );
     return (
       <FieldSet className="flex flex-col gap-3">
-        <group.AppField name="name">
-          {(field) => (
-            <Field>
-              <FieldLabel>Camper Name</FieldLabel>
-              <FieldContent>
-                <field.TextInput
-                  onRemove={hasOnlyDrafts ? onRemove : undefined}
-                />
-              </FieldContent>
-            </Field>
-          )}
-        </group.AppField>
+        <div className="flex gap-3">
+          <group.AppField name="firstName">
+            {(field) => (
+              <Field>
+                <FieldLabel>First Name</FieldLabel>
+                <FieldContent>
+                  <field.TextInput />
+                </FieldContent>
+              </Field>
+            )}
+          </group.AppField>
+          <group.AppField name="lastName">
+            {(field) => (
+              <Field>
+                <FieldLabel>Last Name</FieldLabel>
+                <FieldContent>
+                  <field.TextInput
+                    onRemove={hasOnlyDrafts ? onRemove : undefined}
+                  />
+                </FieldContent>
+              </Field>
+            )}
+          </group.AppField>
+        </div>
         <group.AppField name="registrations" mode="array">
           {(field) => {
             return (

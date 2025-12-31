@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   date,
   foreignKey,
   integer,
@@ -39,12 +40,44 @@ export const campYears = pgTable(
 
 export const campers = pgTable("campers", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  clientId: text("client_id").notNull(),
-  name: text().notNull(),
   userId: integer("user_id")
     .references(() => users.id)
     .notNull(),
+  clientId: text("client_id").notNull(),
+  firstName: text("first_name").notNull().default(""),
+  lastName: text("last_name").notNull().default(""),
+  dateOfBirth: date("date_of_birth").notNull().default("2000-01-01"),
+  swimmingLevel: text("swimming_level").default(""),
+  gender: text().default(""),
+  hasBeenToCamp: boolean("has_been_to_camp").default(false),
+  shirtSize: text("shirt_size").default(""),
 });
+
+export const addresses = pgTable("addresses", {
+  id: integer().primaryKey().generatedByDefaultAsIdentity(),
+  userId: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
+  addressLine1: text("address_line_1").notNull(),
+  addressLine2: text("address_line_2"),
+  city: text().notNull(),
+  stateProv: text().notNull(),
+  country: text().notNull(),
+  postalZip: text().notNull(),
+});
+
+export const camperAddresses = pgTable(
+  "camper_addresses",
+  {
+    camperId: integer("camper_id")
+      .notNull()
+      .references(() => campers.id),
+    addressId: integer("address_id")
+      .notNull()
+      .references(() => addresses.id),
+  },
+  (t) => [primaryKey({ columns: [t.camperId, t.addressId] })],
+);
 
 export const registrations = pgTable(
   "registrations",
@@ -91,12 +124,33 @@ export const campRelations = relations(camps, ({ many }) => ({
 
 export const userRelations = relations(users, ({ many }) => ({
   campers: many(campers),
+  addresses: many(addresses),
+}));
+
+export const addressesRelations = relations(addresses, ({ many, one }) => ({
+  camperAddresses: many(camperAddresses),
+  users: one(users, { fields: [addresses.userId], references: [users.id] }),
 }));
 
 export const campersRelations = relations(campers, ({ one, many }) => ({
   user: one(users, { fields: [campers.userId], references: [users.id] }),
   registrations: many(registrations),
+  address: one(camperAddresses, {
+    fields: [campers.id],
+    references: [camperAddresses.camperId],
+  }),
 }));
+
+export const camperAddressesRelations = relations(
+  camperAddresses,
+  ({ one, many }) => ({
+    addresses: many(addresses),
+    campers: one(campers, {
+      fields: [camperAddresses.camperId],
+      references: [campers.id],
+    }),
+  }),
+);
 
 export const registrationsRelations = relations(registrations, ({ one }) => ({
   camper: one(campers, {

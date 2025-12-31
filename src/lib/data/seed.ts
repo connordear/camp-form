@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { fake, setFaker } from "zod-schema-faker/v4";
 import { camps, campYears } from "@/lib/data/schema";
-import { campSchema } from "../common-schema";
+import { campSchema } from "../types/common-schema";
 import { db } from "./db";
 
 setFaker(faker);

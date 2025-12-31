@@ -21,7 +21,9 @@ const insertRegistrationSchema = createInsertSchema(registrations).omit({
 
 // Camper Input: We pick ID and Name, and enforce min length
 export const insertCamperSchema = createInsertSchema(campers, {
-  name: (schema) => schema.min(1, "Name is required"),
+  firstName: (schema) => schema.min(1, "First name is required"),
+  lastName: (schema) => schema.min(1, "Last name is required"),
+  dateOfBirth: (schema) => schema.nonempty("Date of birth is required"),
 }).extend({
   registrations: z.array(insertRegistrationSchema),
 });
