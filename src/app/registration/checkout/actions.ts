@@ -59,7 +59,7 @@ export async function fetchClientSecret() {
     ui_mode: "embedded",
     line_items: lineItems,
     mode: "payment",
-    return_url: `${getBaseUrl()}/return?session_id={CHECKOUT_SESSION_ID}`,
+    return_url: `${getBaseUrl()}/registration/overview?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
     branding_settings: {
       display_name: "Mulhurst Camp",

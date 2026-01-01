@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/data/db";
@@ -40,7 +41,11 @@ export async function POST(req: Request) {
         // Retrieve the metadata from the 'Product' object Stripe created
         // Note: Stripe types can be tricky here, 'product' is string | Stripe.Product
         const product = item.price?.product as any;
-        const registrationId = parseInt(product?.metadata?.registrationId, 10);
+        const registrationId = product?.metadata?.registrationId;
+        if (typeof registrationId !== "string") {
+          console.error(`Invalid registrationId sent: ${registrationId}`);
+          continue;
+        }
 
         if (!registrationId) {
           console.error(`No registration ID found for item ${item.id}`);
@@ -63,6 +68,8 @@ export async function POST(req: Request) {
       }
     });
   }
+
+  revalidatePath("/registration");
 
   return new Response(null, { status: 200 });
 }
