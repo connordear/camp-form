@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/common-types";
-import { CamperFieldGroup } from "./camper-summary-field";
+import { OverviewFieldGroup } from "./overview-field";
 import { formSchema, saveCampersSchema } from "./schema";
 import type { CampFormUser } from "./types";
 import useOverviewAutoSave from "./use-auto-save-overview";
@@ -45,7 +45,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
               {(field) => (
                 <FieldGroup className="flex flex-col gap-3">
                   {field.state.value.map((camper, i) => (
-                    <CamperFieldGroup
+                    <OverviewFieldGroup
                       key={`${camper.clientId}-${i}`}
                       form={form}
                       camps={camps}

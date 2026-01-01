@@ -6,7 +6,6 @@ import { registrations } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {
-  console.log("webhook", req);
   const body = await req.text();
   const signature = (await headers()).get("Stripe-Signature") as string;
 

@@ -44,6 +44,7 @@ export const campers = pgTable("campers", {
     .references(() => users.id)
     .notNull(),
   clientId: text("client_id").notNull(),
+  addressId: integer("address_id").references(() => addresses.id),
   firstName: text("first_name").notNull().default(""),
   lastName: text("last_name").notNull().default(""),
   dateOfBirth: date("date_of_birth").notNull().default("2000-01-01"),
@@ -65,19 +66,6 @@ export const addresses = pgTable("addresses", {
   country: text().notNull(),
   postalZip: text().notNull(),
 });
-
-export const camperAddresses = pgTable(
-  "camper_addresses",
-  {
-    camperId: integer("camper_id")
-      .notNull()
-      .references(() => campers.id),
-    addressId: integer("address_id")
-      .notNull()
-      .references(() => addresses.id),
-  },
-  (t) => [primaryKey({ columns: [t.camperId, t.addressId] })],
-);
 
 export const registrations = pgTable(
   "registrations",
@@ -128,29 +116,18 @@ export const userRelations = relations(users, ({ many }) => ({
 }));
 
 export const addressesRelations = relations(addresses, ({ many, one }) => ({
-  camperAddresses: many(camperAddresses),
+  campers: many(campers),
   users: one(users, { fields: [addresses.userId], references: [users.id] }),
 }));
 
 export const campersRelations = relations(campers, ({ one, many }) => ({
   user: one(users, { fields: [campers.userId], references: [users.id] }),
   registrations: many(registrations),
-  address: one(camperAddresses, {
-    fields: [campers.id],
-    references: [camperAddresses.camperId],
+  address: one(addresses, {
+    fields: [campers.addressId],
+    references: [addresses.id],
   }),
 }));
-
-export const camperAddressesRelations = relations(
-  camperAddresses,
-  ({ one, many }) => ({
-    addresses: many(addresses),
-    campers: one(campers, {
-      fields: [camperAddresses.camperId],
-      references: [campers.id],
-    }),
-  }),
-);
 
 export const registrationsRelations = relations(registrations, ({ one }) => ({
   camper: one(campers, {

@@ -21,7 +21,7 @@ const defaultCamperValues: Camper = {
   registrations: [],
 };
 
-export const CamperFieldGroup = withFieldGroup({
+export const OverviewFieldGroup = withFieldGroup({
   defaultValues: defaultCamperValues,
   props: {
     onRemove: () => {},

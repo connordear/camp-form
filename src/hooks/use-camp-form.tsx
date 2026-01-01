@@ -1,5 +1,5 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import { XIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -56,10 +56,12 @@ export function Select({
   options,
   isNumber = true,
   onRemove,
+  onAdd,
   ...props
 }: {
   isNumber?: boolean;
   onRemove?: () => void;
+  onAdd?: () => void;
   options: { value: string; name: string }[];
 } & SelectTriggerProps) {
   const field = useFieldContext<string | number>();
@@ -90,6 +92,12 @@ export function Select({
             ))}
           </SelectContent>
         </BaseSelect>
+        {onAdd && (
+          <Button type="button" variant="outline" size="icon" onClick={onAdd}>
+            <PlusIcon />
+          </Button>
+        )}
+
         {onRemove && (
           <Button
             type="button"

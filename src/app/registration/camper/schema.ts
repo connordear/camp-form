@@ -1,13 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { addresses, camperAddresses, campers } from "@/lib/data/schema";
-
-export const camperAddressesInsertSchema = createInsertSchema(
-  camperAddresses,
-).required({
-  addressId: true,
-  camperId: true,
-});
+import { addresses, campers } from "@/lib/data/schema";
 
 export const addressSelectSchema = createSelectSchema(addresses);
 export type Address = z.infer<typeof addressSelectSchema>;
@@ -23,9 +16,7 @@ export const addressInsertSchema = createInsertSchema(addresses, {
 });
 export type AddressFormValues = z.infer<typeof addressInsertSchema>;
 
-export const camperInfoSelectSchema = createSelectSchema(campers).extend({
-  address: z.optional(addressSelectSchema),
-});
+export const camperInfoSelectSchema = createSelectSchema(campers);
 
 export type CamperInfo = z.infer<typeof camperInfoSelectSchema>;
 
@@ -40,7 +31,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
   .extend({
     addressId: z
       .number("Please select an address, or create a new one to use.")
-      .min(1, "Please select an address, or create a new one to use."),
+      .min(0, "Please select an address, or create a new one to use."),
   })
   .required({
     id: true, // required here since we only want creation/deletion on the home page

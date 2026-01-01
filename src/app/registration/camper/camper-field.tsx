@@ -11,6 +11,7 @@ import { useAppForm } from "@/hooks/use-camp-form";
 import { saveCamper } from "./actions";
 import {
   type Address,
+  type AddressFormValues,
   type CamperInfo,
   camperInfoInsertSchema,
 } from "./schema";
@@ -18,15 +19,19 @@ import {
 type CamperFieldProps = {
   camper: CamperInfo;
   addresses: Address[];
+  openAddressForm: (camperId: number, address?: AddressFormValues) => void;
 };
 
-export default function CamperField({ camper, addresses }: CamperFieldProps) {
-  const { firstName, lastName, clientId, address, ...camperValues } = camper;
+export default function CamperField({
+  camper,
+  addresses,
+  openAddressForm,
+}: CamperFieldProps) {
+  const { firstName, lastName, clientId, ...camperValues } = camper;
 
   const form = useAppForm({
     defaultValues: {
       ...camperValues,
-      addressId: addresses.length ? addresses[0].id : 0,
     },
     validators: {
       onChange: camperInfoInsertSchema,
@@ -71,11 +76,12 @@ export default function CamperField({ camper, addresses }: CamperFieldProps) {
                   <FieldContent>
                     <field.Select
                       isNumber
-                      disabled={!addresses}
+                      disabled={!addresses.length}
                       options={addresses.map((a) => ({
                         name: `${a.postalZip}`,
                         value: a.id.toString(),
                       }))}
+                      onAdd={() => openAddressForm(camper.id)}
                     />
                   </FieldContent>
                 </Field>

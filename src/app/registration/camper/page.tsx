@@ -1,5 +1,5 @@
 import { getAddresses, getCampers } from "./actions";
-import CamperField from "./camper-field";
+import CamperForm from "./form";
 
 export default async function CamperPage() {
   const campersPromise = getCampers();
@@ -10,11 +10,5 @@ export default async function CamperPage() {
     addressesPromise,
   ]);
 
-  return (
-    <div className="flex flex-col gap-3">
-      {(campers ?? []).map((camper) => (
-        <CamperField key={camper.id} camper={camper} addresses={addresses} />
-      ))}
-    </div>
-  );
+  return <CamperForm campers={campers ?? []} addresses={addresses} />;
 }
