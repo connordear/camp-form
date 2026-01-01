@@ -1,5 +1,5 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import FieldErrors from "@/components/forms/field-errors";
+import { WithErrors } from "@/components/forms/field-errors";
 import Select from "@/components/forms/select";
 import TextInput from "@/components/forms/text-input";
 
@@ -9,7 +9,7 @@ export const { fieldContext, formContext, useFieldContext } =
 const fieldComponents = {
   TextInput,
   Select,
-  FieldErrors,
+  WithErrors,
 };
 const formComponents = {};
 

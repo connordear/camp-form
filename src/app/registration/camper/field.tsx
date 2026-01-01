@@ -52,43 +52,49 @@ export default function CamperField({
             e.preventDefault();
             e.stopPropagation();
           }}
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 items-start"
         >
           <FieldSet>
             <form.AppField name="dateOfBirth">
               {(field) => (
-                <Field>
-                  <FieldLabel>Date of Birth</FieldLabel>
-                  <field.TextInput />
-                  <field.FieldErrors />
-                </Field>
+                <>
+                  <Field>
+                    <FieldLabel>Date of Birth</FieldLabel>
+                    <field.WithErrors>
+                      <field.TextInput />
+                    </field.WithErrors>
+                  </Field>
+                </>
               )}
             </form.AppField>
 
             <form.AppField name="addressId">
               {(field) => (
-                <Field>
-                  <FieldLabel>Address</FieldLabel>
-                  <div className="flex gap-1">
-                    <field.Select
-                      placeholder={
-                        addresses.length
-                          ? "Select an address"
-                          : "Create an address first ->"
-                      }
-                      disabled={!addresses.length}
-                      options={addresses.map((a) => ({
-                        name: `${a.postalZip}`,
-                        value: a.id,
-                      }))}
-                    />
-                    <AddButton
-                      onClick={() => openAddressForm(camper.id)}
-                      tooltip="Add new address"
-                    />
-                  </div>
-                  <field.FieldErrors />
-                </Field>
+                <>
+                  <Field>
+                    <FieldLabel>Address</FieldLabel>
+                    <field.WithErrors>
+                      <div className="flex gap-1">
+                        <field.Select
+                          placeholder={
+                            addresses.length
+                              ? "Select an address"
+                              : "Create an address first ->"
+                          }
+                          disabled={!addresses.length}
+                          options={addresses.map((a) => ({
+                            name: `${a.postalZip}`,
+                            value: a.id,
+                          }))}
+                        />
+                        <AddButton
+                          onClick={() => openAddressForm(camper.id)}
+                          tooltip="Add new address"
+                        />
+                      </div>
+                    </field.WithErrors>
+                  </Field>
+                </>
               )}
             </form.AppField>
           </FieldSet>

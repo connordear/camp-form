@@ -50,8 +50,9 @@ export const OverviewFieldGroup = withFieldGroup({
             {(field) => (
               <Field>
                 <FieldLabel>First Name</FieldLabel>
-                <field.TextInput />
-                <field.FieldErrors />
+                <field.WithErrors>
+                  <field.TextInput />
+                </field.WithErrors>
               </Field>
             )}
           </group.AppField>
@@ -59,14 +60,16 @@ export const OverviewFieldGroup = withFieldGroup({
             {(field) => (
               <Field>
                 <FieldLabel>Last Name</FieldLabel>
-                <field.TextInput />
-                <field.FieldErrors />
+                <field.WithErrors>
+                  <field.TextInput />
+                </field.WithErrors>
               </Field>
             )}
           </group.AppField>
 
           {hasOnlyDrafts && (
             <RemoveButton
+              className="mt-8"
               tooltip="Delete Camper & Registrations"
               onClick={onRemove}
             />
