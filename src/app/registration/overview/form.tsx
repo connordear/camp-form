@@ -1,13 +1,14 @@
 "use client";
+import { createId } from "@paralleldrive/cuid2";
 import AutoSaveIndicator from "@/components/forms/save-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/common-types";
-import { OverviewFieldGroup } from "./overview-field";
+import { OverviewFieldGroup } from "./field";
+import type { CampFormUser } from "./schema";
 import { formSchema, saveCampersSchema } from "./schema";
-import type { CampFormUser } from "./types";
 import useOverviewAutoSave from "./use-auto-save-overview";
 
 type RegistrationFormProps = {
@@ -46,7 +47,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
                 <FieldGroup className="flex flex-col gap-3">
                   {field.state.value.map((camper, i) => (
                     <OverviewFieldGroup
-                      key={`${camper.clientId}-${i}`}
+                      key={`${camper.id}-${i}`}
                       form={form}
                       camps={camps}
                       onRemove={() => field.removeValue(i)}
@@ -56,7 +57,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
                   <Button
                     onClick={() =>
                       field.pushValue({
-                        clientId: crypto.randomUUID(),
+                        id: createId(),
                         userId: user.id,
                         firstName: "",
                         lastName: "",

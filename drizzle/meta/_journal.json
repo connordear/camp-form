@@ -5,78 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1766535826039,
-      "tag": "0000_tranquil_adam_destine",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1766607489805,
-      "tag": "0001_tiresome_green_goblin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1766608684169,
-      "tag": "0002_worthless_nitro",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1766608855651,
-      "tag": "0003_lovely_shaman",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1766611043365,
-      "tag": "0004_nostalgic_spot",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767130480585,
-      "tag": "0005_slow_maestro",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1767132231297,
-      "tag": "0006_dazzling_preak",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1767214392801,
-      "tag": "0007_nifty_vance_astro",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1767231142107,
-      "tag": "0008_fast_stark_industries",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1767231683672,
-      "tag": "0009_loose_lady_vermin",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1767232121989,
-      "tag": "0010_lethal_hardball",
+      "when": 1767298011962,
+      "tag": "0000_faulty_diamondback",
       "breakpoints": true
     }
   ]

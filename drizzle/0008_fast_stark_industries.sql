@@ -1,1 +1,0 @@
-ALTER TABLE "addresses" ADD COLUMN "nickname" text DEFAULT '' NOT NULL;

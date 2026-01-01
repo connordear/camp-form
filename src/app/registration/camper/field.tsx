@@ -19,7 +19,10 @@ import {
 type CamperFieldProps = {
   camper: CamperInfo;
   addresses: Address[];
-  openAddressForm: (camperId: number, address?: AddressFormValues) => void;
+  openAddressForm: (
+    camperId: CamperInfo["id"],
+    address?: AddressFormValues,
+  ) => void;
 };
 
 export default function CamperField({
@@ -27,7 +30,7 @@ export default function CamperField({
   addresses,
   openAddressForm,
 }: CamperFieldProps) {
-  const { firstName, lastName, clientId, ...camperValues } = camper;
+  const { firstName, lastName, ...camperValues } = camper;
 
   const form = useAppForm({
     defaultValues: {
@@ -76,11 +79,10 @@ export default function CamperField({
                   <FieldContent>
                     <field.Select
                       placeholder="Select an address"
-                      isNumber
                       disabled={!addresses.length}
                       options={addresses.map((a) => ({
                         name: `${a.postalZip}`,
-                        value: a.id.toString(),
+                        value: a.id,
                       }))}
                       onAdd={() => openAddressForm(camper.id)}
                     />

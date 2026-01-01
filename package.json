@@ -16,12 +16,14 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run ./src/lib/data/seed.ts",
     "db:up": "bun run db:generate && bun run db:migrate",
+    "db:nuke": "bun ./src/lib/data/reset-db.ts",
     "db:reset": "bun ./src/lib/data/reset-db.ts && bun drizzle-kit push && bun run db:seed"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
+    "@paralleldrive/cuid2": "^3.0.6",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-navigation-menu": "^1.2.14",

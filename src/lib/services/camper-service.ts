@@ -7,7 +7,7 @@ export async function getCampersForUser(clerkId: string) {
     where: eq(users.clerkId, clerkId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.id),
+        orderBy: (t) => asc(t.createdAt),
       },
     },
   });

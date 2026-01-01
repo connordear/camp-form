@@ -10,10 +10,12 @@ faker.seed(Number(process.env.SEED_VALUE || 1234));
 async function seed() {
   console.log("🌱 Starting Drizzle seeding...");
   const devCamps = Array.from({ length: 10 }, () => {
-    const base = fake(campSchema.omit({ id: true }));
+    const base = fake(
+      campSchema.omit({ id: true, createdAt: true, updatedAt: true }),
+    );
     const adjective = faker.commerce.productAdjective(); // e.g., "Silver", "Rustic"
-    const feature = faker.location.streetAddress().split(" ")[0]; // e.g., "Lake", "Ridge"
-    const name = `${adjective} ${feature} Dev Camp`;
+    const noun = faker.commerce.productName();
+    const name = `${adjective} ${noun} Camp`;
     return {
       ...base,
       name,

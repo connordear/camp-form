@@ -54,7 +54,7 @@ export function TextInput({
 
 export function Select({
   options,
-  isNumber = true,
+  isNumber,
   onRemove,
   onAdd,
   placeholder = "Select",

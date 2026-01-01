@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import RegistrationBadge from "@/components/forms/registration-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,12 +10,12 @@ import {
 } from "@/components/ui/field";
 import { withFieldGroup } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/common-types";
-import type { Camper } from "./types";
+import type { Camper } from "./schema";
 
 // These default values are used for mapping keys, not runtime defaults
 const defaultCamperValues: Camper = {
-  userId: 0,
-  clientId: "",
+  id: createId(),
+  userId: "",
   firstName: "",
   lastName: "",
   dateOfBirth: "2000-01-01",
@@ -29,7 +30,7 @@ export const OverviewFieldGroup = withFieldGroup({
   },
   render: ({ group, camps, onRemove }) => {
     const camper = group.state.values;
-    const hasOnlyDrafts = group.state.values.registrations.every(
+    const hasOnlyDrafts = group.state.values?.registrations.every(
       (r) => r.status === "draft",
     );
     const campLookup = camps.reduce(
@@ -37,10 +38,10 @@ export const OverviewFieldGroup = withFieldGroup({
         acc[curr.id] = curr;
         return acc;
       },
-      {} as Record<number, Camp>,
+      {} as Record<string, Camp>,
     );
     const validCamps = camps.filter(
-      (c) => !camper.registrations.some((r) => r.campId === c.id),
+      (c) => !camper?.registrations.some((r) => r.campId === c.id),
     );
     return (
       <FieldSet className="flex flex-col gap-3">
@@ -79,17 +80,17 @@ export const OverviewFieldGroup = withFieldGroup({
                       const isDraft = reg.status === "draft";
                       return (
                         <group.AppField
-                          key={`${reg.clientId}-${j}`}
+                          key={reg.id}
                           name={`registrations[${j}].campId`}
                         >
                           {(itemField) => {
                             const campOptions = validCamps.map((c) => ({
-                              value: c.id.toString(),
+                              value: c.id,
                               name: c.name,
                             }));
                             if (itemField.state.value) {
                               campOptions.push({
-                                value: itemField.state.value.toString(),
+                                value: itemField.state.value,
                                 name:
                                   campLookup[itemField.state.value]?.name ??
                                   "Unknown Camp Selected",
@@ -101,7 +102,6 @@ export const OverviewFieldGroup = withFieldGroup({
                                   placeholder="Select a camp"
                                   disabled={!isDraft}
                                   options={campOptions}
-                                  isNumber
                                   onRemove={
                                     isDraft
                                       ? () => field.removeValue(j)
@@ -125,7 +125,7 @@ export const OverviewFieldGroup = withFieldGroup({
                   disabled={!validCamps.length}
                   onClick={() =>
                     field.pushValue({
-                      clientId: crypto.randomUUID(),
+                      id: createId(),
                       campId: validCamps[0].id,
                       camperId: group.state.values.id ?? null,
                       campYear: validCamps[0].year,

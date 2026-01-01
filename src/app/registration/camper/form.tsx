@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import AddressForm from "./address-modal";
-import CamperField from "./camper-field";
+import CamperField from "./field";
 import type { Address, AddressFormValues, CamperInfo } from "./schema";
 
 type CamperFormProps = {
@@ -13,9 +13,12 @@ type CamperFormProps = {
 export default function CamperForm({ campers, addresses }: CamperFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentAddress, setCurrentAddress] = useState<AddressFormValues>();
-  const [activeCamperId, setActiveCamperId] = useState<number>(0);
+  const [activeCamperId, setActiveCamperId] = useState<CamperInfo["id"]>();
 
-  function openAddressForm(camperId: number, address?: AddressFormValues) {
+  function openAddressForm(
+    camperId: CamperInfo["id"],
+    address?: AddressFormValues,
+  ) {
     setCurrentAddress(address);
     setIsOpen(true);
     setActiveCamperId(camperId);

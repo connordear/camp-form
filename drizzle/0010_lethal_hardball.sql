@@ -1,1 +1,0 @@
-ALTER TABLE "addresses" DROP COLUMN "nickname";

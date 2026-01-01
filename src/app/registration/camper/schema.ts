@@ -30,7 +30,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
 })
   .extend({
     addressId: z
-      .number("Please select an address, or create a new one to use.")
+      .string("Please select an address, or create a new one to use.")
       .min(0, "Please select an address, or create a new one to use."),
   })
   .required({
