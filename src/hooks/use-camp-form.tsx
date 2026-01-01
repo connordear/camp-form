@@ -1,128 +1,15 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import { PlusIcon, XIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FieldError } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-  Select as BaseSelect,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  type SelectTriggerProps,
-  SelectValue,
-} from "@/components/ui/select";
+import FieldErrors from "@/components/forms/field-errors";
+import Select from "@/components/forms/select";
+import TextInput from "@/components/forms/text-input";
 
 export const { fieldContext, formContext, useFieldContext } =
   createFormHookContexts();
 
-export function TextInput({
-  onRemove,
-  ...props
-}: {
-  onRemove?: () => void;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
-  const field = useFieldContext<string>();
-  return (
-    <>
-      <div className="flex items-center gap-1">
-        <Input
-          {...props}
-          className="flex-1 border p-2 rounded"
-          value={field.state.value ?? ""}
-          onChange={(e) => field.handleChange(e.target.value)}
-          onBlur={field.handleBlur}
-        />
-        {onRemove && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onRemove}
-          >
-            <XIcon />
-          </Button>
-        )}
-      </div>
-      {field.state.meta.errors ? (
-        <FieldError>
-          {field.state.meta.errors.map((e) => e.message).join(", ")}
-        </FieldError>
-      ) : null}
-    </>
-  );
-}
-
-export function Select({
-  options,
-  isNumber,
-  onRemove,
-  onAdd,
-  placeholder = "Select",
-  ...props
-}: {
-  isNumber?: boolean;
-  onRemove?: () => void;
-  onAdd?: () => void;
-  placeholder?: string;
-  options: { value: string; name: string }[];
-} & SelectTriggerProps) {
-  const field = useFieldContext<string | number>();
-  return (
-    <>
-      <div className="flex gap-1">
-        <BaseSelect
-          value={field.state.value?.toString()}
-          onValueChange={(v) =>
-            isNumber
-              ? field.handleChange(parseInt(v, 10))
-              : field.handleChange(v)
-          }
-          disabled={props.disabled}
-        >
-          <SelectTrigger
-            {...props}
-            className={`w-[300px] ${props.className ?? ""}`}
-          >
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value.toString()}>
-                {opt.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </BaseSelect>
-        {onAdd && (
-          <Button type="button" variant="outline" size="icon" onClick={onAdd}>
-            <PlusIcon />
-          </Button>
-        )}
-
-        {onRemove && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onRemove}
-          >
-            <XIcon />
-          </Button>
-        )}
-      </div>
-
-      {field.state.meta.errors ? (
-        <FieldError>
-          {field.state.meta.errors.map((e) => e.message).join(", ")}
-        </FieldError>
-      ) : null}
-    </>
-  );
-}
-
 const fieldComponents = {
   TextInput,
   Select,
+  FieldErrors,
 };
 const formComponents = {};
 

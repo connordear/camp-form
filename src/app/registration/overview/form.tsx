@@ -50,8 +50,8 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
                       key={`${camper.id}-${i}`}
                       form={form}
                       camps={camps}
-                      onRemove={() => field.removeValue(i)}
                       fields={`campers[${i}]`}
+                      onRemove={() => field.removeValue(i)}
                     />
                   ))}
                   <Button

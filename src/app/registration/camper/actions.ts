@@ -69,7 +69,7 @@ export async function saveAddress(address: AddressFormValues) {
     })
     .onConflictDoUpdate({
       target: [addresses.id],
-      set: addressPayload, // don't include the userId here
+      set: addressPayload,
       where: eq(addresses.userId, userId),
     })
     .returning();

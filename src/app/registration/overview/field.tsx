@@ -1,9 +1,9 @@
 import { createId } from "@paralleldrive/cuid2";
 import RegistrationBadge from "@/components/forms/registration-badge";
+import RemoveButton from "@/components/forms/remove-button";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldContent,
   FieldLabel,
   FieldSeparator,
   FieldSet,
@@ -25,8 +25,8 @@ const defaultCamperValues: Camper = {
 export const OverviewFieldGroup = withFieldGroup({
   defaultValues: defaultCamperValues,
   props: {
-    onRemove: () => {},
     camps: [] as Camp[],
+    onRemove: () => {},
   },
   render: ({ group, camps, onRemove }) => {
     const camper = group.state.values;
@@ -45,14 +45,13 @@ export const OverviewFieldGroup = withFieldGroup({
     );
     return (
       <FieldSet className="flex flex-col gap-3">
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-start">
           <group.AppField name="firstName">
             {(field) => (
               <Field>
                 <FieldLabel>First Name</FieldLabel>
-                <FieldContent>
-                  <field.TextInput />
-                </FieldContent>
+                <field.TextInput />
+                <field.FieldErrors />
               </Field>
             )}
           </group.AppField>
@@ -60,14 +59,18 @@ export const OverviewFieldGroup = withFieldGroup({
             {(field) => (
               <Field>
                 <FieldLabel>Last Name</FieldLabel>
-                <FieldContent>
-                  <field.TextInput
-                    onRemove={hasOnlyDrafts ? onRemove : undefined}
-                  />
-                </FieldContent>
+                <field.TextInput />
+                <field.FieldErrors />
               </Field>
             )}
           </group.AppField>
+
+          {hasOnlyDrafts && (
+            <RemoveButton
+              tooltip="Delete Camper & Registrations"
+              onClick={onRemove}
+            />
+          )}
         </div>
         <group.AppField name="registrations" mode="array">
           {(field) => {
@@ -75,49 +78,48 @@ export const OverviewFieldGroup = withFieldGroup({
               <div className="flex flex-col gap-1 ml-5">
                 <Field>
                   <FieldLabel>Registrations</FieldLabel>
-                  <FieldContent>
-                    {field.state.value?.map((reg, j) => {
-                      const isDraft = reg.status === "draft";
-                      return (
-                        <group.AppField
-                          key={reg.id}
-                          name={`registrations[${j}].campId`}
-                        >
-                          {(itemField) => {
-                            const campOptions = validCamps.map((c) => ({
-                              value: c.id,
-                              name: c.name,
-                            }));
-                            if (itemField.state.value) {
-                              campOptions.push({
-                                value: itemField.state.value,
-                                name:
-                                  campLookup[itemField.state.value]?.name ??
-                                  "Unknown Camp Selected",
-                              });
-                            }
-                            return (
-                              <div className="flex gap-1 items-center justify-between">
-                                <itemField.Select
-                                  placeholder="Select a camp"
-                                  disabled={!isDraft}
-                                  options={campOptions}
-                                  onRemove={
-                                    isDraft
-                                      ? () => field.removeValue(j)
-                                      : undefined
-                                  }
+                  {field.state.value?.map((reg, j) => {
+                    const isDraft = reg.status === "draft";
+                    return (
+                      <group.AppField
+                        key={reg.id}
+                        name={`registrations[${j}].campId`}
+                      >
+                        {(itemField) => {
+                          const campOptions = validCamps.map((c) => ({
+                            value: c.id,
+                            name: c.name,
+                          }));
+                          if (itemField.state.value) {
+                            campOptions.push({
+                              value: itemField.state.value,
+                              name:
+                                campLookup[itemField.state.value]?.name ??
+                                "Unknown Camp Selected",
+                            });
+                          }
+                          return (
+                            <div className="flex gap-1 items-center">
+                              <itemField.Select
+                                placeholder="Select a camp"
+                                disabled={!isDraft}
+                                options={campOptions}
+                              />
+                              {isDraft && (
+                                <RemoveButton
+                                  tooltip="Remove registration"
+                                  onClick={() => field.removeValue(j)}
                                 />
-                                <RegistrationBadge
-                                  status={reg.status ?? "draft"}
-                                />
-                              </div>
-                            );
-                          }}
-                        </group.AppField>
-                      );
-                    })}
-                  </FieldContent>
+                              )}
+                              <RegistrationBadge
+                                status={reg.status ?? "draft"}
+                              />
+                            </div>
+                          );
+                        }}
+                      </group.AppField>
+                    );
+                  })}
                 </Field>
                 <Button
                   className="w-fit"

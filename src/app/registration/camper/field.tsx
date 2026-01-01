@@ -1,12 +1,8 @@
 "use client";
+import AddButton from "@/components/forms/add-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-  FieldSet,
-} from "@/components/ui/field";
+import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { saveCamper } from "./actions";
 import {
@@ -30,7 +26,7 @@ export default function CamperField({
   addresses,
   openAddressForm,
 }: CamperFieldProps) {
-  const { firstName, lastName, ...camperValues } = camper;
+  const { firstName, lastName, createdAt, updatedAt, ...camperValues } = camper;
 
   const form = useAppForm({
     defaultValues: {
@@ -63,35 +59,42 @@ export default function CamperField({
               {(field) => (
                 <Field>
                   <FieldLabel>Date of Birth</FieldLabel>
-                  <FieldContent>
-                    <field.TextInput />
-                  </FieldContent>
+                  <field.TextInput />
+                  <field.FieldErrors />
                 </Field>
               )}
             </form.AppField>
-          </FieldSet>
 
-          <FieldSet>
             <form.AppField name="addressId">
               {(field) => (
                 <Field>
                   <FieldLabel>Address</FieldLabel>
-                  <FieldContent>
+                  <div className="flex gap-1">
                     <field.Select
-                      placeholder="Select an address"
+                      placeholder={
+                        addresses.length
+                          ? "Select an address"
+                          : "Create an address first ->"
+                      }
                       disabled={!addresses.length}
                       options={addresses.map((a) => ({
                         name: `${a.postalZip}`,
                         value: a.id,
                       }))}
-                      onAdd={() => openAddressForm(camper.id)}
                     />
-                  </FieldContent>
+                    <AddButton
+                      onClick={() => openAddressForm(camper.id)}
+                      tooltip="Add new address"
+                    />
+                  </div>
+                  <field.FieldErrors />
                 </Field>
               )}
             </form.AppField>
           </FieldSet>
-          <Button onClick={() => form.handleSubmit()}>Submit</Button>
+          <Button name="Create an address" onClick={() => form.handleSubmit()}>
+            Submit
+          </Button>
         </form>
       </CardContent>
     </Card>
