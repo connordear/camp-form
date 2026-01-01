@@ -1,5 +1,5 @@
 import { AlertCircle, Check, Loader2 } from "lucide-react";
-import type { AutoSaveStatus } from "@/app/registration/overview/use-auto-save-overview";
+import type { AutoSaveStatus } from "@/hooks/use-auto-save";
 import { cn } from "@/lib/utils";
 
 const Dot = ({ delay }: { delay: string }) => (

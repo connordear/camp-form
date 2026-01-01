@@ -28,7 +28,7 @@ async function seed() {
     .values(devCamps)
     .returning({ id: camps.id });
 
-  const currYear = 2025;
+  const currYear = 2026;
   const cyValues = campRes.map((camp, i) => {
     const start = new Date("2026-06-01");
     start.setDate(start.getDate() + i * 7);

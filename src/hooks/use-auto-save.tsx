@@ -1,5 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+export type AutoSaveStatus =
+  | "idle"
+  | "debouncing"
+  | "saving"
+  | "saved"
+  | "error";
+
 interface UseAutoSaveOptions<T> {
   values: T;
   isDirty?: boolean;
@@ -17,9 +24,7 @@ export function useAutoSave<T>({
   onUpdate,
   debounceMs = 1500,
 }: UseAutoSaveOptions<T>) {
-  const [status, setStatus] = useState<
-    "idle" | "debouncing" | "saving" | "saved" | "error"
-  >("idle");
+  const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const lastSavedRef = useRef<string>("");

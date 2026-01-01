@@ -75,6 +75,7 @@ export default function CamperField({
                   <FieldLabel>Address</FieldLabel>
                   <FieldContent>
                     <field.Select
+                      placeholder="Select an address"
                       isNumber
                       disabled={!addresses.length}
                       options={addresses.map((a) => ({

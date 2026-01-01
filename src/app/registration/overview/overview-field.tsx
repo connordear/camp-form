@@ -82,36 +82,38 @@ export const OverviewFieldGroup = withFieldGroup({
                           key={`${reg.clientId}-${j}`}
                           name={`registrations[${j}].campId`}
                         >
-                          {(itemField) => (
-                            <div className="flex gap-1 items-center justify-between">
-                              <itemField.Select
-                                disabled={!isDraft}
-                                options={[
-                                  ...validCamps.map((c) => ({
-                                    value: c.id.toString(),
-                                    name: c.name,
-                                  })),
-                                  {
-                                    value: (
-                                      itemField.state.value ?? 0
-                                    ).toString(),
-                                    name: itemField.state.value
-                                      ? campLookup[itemField.state.value].name
-                                      : "Unknown",
-                                  },
-                                ]}
-                                isNumber
-                                onRemove={
-                                  isDraft
-                                    ? () => field.removeValue(j)
-                                    : undefined
-                                }
-                              />
-                              <RegistrationBadge
-                                status={reg.status ?? "draft"}
-                              />
-                            </div>
-                          )}
+                          {(itemField) => {
+                            const campOptions = validCamps.map((c) => ({
+                              value: c.id.toString(),
+                              name: c.name,
+                            }));
+                            if (itemField.state.value) {
+                              campOptions.push({
+                                value: itemField.state.value.toString(),
+                                name:
+                                  campLookup[itemField.state.value]?.name ??
+                                  "Unknown Camp Selected",
+                              });
+                            }
+                            return (
+                              <div className="flex gap-1 items-center justify-between">
+                                <itemField.Select
+                                  placeholder="Select a camp"
+                                  disabled={!isDraft}
+                                  options={campOptions}
+                                  isNumber
+                                  onRemove={
+                                    isDraft
+                                      ? () => field.removeValue(j)
+                                      : undefined
+                                  }
+                                />
+                                <RegistrationBadge
+                                  status={reg.status ?? "draft"}
+                                />
+                              </div>
+                            );
+                          }}
                         </group.AppField>
                       );
                     })}

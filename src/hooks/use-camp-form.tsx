@@ -57,20 +57,21 @@ export function Select({
   isNumber = true,
   onRemove,
   onAdd,
+  placeholder = "Select",
   ...props
 }: {
   isNumber?: boolean;
   onRemove?: () => void;
   onAdd?: () => void;
+  placeholder?: string;
   options: { value: string; name: string }[];
 } & SelectTriggerProps) {
   const field = useFieldContext<string | number>();
-  console.error(field.state.meta.errors);
   return (
     <>
       <div className="flex gap-1">
         <BaseSelect
-          value={(field.state.value ?? 0).toString()}
+          value={field.state.value?.toString()}
           onValueChange={(v) =>
             isNumber
               ? field.handleChange(parseInt(v, 10))
@@ -82,7 +83,7 @@ export function Select({
             {...props}
             className={`w-[300px] ${props.className ?? ""}`}
           >
-            <SelectValue placeholder="Camp" />
+            <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
             {options.map((opt) => (
