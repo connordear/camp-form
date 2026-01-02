@@ -1,20 +1,10 @@
 import { useStore } from "@tanstack/react-form";
 import { useAutoSave } from "@/hooks/use-auto-save";
-import { useAppForm } from "@/hooks/use-camp-form";
+import type { AppFormApi } from "@/lib/types/common-types";
 import { saveRegistrationsForUser } from "./actions";
 import type { RegistrationFormValues } from "./schema";
-import { formSchema } from "./schema";
 
-const _formInferHelper = () => {
-  return useAppForm({
-    defaultValues: {} as RegistrationFormValues,
-    validators: {
-      onChange: formSchema,
-    },
-  });
-};
-
-export type CampFormApi = ReturnType<typeof _formInferHelper>;
+export type CampFormApi = AppFormApi<RegistrationFormValues>;
 
 export default function useOverviewAutoSave(form: CampFormApi) {
   const values = useStore(form.store, (state) => state.values);

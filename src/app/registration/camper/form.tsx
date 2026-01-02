@@ -10,19 +10,22 @@ type CamperFormProps = {
   addresses: Address[];
 };
 
+export type OpenAddressFormArgs = {
+  camperId: CamperInfo["id"];
+  address?: AddressFormValues;
+};
+
 export default function CamperForm({ campers, addresses }: CamperFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentAddress, setCurrentAddress] = useState<AddressFormValues>();
   const [activeCamperId, setActiveCamperId] = useState<CamperInfo["id"]>();
 
-  function openAddressForm(
-    camperId: CamperInfo["id"],
-    address?: AddressFormValues,
-  ) {
+  function openAddressForm({ camperId, address }: OpenAddressFormArgs) {
     setCurrentAddress(address);
     setIsOpen(true);
     setActiveCamperId(camperId);
   }
+
   return (
     <>
       <div className="flex flex-col gap-3">
@@ -40,6 +43,7 @@ export default function CamperForm({ campers, addresses }: CamperFormProps) {
         onOpenChange={setIsOpen}
         isOpen={isOpen}
         address={currentAddress}
+        camperId={activeCamperId}
       />
     </>
   );

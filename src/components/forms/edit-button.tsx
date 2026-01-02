@@ -1,20 +1,16 @@
-import { XIcon } from "lucide-react";
+import { EditIcon } from "lucide-react";
 import { WithTooltip } from "../hoc/with-tooltip";
 import { Button } from "../ui/button";
 
-type RemoveButtonProps = { tooltip?: string } & React.ComponentProps<
+type EditButtonProps = { tooltip?: string } & React.ComponentProps<
   typeof Button
 >;
 
-export default function RemoveButton({
-  tooltip,
-  className,
-  ...props
-}: RemoveButtonProps) {
+export default function EditButton({ tooltip, ...props }: EditButtonProps) {
   return (
     <WithTooltip text={tooltip}>
       <Button type="button" variant="outline" size="icon" {...props}>
-        <XIcon />
+        <EditIcon />
       </Button>
     </WithTooltip>
   );

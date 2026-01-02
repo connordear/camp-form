@@ -1,6 +1,7 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/data/db";
 import { addresses, campers } from "@/lib/data/schema";
 import { getCampersForUser } from "@/lib/services/camper-service";
@@ -41,16 +42,17 @@ export async function saveCamper(camper: CamperInfoForm) {
 
   const { id, userId: _uid, ...camperInfo } = camper;
 
-  const updatedId = await db
+  await db
     .update(campers)
     .set(camperInfo)
     .where(and(eq(campers.id, id), eq(campers.userId, userId)))
     .returning({ id: campers.id });
-
-  return updatedId;
 }
 
-export async function saveAddress(address: AddressFormValues) {
+export async function saveAddress(
+  address: AddressFormValues,
+  forCamperId?: string,
+) {
   const { userId: clerkId } = await auth();
   if (!clerkId) {
     throw new Error("Not logged in");
@@ -59,20 +61,32 @@ export async function saveAddress(address: AddressFormValues) {
   const { id: userId } = await getUser(clerkId);
 
   const { id, ...addressPayload } = address;
+  return await db.transaction(async (tx) => {
+    const [upsertedAddress] = await tx
+      .insert(addresses)
+      .values({
+        id,
+        userId,
+        ...addressPayload,
+      })
+      .onConflictDoUpdate({
+        target: [addresses.id],
+        set: addressPayload,
+        where: eq(addresses.userId, userId),
+      })
+      .returning();
 
-  const [upsertedAddress] = await db
-    .insert(addresses)
-    .values({
-      id,
-      userId,
-      ...addressPayload,
-    })
-    .onConflictDoUpdate({
-      target: [addresses.id],
-      set: addressPayload,
-      where: eq(addresses.userId, userId),
-    })
-    .returning();
+    if (forCamperId) {
+      await tx
+        .update(campers)
+        .set({
+          addressId: upsertedAddress.id,
+        })
+        .where(and(eq(campers.id, forCamperId), eq(campers.userId, userId)));
+    }
 
-  return upsertedAddress;
+    revalidatePath("/registration/campers");
+
+    return upsertedAddress;
+  });
 }

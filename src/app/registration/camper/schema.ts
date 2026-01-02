@@ -11,6 +11,7 @@ export const addressInsertSchema = createInsertSchema(addresses, {
   country: z.string().min(1, "Country is required"),
   postalZip: z.string().min(1, "Postal/Zip Code is required"),
   stateProv: z.string().min(1, "Province/State is required"),
+  id: z.string().nonoptional(),
 }).omit({
   userId: true, // let this handle from cookies
 });
