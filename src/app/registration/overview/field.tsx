@@ -69,7 +69,7 @@ export const OverviewFieldGroup = withFieldGroup({
 
           {hasOnlyDrafts && (
             <RemoveButton
-              className="mt-8"
+              className="self-end"
               tooltip="Delete Camper & Registrations"
               onClick={onRemove}
             />

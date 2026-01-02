@@ -1,7 +1,13 @@
 "use client";
 import AddButton from "@/components/forms/add-button";
 import EditButton from "@/components/forms/edit-button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { saveCamper } from "./actions";
@@ -17,6 +23,26 @@ type CamperFieldProps = {
   addresses: Address[];
   openAddressForm: (args: OpenAddressFormArgs) => void;
 };
+
+const shirtSizeOptions = [
+  { value: "ys", name: "Youth Small" },
+  { value: "ym", name: "Youth Medium" },
+  { value: "yl", name: "Youth Large" },
+  { value: "xs", name: "Adult XS" },
+  { value: "s", name: "Adult Small" },
+  { value: "m", name: "Adult Medium" },
+  { value: "l", name: "Adult Large" },
+  { value: "xl", name: "Adult XL" },
+  { value: "xxl", name: "Adult XXL" },
+];
+
+const swimmingLevelOptions = [
+  { value: "none", name: "Non-swimmer (must wear life jacket)" },
+  { value: "beginner", name: "Beginner (comfortable in shallow water)" },
+  { value: "intermediate", name: "Intermediate (can swim short distances)" },
+  { value: "advanced", name: "Advanced (comfortable in deep water)" },
+  { value: "prefer_not_to_say", name: "Adult - prefer not to answer" },
+];
 
 export default function CamperField({
   camper,
@@ -45,13 +71,13 @@ export default function CamperField({
 
   return (
     <form.AppForm>
-      <Card>
+      <Card className="w-full max-w-md">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          className="flex flex-col gap-3 items-start"
+          className="flex flex-col gap-3"
         >
           <CardHeader>
             <div className="flex gap-3 justify-between items-center">
@@ -60,17 +86,67 @@ export default function CamperField({
             </div>
           </CardHeader>
           <CardContent>
-            <FieldSet>
+            <FieldSet className="w-full min-w-0">
               <form.AppField name="dateOfBirth">
                 {(field) => (
-                  <>
-                    <Field>
-                      <FieldLabel>Date of Birth</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  </>
+                  <Field>
+                    <FieldLabel>Date of Birth</FieldLabel>
+                    <field.WithErrors>
+                      <field.TextInput />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </form.AppField>
+
+              <form.AppField name="gender">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Gender</FieldLabel>
+                    <field.WithErrors>
+                      <field.TextInput />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </form.AppField>
+
+              <form.AppField name="shirtSize">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Shirt Size</FieldLabel>
+                    <field.WithErrors>
+                      <field.Select
+                        placeholder="Select a shirt size"
+                        options={shirtSizeOptions}
+                      />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </form.AppField>
+
+              <form.AppField name="swimmingLevel">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Swimming Level</FieldLabel>
+                    <field.WithErrors>
+                      <field.Select
+                        placeholder="Select swimming level"
+                        options={swimmingLevelOptions}
+                      />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </form.AppField>
+
+              <form.AppField name="hasBeenToCamp">
+                {(field) => (
+                  <Field orientation="horizontal" className="w-fit">
+                    <field.Switch />
+                    <FieldLabel>
+                      {field.state.value
+                        ? "Has been to camp before"
+                        : "Has not been to camp before"}
+                    </FieldLabel>
+                  </Field>
                 )}
               </form.AppField>
 
@@ -118,13 +194,15 @@ export default function CamperField({
                 }}
               </form.AppField>
             </FieldSet>
+          </CardContent>
+          <CardFooter>
             <form.SubmitButton
               name="Save Camper"
               onClick={() => form.handleSubmit()}
             >
               Submit
             </form.SubmitButton>
-          </CardContent>
+          </CardFooter>
         </form>
       </Card>
     </form.AppForm>

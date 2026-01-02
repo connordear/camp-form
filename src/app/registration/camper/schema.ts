@@ -25,7 +25,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
   dateOfBirth: (schema) =>
     schema.min(10, "Date must be in the format YYYY-MM-DD"),
   swimmingLevel: z.string(),
-  gender: z.string(),
+  gender: z.string().min(1, "Please specify a gender"),
   hasBeenToCamp: z.boolean(),
   shirtSize: z.string(),
 })

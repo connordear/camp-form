@@ -3,6 +3,7 @@ import AutoSaver from "@/components/forms/auto-saver";
 import { WithErrors } from "@/components/forms/field-errors";
 import Select from "@/components/forms/select";
 import SubmitButton from "@/components/forms/submit-button";
+import Switch from "@/components/forms/switch";
 import TextInput from "@/components/forms/text-input";
 
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
@@ -11,6 +12,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
 const fieldComponents = {
   TextInput,
   Select,
+  Switch,
   WithErrors,
 };
 const formComponents = {

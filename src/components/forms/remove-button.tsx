@@ -6,11 +6,7 @@ type RemoveButtonProps = { tooltip?: string } & React.ComponentProps<
   typeof Button
 >;
 
-export default function RemoveButton({
-  tooltip,
-  className,
-  ...props
-}: RemoveButtonProps) {
+export default function RemoveButton({ tooltip, ...props }: RemoveButtonProps) {
   return (
     <WithTooltip text={tooltip}>
       <Button type="button" variant="outline" size="icon" {...props}>

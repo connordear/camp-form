@@ -29,7 +29,7 @@ export default function Select({
     >
       <SelectTrigger
         {...props}
-        className={`w-[300px] ${props.className ?? ""}`}
+        className={`w-full max-w-full w-[300px] ${props.className ?? ""}`}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
