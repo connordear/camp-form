@@ -71,7 +71,7 @@ export default function CamperField({
 
   return (
     <form.AppForm>
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -87,65 +87,69 @@ export default function CamperField({
           </CardHeader>
           <CardContent>
             <FieldSet className="w-full min-w-0">
-              <form.AppField name="dateOfBirth">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Date of Birth</FieldLabel>
-                    <field.WithErrors>
-                      <field.TextInput />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form.AppField name="dateOfBirth">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Date of Birth</FieldLabel>
+                      <field.WithErrors>
+                        <field.TextInput />
+                      </field.WithErrors>
+                    </Field>
+                  )}
+                </form.AppField>
 
-              <form.AppField name="gender">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Gender</FieldLabel>
-                    <field.WithErrors>
-                      <field.TextInput />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
+                <form.AppField name="gender">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Gender</FieldLabel>
+                      <field.WithErrors>
+                        <field.TextInput />
+                      </field.WithErrors>
+                    </Field>
+                  )}
+                </form.AppField>
+              </div>
 
-              <form.AppField name="shirtSize">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Shirt Size</FieldLabel>
-                    <field.WithErrors>
-                      <field.Select
-                        placeholder="Select a shirt size"
-                        options={shirtSizeOptions}
-                      />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form.AppField name="shirtSize">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Shirt Size</FieldLabel>
+                      <field.WithErrors>
+                        <field.Select
+                          placeholder="Select a shirt size"
+                          options={shirtSizeOptions}
+                        />
+                      </field.WithErrors>
+                    </Field>
+                  )}
+                </form.AppField>
 
+                <form.AppField name="hasBeenToCamp">
+                  {(field) => (
+                    <Field orientation="horizontal" className="w-fit mt-6">
+                      <field.Switch />
+                      <FieldLabel>
+                        {field.state.value
+                          ? "Has been to camp before"
+                          : "Has not been to camp before"}
+                      </FieldLabel>
+                    </Field>
+                  )}
+                </form.AppField>
+              </div>
               <form.AppField name="swimmingLevel">
                 {(field) => (
                   <Field>
                     <FieldLabel>Swimming Level</FieldLabel>
                     <field.WithErrors>
                       <field.Select
+                        className="min-w-0 max-w-full flex-1"
                         placeholder="Select swimming level"
                         options={swimmingLevelOptions}
                       />
                     </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
-
-              <form.AppField name="hasBeenToCamp">
-                {(field) => (
-                  <Field orientation="horizontal" className="w-fit">
-                    <field.Switch />
-                    <FieldLabel>
-                      {field.state.value
-                        ? "Has been to camp before"
-                        : "Has not been to camp before"}
-                    </FieldLabel>
                   </Field>
                 )}
               </form.AppField>
@@ -161,6 +165,7 @@ export default function CamperField({
                       <field.WithErrors>
                         <div className="flex gap-1">
                           <field.Select
+                            className="w-max"
                             placeholder={
                               addresses.length
                                 ? "Select an address"

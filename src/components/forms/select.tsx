@@ -27,10 +27,7 @@ export default function Select({
       }
       disabled={props.disabled}
     >
-      <SelectTrigger
-        {...props}
-        className={`w-full max-w-full w-[300px] ${props.className ?? ""}`}
-      >
+      <SelectTrigger {...props} className={`${props.className ?? ""}`}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

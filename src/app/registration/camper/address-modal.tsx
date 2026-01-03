@@ -62,7 +62,7 @@ export default function AddressForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80%]">
+      <DialogContent className="max-h-[80%] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>
             {isNew ? "Add New Address" : "Edit Address"}
@@ -74,13 +74,14 @@ export default function AddressForm({
           </DialogDescription>
         </DialogHeader>
         <form
+          className="flex flex-col flex-1 min-h-0 overflow-hidden"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
         >
-          <FieldSet className="max-h-[300px] overflow-y-auto">
+          <FieldSet className="flex-1 min-h-0 overflow-y-auto">
             <form.AppField name="addressLine1">
               {(field) => (
                 <Field>

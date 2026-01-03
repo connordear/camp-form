@@ -44,8 +44,8 @@ export const OverviewFieldGroup = withFieldGroup({
       (c) => !camper?.registrations.some((r) => r.campId === c.id),
     );
     return (
-      <FieldSet className="flex flex-col gap-3">
-        <div className="flex gap-3 items-start">
+      <FieldSet className="flex flex-col gap-3 w-full min-w-0">
+        <div className="flex flex-col md:flex-row gap-3">
           <group.AppField name="firstName">
             {(field) => (
               <Field>
@@ -66,10 +66,9 @@ export const OverviewFieldGroup = withFieldGroup({
               </Field>
             )}
           </group.AppField>
-
           {hasOnlyDrafts && (
             <RemoveButton
-              className="self-end"
+              className="self-end hidden md:flex"
               tooltip="Delete Camper & Registrations"
               onClick={onRemove}
             />
@@ -78,7 +77,7 @@ export const OverviewFieldGroup = withFieldGroup({
         <group.AppField name="registrations" mode="array">
           {(field) => {
             return (
-              <div className="flex flex-col gap-1 ml-5">
+              <div className="flex flex-col gap-3 md:ml-5">
                 <Field>
                   <FieldLabel>Registrations</FieldLabel>
                   {field.state.value?.map((reg, j) => {
@@ -102,18 +101,22 @@ export const OverviewFieldGroup = withFieldGroup({
                             });
                           }
                           return (
-                            <div className="flex gap-1 items-center">
-                              <itemField.Select
-                                placeholder="Select a camp"
-                                disabled={!isDraft}
-                                options={campOptions}
-                              />
-                              {isDraft && (
-                                <RemoveButton
-                                  tooltip="Remove registration"
-                                  onClick={() => field.removeValue(j)}
+                            <div className="flex gap-1 items-center justify-between min-w-0">
+                              <div className="flex gap-1 flex-1 min-w-0">
+                                <itemField.Select
+                                  className="min-w-0 flex-1"
+                                  placeholder="Select a camp"
+                                  disabled={!isDraft}
+                                  options={campOptions}
                                 />
-                              )}
+                                {isDraft && (
+                                  <RemoveButton
+                                    className="start"
+                                    tooltip="Remove registration"
+                                    onClick={() => field.removeValue(j)}
+                                  />
+                                )}
+                              </div>
                               <RegistrationBadge
                                 status={reg.status ?? "draft"}
                               />

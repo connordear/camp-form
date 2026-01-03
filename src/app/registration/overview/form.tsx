@@ -30,7 +30,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
 
   return (
     <>
-      <Card className="flex-1 max-w-[700px] m-auto mt-3">
+      <Card className="flex-1 max-w-lg m-auto">
         <CardHeader>
           <CardTitle>Camper Registration</CardTitle>
         </CardHeader>

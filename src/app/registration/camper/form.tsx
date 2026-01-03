@@ -28,7 +28,7 @@ export default function CamperForm({ campers, addresses }: CamperFormProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 items-center mt-3">
+      <div className="flex flex-col gap-3 items-center">
         {(campers ?? []).map((camper) => (
           <CamperField
             key={camper.id}
