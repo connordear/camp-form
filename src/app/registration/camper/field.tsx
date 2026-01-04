@@ -1,6 +1,9 @@
 "use client";
+import { useStore } from "@tanstack/react-form";
+import { useEffect, useState } from "react";
 import AddButton from "@/components/forms/add-button";
 import EditButton from "@/components/forms/edit-button";
+import FormStatusBadge from "@/components/forms/form-status-badge";
 import {
   Card,
   CardContent,
@@ -10,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
+import type { FormStatus } from "@/lib/types/common-types";
 import { saveCamper } from "./actions";
 import type { OpenAddressFormArgs } from "./form";
 import {
@@ -69,6 +73,17 @@ export default function CamperField({
     },
   });
 
+  const hasSubmitted = useStore(form.store, (s) => s.isSubmitted);
+
+  // for now just check if we pulled an id out, if so, we know it saved
+  const [status, setStatus] = useState<FormStatus>(
+    camper.addressId ? "complete" : "draft",
+  );
+
+  useEffect(() => {
+    hasSubmitted && setStatus("complete");
+  }, [hasSubmitted]);
+
   return (
     <form.AppForm>
       <Card className="w-full max-w-lg">
@@ -82,7 +97,8 @@ export default function CamperField({
           <CardHeader>
             <div className="flex gap-3 justify-between items-center">
               <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName}`}</CardTitle>
-              <form.AutoSaver onSave={saveCamper} />
+
+              <FormStatusBadge status={status} />
             </div>
           </CardHeader>
           <CardContent>
