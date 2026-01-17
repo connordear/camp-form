@@ -5,6 +5,7 @@ import {
   date,
   foreignKey,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -71,6 +72,7 @@ export const campers = pgTable("campers", {
   hasBeenToCamp: boolean("has_been_to_camp").default(false),
   shirtSize: text("shirt_size").default(""),
   arePhotosAllowed: boolean("are_photos_allowed").notNull().default(false),
+  dietaryRestrictions: text("dietary_restrictions"),
   ...timestamps,
 });
 
@@ -140,6 +142,64 @@ export const registrationDetails = pgTable("registration_details", {
   parentSignature: text("parent_signature"),
   additionalInfo: text("additional_info"),
 });
+
+export const OTC_MEDICATIONS_LIST = [
+  "Acetaminophen (Tylenol)",
+  "Ibuprofen (Advil)",
+  "Antacids (Tums, Rolaids)",
+  "Antihistamines (Benadryl)",
+  "Antibiotic Cream",
+  "Sting Relief/Cream",
+  "Insect Repellent",
+  "Sunscreen",
+  "Sunburn Spray (Solarcaine)",
+  "Sudafed (Decongestant)",
+] as const;
+
+export const medicalInfo = pgTable("medical_info", {
+  camperId: text("camper_id")
+    .primaryKey()
+    .references(() => campers.id, { onDelete: "cascade" }),
+
+  healthCareNumber: text("health_care_number").notNull(),
+  familyDoctor: text("family_doctor").notNull(),
+  doctorPhone: text("doctor_phone").notNull(),
+
+  height: text("height"),
+  weight: text("weight"),
+
+  hasAllergies: boolean("has_allergies").default(false).notNull(),
+  allergiesDetails: text("allergies_details"),
+
+  usesEpiPen: boolean("uses_epi_pen").default(false).notNull(),
+
+  hasMedicationsAtCamp: boolean("has_medications_at_camp")
+    .default(false)
+    .notNull(),
+  medicationsAtCampDetails: text("medications_at_camp_details"),
+
+  hasMedicationsNotAtCamp: boolean("has_medications_not_at_camp")
+    .default(false)
+    .notNull(),
+  medicationsNotAtCampDetails: text("medications_not_at_camp_details"),
+
+  otcPermissions: jsonb("otc_permissions").$type<string[]>().default([]),
+
+  hasMedicalConditions: boolean("has_medical_conditions")
+    .default(false)
+    .notNull(),
+  medicalConditionsDetails: text("medical_conditions_details"),
+
+  additionalInfo: text("additional_info"),
+});
+
+// Define Relations
+export const medicalInfoRelations = relations(medicalInfo, ({ one }) => ({
+  camper: one(campers, {
+    fields: [medicalInfo.camperId],
+    references: [campers.id],
+  }),
+}));
 
 export const campYearRelations = relations(campYears, ({ one, many }) => ({
   camp: one(camps, {

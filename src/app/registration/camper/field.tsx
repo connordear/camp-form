@@ -228,6 +228,14 @@ export default function CamperField({
                   )}
                 </form.AppField>
               </div>
+              <form.AppField name="dietaryRestrictions">
+                {(field) => (
+                  <Field className="w-full">
+                    <FieldLabel>Diestary Restrictions</FieldLabel>
+                    <field.TextArea placeholder="None" />
+                  </Field>
+                )}
+              </form.AppField>
             </FieldSet>
           </CardContent>
           <CardFooter>
