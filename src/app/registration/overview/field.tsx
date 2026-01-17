@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/field";
 import { withFieldGroup } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/common-types";
+import { getDaysBetweenDates } from "@/lib/utils";
 import type { Camper } from "./schema";
 
 // These default values are used for mapping keys, not runtime defaults
@@ -92,13 +93,21 @@ export const OverviewFieldGroup = withFieldGroup({
                             value: c.id,
                             name: c.name,
                           }));
+                          let hasDayPrice = false;
+                          let numDays = 0;
                           if (itemField.state.value) {
+                            const camp = campLookup[itemField.state.value];
                             campOptions.push({
                               value: itemField.state.value,
-                              name:
-                                campLookup[itemField.state.value]?.name ??
-                                "Unknown Camp Selected",
+                              name: camp?.name ?? "Unknown Camp Selected",
                             });
+                            hasDayPrice = !!camp.dayPrice;
+
+                            numDays =
+                              getDaysBetweenDates(
+                                camp.startDate,
+                                camp.endDate,
+                              ) - 1;
                           }
                           return (
                             <div className="flex gap-1 items-center justify-between min-w-0">
@@ -109,17 +118,37 @@ export const OverviewFieldGroup = withFieldGroup({
                                   disabled={!isDraft}
                                   options={campOptions}
                                 />
-                                {isDraft && (
-                                  <RemoveButton
-                                    className="start"
-                                    tooltip="Remove registration"
-                                    onClick={() => field.removeValue(j)}
-                                  />
-                                )}
                               </div>
+                              <group.AppField
+                                name={`registrations[${j}].numDays`}
+                              >
+                                {(itemField) => {
+                                  return (
+                                    <itemField.Select
+                                      placeholder="Full Week"
+                                      className="w-[110px]"
+                                      disabled={!hasDayPrice}
+                                      isNumber
+                                      options={Array.from({
+                                        length: numDays,
+                                      }).map((_, i) => ({
+                                        value: `${i + 1}`,
+                                        name: `${i + 1} Days`,
+                                      }))}
+                                    ></itemField.Select>
+                                  );
+                                }}
+                              </group.AppField>
                               <RegistrationBadge
                                 status={reg.status ?? "draft"}
                               />
+                              {isDraft && (
+                                <RemoveButton
+                                  className="self-start"
+                                  tooltip="Remove registration"
+                                  onClick={() => field.removeValue(j)}
+                                />
+                              )}
                             </div>
                           );
                         }}

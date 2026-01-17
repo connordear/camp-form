@@ -35,6 +35,8 @@ async function seed() {
     const start = new Date("2026-06-01");
     start.setDate(start.getDate() + i * 7);
 
+    const hasDayPrice = Math.random() > 0.5;
+
     const end = new Date(start);
     end.setDate(end.getDate() + 7);
     const campData = devCamps[i];
@@ -45,6 +47,7 @@ async function seed() {
       campId: camp.id,
       year: currYear,
       basePrice: faker.helpers.arrayElement([10000, 20000, 30000]),
+      dayPrice: hasDayPrice ? faker.helpers.arrayElement([8000, 10000]) : null,
       capacity: faker.helpers.arrayElement([20, 30, 40, 50]),
     };
   });

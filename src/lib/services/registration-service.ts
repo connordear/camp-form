@@ -15,6 +15,29 @@ export async function getRegistrationsForUser(clerkId: string) {
   });
 }
 
+export async function getRegistrationDetailsForUser(clerkId: string) {
+  return await db.query.users.findFirst({
+    where: eq(users.clerkId, clerkId),
+    with: {
+      campers: {
+        with: {
+          registrations: {
+            with: {
+              camper: true,
+              details: true,
+              campYear: {
+                with: {
+                  camp: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 export async function getCheckoutRegistrationsForUser(clerkId: string) {
   return await db.query.users.findFirst({
     where: eq(users.clerkId, clerkId),

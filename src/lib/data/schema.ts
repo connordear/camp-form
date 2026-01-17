@@ -48,9 +48,10 @@ export const campYears = pgTable(
       .references(() => camps.id)
       .notNull(),
     basePrice: integer("base_price").notNull().default(0),
+    dayPrice: integer("day_price"),
     capacity: integer(),
-    startDate: date("start_date"),
-    endDate: date("end_date"),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
     ...timestamps,
   },
   (t) => [primaryKey({ columns: [t.campId, t.year] })],
@@ -69,6 +70,7 @@ export const campers = pgTable("campers", {
   gender: text().default(""),
   hasBeenToCamp: boolean("has_been_to_camp").default(false),
   shirtSize: text("shirt_size").default(""),
+  arePhotosAllowed: boolean("are_photos_allowed").notNull().default(false),
   ...timestamps,
 });
 
@@ -110,6 +112,7 @@ export const registrations = pgTable(
     camperId: text("camper_id").references(() => campers.id, {
       onDelete: "cascade",
     }),
+    numDays: integer("num_days"),
     pricePaid: integer("price_paid"),
     status: text("status", {
       enum: ["draft", "registered", "refunded"],
@@ -128,6 +131,15 @@ export const registrations = pgTable(
     unique().on(t.camperId, t.campId, t.campYear),
   ],
 );
+
+export const registrationDetails = pgTable("registration_details", {
+  registrationId: text("registration_id")
+    .primaryKey()
+    .references(() => registrations.id, { onDelete: "cascade" }),
+  cabinRequest: text("cabin_request"),
+  parentSignature: text("parent_signature"),
+  additionalInfo: text("additional_info"),
+});
 
 export const campYearRelations = relations(campYears, ({ one, many }) => ({
   camp: one(camps, {
@@ -168,5 +180,9 @@ export const registrationsRelations = relations(registrations, ({ one }) => ({
   campYear: one(campYears, {
     fields: [registrations.campId, registrations.campYear],
     references: [campYears.campId, campYears.year],
+  }),
+  details: one(registrationDetails, {
+    fields: [registrations.id],
+    references: [registrationDetails.registrationId],
   }),
 }));

@@ -144,7 +144,7 @@ export default function CamperField({
 
                 <form.AppField name="hasBeenToCamp">
                   {(field) => (
-                    <Field orientation="horizontal" className="w-fit mt-6">
+                    <Field orientation="horizontal" className="w-fit md:mt-6">
                       <field.Switch />
                       <FieldLabel>
                         {field.state.value
@@ -169,51 +169,65 @@ export default function CamperField({
                   </Field>
                 )}
               </form.AppField>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form.AppField name="addressId">
+                  {(field) => {
+                    const currentAddress = addresses.find(
+                      (a) => a.id === field.state.value,
+                    );
+                    return (
+                      <Field>
+                        <FieldLabel>Address</FieldLabel>
+                        <field.WithErrors>
+                          <div className="flex gap-1">
+                            <field.Select
+                              className="w-max"
+                              placeholder={
+                                addresses.length
+                                  ? "Select an address"
+                                  : "Create an address first ->"
+                              }
+                              disabled={!addresses.length}
+                              options={addressOptions}
+                            />
+                            <EditButton
+                              disabled={!currentAddress}
+                              tooltip={`Edit Address ${currentAddress?.postalZip}`}
+                              onClick={() =>
+                                openAddressForm({
+                                  camperId: camper.id,
+                                  address: currentAddress,
+                                })
+                              }
+                            />
+                            <AddButton
+                              onClick={() =>
+                                openAddressForm({
+                                  camperId: camper.id,
+                                })
+                              }
+                              tooltip="Add new address"
+                            />
+                          </div>
+                        </field.WithErrors>
+                      </Field>
+                    );
+                  }}
+                </form.AppField>
 
-              <form.AppField name="addressId">
-                {(field) => {
-                  const currentAddress = addresses.find(
-                    (a) => a.id === field.state.value,
-                  );
-                  return (
-                    <Field>
-                      <FieldLabel>Address</FieldLabel>
-                      <field.WithErrors>
-                        <div className="flex gap-1">
-                          <field.Select
-                            className="w-max"
-                            placeholder={
-                              addresses.length
-                                ? "Select an address"
-                                : "Create an address first ->"
-                            }
-                            disabled={!addresses.length}
-                            options={addressOptions}
-                          />
-                          <EditButton
-                            disabled={!currentAddress}
-                            tooltip={`Edit Address ${currentAddress?.postalZip}`}
-                            onClick={() =>
-                              openAddressForm({
-                                camperId: camper.id,
-                                address: currentAddress,
-                              })
-                            }
-                          />
-                          <AddButton
-                            onClick={() =>
-                              openAddressForm({
-                                camperId: camper.id,
-                              })
-                            }
-                            tooltip="Add new address"
-                          />
-                        </div>
-                      </field.WithErrors>
+                <form.AppField name="arePhotosAllowed">
+                  {(field) => (
+                    <Field orientation="horizontal" className="w-fit md:mt-6">
+                      <field.Switch />
+                      <FieldLabel>
+                        {field.state.value
+                          ? "Photos are allowed"
+                          : "Photos are not allowed"}
+                      </FieldLabel>
                     </Field>
-                  );
-                }}
-              </form.AppField>
+                  )}
+                </form.AppField>
+              </div>
             </FieldSet>
           </CardContent>
           <CardFooter>

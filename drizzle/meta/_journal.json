@@ -8,6 +8,20 @@
       "when": 1767298011962,
       "tag": "0000_faulty_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768167897022,
+      "tag": "0001_ancient_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768672132584,
+      "tag": "0002_stiff_vampiro",
+      "breakpoints": true
     }
   ]
 }

@@ -37,6 +37,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
   .required({
     id: true, // required here since we only want creation/deletion on the home page
     userId: true,
+    arePhotosAllowed: true,
   })
   .pick({
     id: true,
@@ -47,6 +48,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
     hasBeenToCamp: true,
     shirtSize: true,
     addressId: true,
+    arePhotosAllowed: true,
   });
 
 export type CamperInfoForm = z.infer<typeof camperInfoInsertSchema>;
