@@ -1,5 +1,3 @@
-"use client";
-
 import CampField from "./field";
 import type { RegistrationDetail } from "./schema";
 

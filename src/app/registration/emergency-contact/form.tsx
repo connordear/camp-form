@@ -1,0 +1,50 @@
+"use client";
+
+import { useState } from "react";
+import AddressForm from "./address-modal";
+import CamperField from "./field";
+import type { Address, AddressFormValues, CamperInfo } from "./schema";
+
+type CamperFormProps = {
+  campers: CamperInfo[];
+  addresses: Address[];
+};
+
+export type OpenAddressFormArgs = {
+  camperId: CamperInfo["id"];
+  address?: AddressFormValues;
+};
+
+export default function CamperForm({ campers, addresses }: CamperFormProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState<AddressFormValues>();
+  const [activeCamperId, setActiveCamperId] = useState<CamperInfo["id"]>();
+
+  function openAddressForm({ camperId, address }: OpenAddressFormArgs) {
+    setCurrentAddress(address);
+    setIsOpen(true);
+    setActiveCamperId(camperId);
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-3 items-center">
+        {(campers ?? []).map((camper) => (
+          <CamperField
+            key={camper.id}
+            camper={camper}
+            addresses={addresses}
+            openAddressForm={openAddressForm}
+          />
+        ))}
+      </div>
+      <AddressForm
+        key={activeCamperId}
+        onOpenChange={setIsOpen}
+        isOpen={isOpen}
+        address={currentAddress}
+        camperId={activeCamperId}
+      />
+    </>
+  );
+}

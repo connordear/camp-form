@@ -231,7 +231,7 @@ export default function CamperField({
               <form.AppField name="dietaryRestrictions">
                 {(field) => (
                   <Field className="w-full">
-                    <FieldLabel>Dietary Restrictions</FieldLabel>
+                    <FieldLabel>Diestary Restrictions</FieldLabel>
                     <field.TextArea placeholder="None" />
                   </Field>
                 )}

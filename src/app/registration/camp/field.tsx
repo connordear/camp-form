@@ -1,3 +1,4 @@
+"use client";
 import { useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
 import FormStatusBadge from "@/components/forms/form-status-badge";

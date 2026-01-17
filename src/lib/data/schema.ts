@@ -226,6 +226,10 @@ export const addressesRelations = relations(addresses, ({ many, one }) => ({
 export const campersRelations = relations(campers, ({ one, many }) => ({
   user: one(users, { fields: [campers.userId], references: [users.id] }),
   registrations: many(registrations),
+  medicalInfo: one(medicalInfo, {
+    fields: [campers.id],
+    references: [medicalInfo.camperId],
+  }),
   address: one(addresses, {
     fields: [campers.addressId],
     references: [addresses.id],

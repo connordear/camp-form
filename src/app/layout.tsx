@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import NavSignedIn from "@/components/nav/signed-in";
 import NavSignedOut from "@/components/nav/signed-out";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default async function RootLayout({
               </SignedOut>
             </nav>
             <main className="px-4">{children}</main>
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
