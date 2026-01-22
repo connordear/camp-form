@@ -31,6 +31,8 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
       healthCareNumber: medicalInfo?.healthCareNumber ?? "",
       familyDoctor: medicalInfo?.familyDoctor ?? "",
       doctorPhone: medicalInfo?.doctorPhone ?? "",
+      height: medicalInfo?.height ?? "",
+      weight: medicalInfo?.weight ?? "",
 
       hasAllergies: medicalInfo?.hasAllergies ?? false,
       allergiesDetails: medicalInfo?.allergiesDetails ?? "",

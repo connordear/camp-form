@@ -1,49 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import AddressForm from "./address-modal";
-import CamperField from "./field";
-import type { Address, AddressFormValues, CamperInfo } from "./schema";
+import ContactModal from "./contact-modal";
+import EmergencyContactField from "./field";
+import type {
+  CamperWithEmergencyContacts,
+  EmergencyContact,
+  EmergencyContactFormValues,
+} from "./schema";
 
-type CamperFormProps = {
-  campers: CamperInfo[];
-  addresses: Address[];
+type EmergencyContactFormProps = {
+  campers: CamperWithEmergencyContacts[];
+  allContacts: EmergencyContact[];
 };
 
-export type OpenAddressFormArgs = {
-  camperId: CamperInfo["id"];
-  address?: AddressFormValues;
+export type OpenContactModalArgs = {
+  contact?: EmergencyContactFormValues;
 };
 
-export default function CamperForm({ campers, addresses }: CamperFormProps) {
+export default function EmergencyContactForm({
+  campers,
+  allContacts,
+}: EmergencyContactFormProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState<AddressFormValues>();
-  const [activeCamperId, setActiveCamperId] = useState<CamperInfo["id"]>();
+  const [currentContact, setCurrentContact] =
+    useState<EmergencyContactFormValues>();
 
-  function openAddressForm({ camperId, address }: OpenAddressFormArgs) {
-    setCurrentAddress(address);
+  function openContactModal({ contact }: OpenContactModalArgs) {
+    setCurrentContact(contact);
     setIsOpen(true);
-    setActiveCamperId(camperId);
   }
 
   return (
     <>
       <div className="flex flex-col gap-3 items-center">
-        {(campers ?? []).map((camper) => (
-          <CamperField
-            key={camper.id}
-            camper={camper}
-            addresses={addresses}
-            openAddressForm={openAddressForm}
+        {(campers ?? []).map((data) => (
+          <EmergencyContactField
+            key={data.camper.id}
+            data={data}
+            allContacts={allContacts}
+            openContactModal={openContactModal}
           />
         ))}
       </div>
-      <AddressForm
-        key={activeCamperId}
+      <ContactModal
+        key={currentContact?.id ?? "new"}
         onOpenChange={setIsOpen}
         isOpen={isOpen}
-        address={currentAddress}
-        camperId={activeCamperId}
+        contact={currentContact}
       />
     </>
   );

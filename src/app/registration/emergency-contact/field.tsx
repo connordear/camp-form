@@ -1,9 +1,10 @@
 "use client";
-import { useStore } from "@tanstack/react-form";
-import { useEffect, useState } from "react";
-import AddButton from "@/components/forms/add-button";
-import EditButton from "@/components/forms/edit-button";
+
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import FormStatusBadge from "@/components/forms/form-status-badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,243 +12,241 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
-import { useAppForm } from "@/hooks/use-camp-form";
+import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
 import type { FormStatus } from "@/lib/types/common-types";
-import { saveCamper } from "./actions";
-import type { OpenAddressFormArgs } from "./form";
-import {
-  type Address,
-  type CamperInfo,
-  camperInfoInsertSchema,
+import { saveCamperEmergencyContacts } from "./actions";
+import type { OpenContactModalArgs } from "./form";
+import type {
+  CamperWithEmergencyContacts,
+  EmergencyContact,
+  EmergencyContactFormValues,
 } from "./schema";
 
-type CamperFieldProps = {
-  camper: CamperInfo;
-  addresses: Address[];
-  openAddressForm: (args: OpenAddressFormArgs) => void;
+type EmergencyContactFieldProps = {
+  data: CamperWithEmergencyContacts;
+  allContacts: EmergencyContact[];
+  openContactModal: (args: OpenContactModalArgs) => void;
 };
 
-const shirtSizeOptions = [
-  { value: "ys", name: "Youth Small" },
-  { value: "ym", name: "Youth Medium" },
-  { value: "yl", name: "Youth Large" },
-  { value: "xs", name: "Adult XS" },
-  { value: "s", name: "Adult Small" },
-  { value: "m", name: "Adult Medium" },
-  { value: "l", name: "Adult Large" },
-  { value: "xl", name: "Adult XL" },
-  { value: "xxl", name: "Adult XXL" },
-];
+function getRelationshipDisplay(contact: EmergencyContact): string {
+  if (contact.relationship === "other" && contact.relationshipOther) {
+    return contact.relationshipOther;
+  }
+  const option = RELATIONSHIP_OPTIONS.find(
+    (r) => r.value === contact.relationship,
+  );
+  return option?.name ?? contact.relationship;
+}
 
-const swimmingLevelOptions = [
-  { value: "none", name: "Non-swimmer (must wear life jacket)" },
-  { value: "beginner", name: "Beginner (comfortable in shallow water)" },
-  { value: "intermediate", name: "Intermediate (can swim short distances)" },
-  { value: "advanced", name: "Advanced (comfortable in deep water)" },
-  { value: "prefer_not_to_say", name: "Adult - prefer not to answer" },
-];
+export default function EmergencyContactField({
+  data,
+  allContacts,
+  openContactModal,
+}: EmergencyContactFieldProps) {
+  const { camper, emergencyContacts: assignedContacts } = data;
 
-export default function CamperField({
-  camper,
-  addresses,
-  openAddressForm,
-}: CamperFieldProps) {
-  const addressOptions = addresses.map((a) => ({
-    name: `${a.postalZip}`,
-    value: a.id,
-  }));
+  // Track selected contact IDs locally
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(
+    assignedContacts.map((c) => c.id),
+  );
+  const [isSaving, setIsSaving] = useState(false);
 
-  const { firstName, lastName, createdAt, updatedAt, ...camperValues } = camper;
+  // Determine form status based on number of assigned contacts
+  const getStatus = (): FormStatus => {
+    if (selectedContactIds.length >= 2) return "complete";
+    return "draft";
+  };
 
-  const form = useAppForm({
-    defaultValues: {
-      ...camperValues,
-    },
-    validators: {
-      onSubmit: camperInfoInsertSchema,
-    },
-    onSubmit: async ({ value }) => {
-      const validatedValues = await camperInfoInsertSchema.parseAsync(value);
-      await saveCamper(validatedValues);
-    },
-  });
+  const [status, setStatus] = useState<FormStatus>(getStatus());
 
-  const hasSubmitted = useStore(form.store, (s) => s.isSubmitted);
+  // Get contacts that are selected
+  const selectedContacts = selectedContactIds
+    .map((id) => allContacts.find((c) => c.id === id))
+    .filter((c): c is EmergencyContact => c !== undefined);
 
-  // for now just check if we pulled an id out, if so, we know it saved
-  const [status, setStatus] = useState<FormStatus>(
-    camper.addressId ? "complete" : "draft",
+  // Get contacts available to add (not already selected)
+  const availableContacts = allContacts.filter(
+    (c) => !selectedContactIds.includes(c.id),
   );
 
-  useEffect(() => {
-    hasSubmitted && setStatus("complete");
-  }, [hasSubmitted]);
+  const handleAddContact = (contactId: string) => {
+    if (selectedContactIds.length >= 4) {
+      toast.error("Maximum 4 emergency contacts allowed");
+      return;
+    }
+    setSelectedContactIds([...selectedContactIds, contactId]);
+  };
+
+  const handleRemoveContact = (contactId: string) => {
+    setSelectedContactIds(selectedContactIds.filter((id) => id !== contactId));
+  };
+
+  const handleSave = async () => {
+    if (selectedContactIds.length < 2) {
+      toast.error("Please assign at least 2 emergency contacts");
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = toast.loading("Saving emergency contacts...");
+
+    try {
+      await saveCamperEmergencyContacts(camper.id, selectedContactIds);
+      toast.success(`Saved contacts for ${camper.firstName}`, { id: toastId });
+      setStatus("complete");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save contacts",
+        { id: toastId },
+      );
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditContact = (contact: EmergencyContact) => {
+    const formValues: EmergencyContactFormValues = {
+      id: contact.id,
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email ?? "",
+      relationship: contact.relationship,
+      relationshipOther: contact.relationshipOther ?? "",
+    };
+    openContactModal({ contact: formValues });
+  };
 
   return (
-    <form.AppForm>
-      <Card className="w-full max-w-xl">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="flex flex-col gap-3"
-        >
-          <CardHeader>
-            <div className="flex gap-3 justify-between items-center">
-              <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName}`}</CardTitle>
+    <Card className="w-full max-w-xl">
+      <CardHeader>
+        <div className="flex gap-3 justify-between items-center">
+          <CardTitle className="truncate">
+            Emergency Contacts - {camper.firstName} {camper.lastName}
+          </CardTitle>
+          <FormStatusBadge status={status} />
+        </div>
+      </CardHeader>
 
-              <FormStatusBadge status={status} />
+      <CardContent className="space-y-4">
+        {/* Assigned Contacts List */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">
+              Assigned Contacts ({selectedContacts.length}/4)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {selectedContactIds.length < 2
+                ? `Need ${2 - selectedContactIds.length} more`
+                : "Minimum met"}
+            </p>
+          </div>
+
+          {selectedContacts.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-2">
+              No contacts assigned yet
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedContacts.map((contact, index) => (
+                <div
+                  key={contact.id}
+                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        #{index + 1}
+                      </span>
+                      <span className="font-medium truncate">
+                        {contact.name}
+                      </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {contact.phone} ({getRelationshipDisplay(contact)})
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEditContact(contact)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleRemoveContact(contact.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            <FieldSet className="w-full min-w-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="dateOfBirth">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Date of Birth</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
+          )}
+        </div>
 
-                <form.AppField name="gender">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Gender</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
+        {/* Add Contact Section */}
+        {selectedContactIds.length < 4 && (
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Add Contact</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => openContactModal({})}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Contact
+              </Button>
+            </div>
+
+            {availableContacts.length > 0 ? (
+              <div className="space-y-1">
+                {availableContacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    className="w-full flex items-center justify-between p-2 text-left border rounded-md hover:bg-muted/50 transition-colors"
+                    onClick={() => handleAddContact(contact.id)}
+                  >
+                    <div>
+                      <span className="font-medium">{contact.name}</span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        ({getRelationshipDisplay(contact)})
+                      </span>
+                    </div>
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
               </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                {allContacts.length === 0
+                  ? "No contacts created yet. Click 'New Contact' to create one."
+                  : "All contacts are already assigned."}
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="shirtSize">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Shirt Size</FieldLabel>
-                      <field.WithErrors>
-                        <field.Select
-                          placeholder="Select a shirt size"
-                          options={shirtSizeOptions}
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
-
-                <form.AppField name="hasBeenToCamp">
-                  {(field) => (
-                    <Field orientation="horizontal" className="w-fit md:mt-6">
-                      <field.Switch />
-                      <FieldLabel>
-                        {field.state.value
-                          ? "Has been to camp before"
-                          : "Has not been to camp before"}
-                      </FieldLabel>
-                    </Field>
-                  )}
-                </form.AppField>
-              </div>
-              <form.AppField name="swimmingLevel">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Swimming Level</FieldLabel>
-                    <field.WithErrors>
-                      <field.Select
-                        className="min-w-0 max-w-full flex-1"
-                        placeholder="Select swimming level"
-                        options={swimmingLevelOptions}
-                      />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="addressId">
-                  {(field) => {
-                    const currentAddress = addresses.find(
-                      (a) => a.id === field.state.value,
-                    );
-                    return (
-                      <Field>
-                        <FieldLabel>Address</FieldLabel>
-                        <field.WithErrors>
-                          <div className="flex gap-1">
-                            <field.Select
-                              className="w-max"
-                              placeholder={
-                                addresses.length
-                                  ? "Select an address"
-                                  : "Create an address first ->"
-                              }
-                              disabled={!addresses.length}
-                              options={addressOptions}
-                            />
-                            <EditButton
-                              disabled={!currentAddress}
-                              tooltip={`Edit Address ${currentAddress?.postalZip}`}
-                              onClick={() =>
-                                openAddressForm({
-                                  camperId: camper.id,
-                                  address: currentAddress,
-                                })
-                              }
-                            />
-                            <AddButton
-                              onClick={() =>
-                                openAddressForm({
-                                  camperId: camper.id,
-                                })
-                              }
-                              tooltip="Add new address"
-                            />
-                          </div>
-                        </field.WithErrors>
-                      </Field>
-                    );
-                  }}
-                </form.AppField>
-
-                <form.AppField name="arePhotosAllowed">
-                  {(field) => (
-                    <Field orientation="horizontal" className="w-fit md:mt-6">
-                      <field.Switch />
-                      <FieldLabel>
-                        {field.state.value
-                          ? "Photos are allowed"
-                          : "Photos are not allowed"}
-                      </FieldLabel>
-                    </Field>
-                  )}
-                </form.AppField>
-              </div>
-              <form.AppField name="dietaryRestrictions">
-                {(field) => (
-                  <Field className="w-full">
-                    <FieldLabel>Diestary Restrictions</FieldLabel>
-                    <field.TextArea placeholder="None" />
-                  </Field>
-                )}
-              </form.AppField>
-            </FieldSet>
-          </CardContent>
-          <CardFooter>
-            <form.SubmitButton
-              name="Save Camper"
-              onClick={() => form.handleSubmit()}
-            >
-              Submit
-            </form.SubmitButton>
-          </CardFooter>
-        </form>
-      </Card>
-    </form.AppForm>
+      <CardFooter>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || selectedContactIds.length < 2}
+          className="w-full"
+        >
+          {isSaving ? "Saving..." : "Save Emergency Contacts"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

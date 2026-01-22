@@ -1,8 +1,11 @@
 "use client";
+
 import { createId } from "@paralleldrive/cuid2";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { useStore } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -12,47 +15,60 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
-import { saveAddress } from "./actions";
-import type { OpenAddressFormArgs } from "./form";
-import { type AddressFormValues, addressInsertSchema } from "./schema";
+import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
+import { saveEmergencyContact } from "./actions";
+import {
+  type EmergencyContactFormValues,
+  emergencyContactInsertSchema,
+} from "./schema";
 
-const defaultAddressValues: AddressFormValues = {
-  addressLine1: "",
-  city: "",
-  country: "",
-  postalZip: "",
-  stateProv: "",
-  addressLine2: "",
+const defaultContactValues: EmergencyContactFormValues = {
   id: createId(),
+  name: "",
+  phone: "",
+  email: "",
+  relationship: "",
+  relationshipOther: "",
 };
 
-type AddressFormProps = {
-  address?: AddressFormValues;
+type ContactModalProps = {
+  contact?: EmergencyContactFormValues;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  camperId?: OpenAddressFormArgs["camperId"];
 };
 
-export default function AddressForm({
-  address = defaultAddressValues,
+export default function ContactModal({
+  contact,
   isOpen,
   onOpenChange,
-  camperId,
-}: AddressFormProps) {
-  const isNew = !address.postalZip;
+}: ContactModalProps) {
+  const isNew = !contact?.name;
   const router = useRouter();
 
   const form = useAppForm({
-    defaultValues: address,
+    defaultValues: contact ?? { ...defaultContactValues, id: createId() },
     validators: {
-      onChange: addressInsertSchema,
+      onChange: emergencyContactInsertSchema,
     },
     onSubmit: async ({ value }) => {
-      await saveAddress(value, camperId);
-      router.refresh();
-      onOpenChange(false);
+      const toastId = toast.loading(
+        isNew ? "Creating contact..." : "Updating contact...",
+      );
+      try {
+        await saveEmergencyContact(value);
+        toast.success(isNew ? "Contact created" : "Contact updated", {
+          id: toastId,
+        });
+        router.refresh();
+        onOpenChange(false);
+      } catch (err) {
+        toast.error("Failed to save contact", { id: toastId });
+        console.error(err);
+      }
     },
   });
+
+  const relationshipValue = useStore(form.store, (s) => s.values.relationship);
 
   useEffect(() => {
     if (!isOpen) {
@@ -60,17 +76,38 @@ export default function AddressForm({
     }
   }, [isOpen, form.reset]);
 
+  // Reset form values when contact prop changes
+  useEffect(() => {
+    if (contact) {
+      form.reset();
+      form.setFieldValue("id", contact.id ?? createId());
+      form.setFieldValue("name", contact.name ?? "");
+      form.setFieldValue("phone", contact.phone ?? "");
+      form.setFieldValue("email", contact.email ?? "");
+      form.setFieldValue("relationship", contact.relationship ?? "");
+      form.setFieldValue("relationshipOther", contact.relationshipOther ?? "");
+    } else {
+      form.reset();
+      form.setFieldValue("id", createId());
+    }
+  }, [contact, form]);
+
+  const relationshipOptions = RELATIONSHIP_OPTIONS.map((r) => ({
+    value: r.value,
+    name: r.name,
+  }));
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80%] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>
-            {isNew ? "Add New Address" : "Edit Address"}
+            {isNew ? "Add Emergency Contact" : "Edit Emergency Contact"}
           </DialogTitle>
           <DialogDescription>
             {isNew
-              ? "This address can be assigned to one or more campers."
-              : "This address will be updated for all campers currently using it"}
+              ? "Create a new emergency contact that can be assigned to your campers."
+              : "Update this emergency contact's information."}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -82,74 +119,74 @@ export default function AddressForm({
           }}
         >
           <FieldSet className="flex-1 min-h-0 overflow-y-auto">
-            <form.AppField name="addressLine1">
+            <form.AppField name="name">
               {(field) => (
                 <Field>
-                  <FieldLabel>Address</FieldLabel>
+                  <FieldLabel>Name</FieldLabel>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput placeholder="Contact name" />
                   </field.WithErrors>
                 </Field>
               )}
             </form.AppField>
 
-            <form.AppField name="addressLine2">
+            <form.AppField name="phone">
               {(field) => (
                 <Field>
-                  <FieldLabel>Address Line 2</FieldLabel>
+                  <FieldLabel>Phone Number</FieldLabel>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput type="tel" placeholder="(555) 123-4567" />
                   </field.WithErrors>
                 </Field>
               )}
             </form.AppField>
 
-            <form.AppField name="city">
+            <form.AppField name="email">
               {(field) => (
                 <Field>
-                  <FieldLabel>City</FieldLabel>
+                  <FieldLabel>Email (optional)</FieldLabel>
                   <field.WithErrors>
-                    <field.TextInput />
-                  </field.WithErrors>
-                </Field>
-              )}
-            </form.AppField>
-            <form.AppField name="stateProv">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Province/State</FieldLabel>
-                  <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput
+                      type="email"
+                      placeholder="email@example.com"
+                    />
                   </field.WithErrors>
                 </Field>
               )}
             </form.AppField>
 
-            <form.AppField name="country">
+            <form.AppField name="relationship">
               {(field) => (
                 <Field>
-                  <FieldLabel>Country</FieldLabel>
+                  <FieldLabel>Relationship</FieldLabel>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.Select
+                      placeholder="Select relationship"
+                      options={relationshipOptions}
+                    />
                   </field.WithErrors>
                 </Field>
               )}
             </form.AppField>
 
-            <form.AppField name="postalZip">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Postal/Zip Code</FieldLabel>
-                  <field.WithErrors>
-                    <field.TextInput />
-                  </field.WithErrors>
-                </Field>
-              )}
-            </form.AppField>
+            {relationshipValue === "other" && (
+              <form.AppField name="relationshipOther">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Please specify relationship</FieldLabel>
+                    <field.WithErrors>
+                      <field.TextInput placeholder="e.g., Neighbor, Coach" />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </form.AppField>
+            )}
           </FieldSet>
           <DialogFooter className="pt-3">
             <form.AppForm>
-              <form.SubmitButton>Save</form.SubmitButton>
+              <form.SubmitButton>
+                {isNew ? "Create Contact" : "Save Changes"}
+              </form.SubmitButton>
             </form.AppForm>
           </DialogFooter>
         </form>

@@ -156,6 +156,42 @@ export const OTC_MEDICATIONS_LIST = [
   "Sudafed (Decongestant)",
 ] as const;
 
+export const emergencyContacts = pgTable("emergency_contacts", {
+  id: id(),
+  userId: text("user_id")
+    .references(() => users.id)
+    .notNull(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  relationship: text("relationship").notNull(), // "parent", "guardian", "relative", "caregiver", "other"
+  relationshipOther: text("relationship_other"), // For "other" type
+  ...timestamps,
+});
+
+export const camperEmergencyContacts = pgTable(
+  "camper_emergency_contacts",
+  {
+    camperId: text("camper_id")
+      .references(() => campers.id, { onDelete: "cascade" })
+      .notNull(),
+    emergencyContactId: text("emergency_contact_id")
+      .references(() => emergencyContacts.id, { onDelete: "restrict" })
+      .notNull(),
+    priority: integer("priority").notNull(),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.camperId, t.emergencyContactId] })],
+);
+
+export const RELATIONSHIP_OPTIONS = [
+  { value: "parent", name: "Parent" },
+  { value: "guardian", name: "Guardian" },
+  { value: "relative", name: "Relative" },
+  { value: "caregiver", name: "Caregiver" },
+  { value: "other", name: "Other" },
+] as const;
+
 export const medicalInfo = pgTable("medical_info", {
   camperId: text("camper_id")
     .primaryKey()
@@ -216,6 +252,7 @@ export const campRelations = relations(camps, ({ many }) => ({
 export const userRelations = relations(users, ({ many }) => ({
   campers: many(campers),
   addresses: many(addresses),
+  emergencyContacts: many(emergencyContacts),
 }));
 
 export const addressesRelations = relations(addresses, ({ many, one }) => ({
@@ -234,7 +271,33 @@ export const campersRelations = relations(campers, ({ one, many }) => ({
     fields: [campers.addressId],
     references: [addresses.id],
   }),
+  emergencyContacts: many(camperEmergencyContacts),
 }));
+
+export const emergencyContactsRelations = relations(
+  emergencyContacts,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [emergencyContacts.userId],
+      references: [users.id],
+    }),
+    camperAssignments: many(camperEmergencyContacts),
+  }),
+);
+
+export const camperEmergencyContactsRelations = relations(
+  camperEmergencyContacts,
+  ({ one }) => ({
+    camper: one(campers, {
+      fields: [camperEmergencyContacts.camperId],
+      references: [campers.id],
+    }),
+    emergencyContact: one(emergencyContacts, {
+      fields: [camperEmergencyContacts.emergencyContactId],
+      references: [emergencyContacts.id],
+    }),
+  }),
+);
 
 export const registrationsRelations = relations(registrations, ({ one }) => ({
   camper: one(campers, {
