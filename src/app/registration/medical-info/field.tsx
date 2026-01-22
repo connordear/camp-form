@@ -143,7 +143,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               {/* ALLERGIES */}
               <form.AppField name="hasAllergies">
                 {(field) => (
-                  <div className="space-y-3 p-4 border rounded-md bg-slate-50">
+                  <div className="space-y-3 p-4 border rounded-md">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -166,8 +166,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                           <Field>
                             <FieldLabel>Please list all allergies</FieldLabel>
                             <subField.WithErrors>
-                              <subField.TextInput />
-                              {/* Or use <textarea> logic if available in your TextInput */}
+                              <subField.TextArea />
                             </subField.WithErrors>
                           </Field>
                         )}
@@ -180,7 +179,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               {/* MEDICATIONS */}
               <form.AppField name="hasMedicationsAtCamp">
                 {(field) => (
-                  <div className="space-y-3 p-4 border rounded-md bg-slate-50">
+                  <div className="space-y-3 p-4 border rounded-md">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -203,7 +202,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                           <Field>
                             <FieldLabel>List medications & dosage</FieldLabel>
                             <subField.WithErrors>
-                              <subField.TextInput />
+                              <subField.TextArea />
                             </subField.WithErrors>
                           </Field>
                         )}
@@ -216,7 +215,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               {/* MEDICAL CONDITIONS */}
               <form.AppField name="hasMedicalConditions">
                 {(field) => (
-                  <div className="space-y-3 p-4 border rounded-md bg-slate-50">
+                  <div className="space-y-3 p-4 border rounded-md">
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -239,7 +238,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                           <Field>
                             <FieldLabel>Please describe</FieldLabel>
                             <subField.WithErrors>
-                              <subField.TextInput />
+                              <subField.TextArea />
                             </subField.WithErrors>
                           </Field>
                         )}

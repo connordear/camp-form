@@ -1,6 +1,7 @@
 "use client";
 import { useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import AddButton from "@/components/forms/add-button";
 import EditButton from "@/components/forms/edit-button";
 import FormStatusBadge from "@/components/forms/form-status-badge";
@@ -68,8 +69,21 @@ export default function CamperField({
       onSubmit: camperInfoInsertSchema,
     },
     onSubmit: async ({ value }) => {
-      const validatedValues = await camperInfoInsertSchema.parseAsync(value);
-      await saveCamper(validatedValues);
+      const toastId = toast.loading("Saving camper info...");
+      try {
+        const validatedValues = await camperInfoInsertSchema.parseAsync(value);
+        await saveCamper(validatedValues);
+
+        toast.success(`Saved info for ${firstName}`, {
+          id: toastId,
+        });
+        setStatus("complete");
+      } catch (err) {
+        toast.error("Failed to save changes", {
+          id: toastId,
+        });
+        console.error(err);
+      }
     },
   });
 
@@ -86,7 +100,7 @@ export default function CamperField({
 
   return (
     <form.AppForm>
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-xl">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -97,7 +111,6 @@ export default function CamperField({
           <CardHeader>
             <div className="flex gap-3 justify-between items-center">
               <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName}`}</CardTitle>
-
               <FormStatusBadge status={status} />
             </div>
           </CardHeader>

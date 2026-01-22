@@ -20,30 +20,28 @@ export default function SubmitButton({
   const form = useFormContext();
 
   return (
-    // 2. Subscribe to form state
-    // We listen to 'isSubmitting' (for loading) and 'canSubmit' (validation status)
-    <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-      {([canSubmit, isSubmitting]) => (
-        <Button
-          type="submit"
-          // Disable if:
-          // 1. Manually disabled prop is passed
-          // 2. Form is currently submitting
-          // 3. Form cannot be submitted (optional, removes ability to click to see errors)
-          disabled={disabled || isSubmitting || !canSubmit}
-          className={className}
-          {...props}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {label || children || "Saving..."}
-            </>
-          ) : (
-            label || children || "Submit"
-          )}
-        </Button>
-      )}
+    <form.Subscribe
+      selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty]}
+    >
+      {([canSubmit, isSubmitting, isDirty]) => {
+        return (
+          <Button
+            type="submit"
+            disabled={!isDirty || disabled || isSubmitting || !canSubmit}
+            className={className}
+            {...props}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {label || children || "Saving..."}
+              </>
+            ) : (
+              label || children || "Submit"
+            )}
+          </Button>
+        );
+      }}
     </form.Subscribe>
   );
 }

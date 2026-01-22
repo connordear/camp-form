@@ -1,6 +1,7 @@
 "use client";
 import { useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import FormStatusBadge from "@/components/forms/form-status-badge";
 import {
   Card,
@@ -13,6 +14,7 @@ import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { FormStatus } from "@/lib/types/common-types";
 import { getAge } from "@/lib/utils";
+import { saveRegistrationDetails } from "./actions";
 import {
   insertRegistrationDetailSchema,
   type RegistrationDetail,
@@ -27,16 +29,34 @@ export default function CampField({ registration }: CampFieldProps) {
   const age = getAge(camper.dateOfBirth);
   const form = useAppForm({
     defaultValues: {
-      ...registration.details,
+      registrationId: registration.id,
+      cabinRequest: registration.details?.cabinRequest ?? null,
+      parentSignature: registration.details?.parentSignature ?? null,
+      additionalInfo: registration.details?.additionalInfo ?? null,
     },
     validators: {
       onSubmit: insertRegistrationDetailSchema,
     },
     onSubmit: async ({ value }) => {
-      const validatedValues =
-        await insertRegistrationDetailSchema.parseAsync(value);
-      // TODO: create save
-      // await saveCamper(validatedValues);
+      console.log(value);
+      const toastId = toast.loading("Saving camp info...");
+      try {
+        const validatedValues =
+          await insertRegistrationDetailSchema.parseAsync(value);
+        await saveRegistrationDetails(validatedValues);
+        toast.success(
+          `Saved info for ${camper.firstName} - ${registration.campYear.camp.name}`,
+          {
+            id: toastId,
+          },
+        );
+        setStatus("complete");
+      } catch (err) {
+        toast.error("Failed to save changes", {
+          id: toastId,
+        });
+        console.error(err);
+      }
     },
   });
 
@@ -53,7 +73,7 @@ export default function CampField({ registration }: CampFieldProps) {
 
   return (
     <form.AppForm>
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-xl">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -75,7 +95,7 @@ export default function CampField({ registration }: CampFieldProps) {
                   <Field>
                     <FieldLabel>Cabin Request</FieldLabel>
                     <field.WithErrors>
-                      <field.TextInput />
+                      <field.TextArea />
                     </field.WithErrors>
                   </Field>
                 )}
@@ -86,7 +106,7 @@ export default function CampField({ registration }: CampFieldProps) {
                   <Field>
                     <FieldLabel>Additional Info</FieldLabel>
                     <field.WithErrors>
-                      <field.TextInput />
+                      <field.TextArea />
                     </field.WithErrors>
                   </Field>
                 )}

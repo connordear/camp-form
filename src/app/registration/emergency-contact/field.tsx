@@ -86,7 +86,7 @@ export default function CamperField({
 
   return (
     <form.AppForm>
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-xl">
         <form
           onSubmit={(e) => {
             e.preventDefault();
