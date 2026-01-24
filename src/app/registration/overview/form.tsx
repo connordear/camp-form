@@ -9,7 +9,9 @@ import type { Camp } from "@/lib/types/common-types";
 import { OverviewFieldGroup } from "./field";
 import type { CampFormUser } from "./schema";
 import { formSchema, saveCampersSchema } from "./schema";
-import useOverviewAutoSave from "./use-auto-save-overview";
+import useOverviewAutoSave, {
+  type CampFormApi,
+} from "./use-auto-save-overview";
 
 type RegistrationFormProps = {
   user: CampFormUser;
@@ -26,7 +28,9 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
     },
   });
 
-  const { status, lastSaved } = useOverviewAutoSave();
+  const { status, lastSaved } = useOverviewAutoSave(
+    form as unknown as CampFormApi,
+  );
 
   return (
     <>
