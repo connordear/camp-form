@@ -10,7 +10,7 @@ export type RegistrationStatus = z.infer<
 
 const _hook = useAppForm;
 class FormApiInfer<T> {
-  api = _hook({ defaultValues: {} as T });
+  api = _hook({ defaultValues: {} as T, validators: {} as any });
 }
 
 export type AppFormApi<T> = FormApiInfer<T>["api"];

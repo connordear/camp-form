@@ -24,9 +24,9 @@ export const insertRegistrationDetailSchema = createInsertSchema(
   registrationDetails,
   {
     registrationId: z.string().min(1),
-    cabinRequest: z.string().nullish(),
-    parentSignature: z.string().nullish(),
-    additionalInfo: z.string().nullish(),
+    cabinRequest: z.string().nullable(),
+    parentSignature: z.string().nullable(),
+    additionalInfo: z.string().nullable(),
   },
 );
 

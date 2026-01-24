@@ -111,9 +111,11 @@ export const registrations = pgTable(
         onDelete: "restrict",
       }),
     campYear: integer("camp_year").notNull(),
-    camperId: text("camper_id").references(() => campers.id, {
-      onDelete: "cascade",
-    }),
+    camperId: text("camper_id")
+      .references(() => campers.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
     numDays: integer("num_days"),
     pricePaid: integer("price_paid"),
     status: text("status", {

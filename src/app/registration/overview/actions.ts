@@ -14,8 +14,7 @@ import {
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
 import { addNewUser } from "@/lib/services/user-service";
 import type { Camp } from "@/lib/types/common-types";
-import { saveCampersSchema } from "./schema";
-import type { CampFormUser } from "./types";
+import { type CampFormUser, saveCampersSchema } from "./schema";
 
 export async function getCamps() {
   return await db.query.camps.findMany();

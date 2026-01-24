@@ -1,12 +1,14 @@
 import { useStore } from "@tanstack/react-form";
 import { useAutoSave } from "@/hooks/use-auto-save";
+import { useFormContext } from "@/hooks/use-camp-form";
 import type { AppFormApi } from "@/lib/types/common-types";
 import { saveRegistrationsForUser } from "./actions";
 import type { RegistrationFormValues } from "./schema";
 
 export type CampFormApi = AppFormApi<RegistrationFormValues>;
 
-export default function useOverviewAutoSave(form: CampFormApi) {
+export default function useOverviewAutoSave() {
+  const form = useFormContext() as unknown as CampFormApi;
   const values = useStore(form.store, (state) => state.values);
   const isDirty = useStore(form.store, (state) => state.isDirty);
   const isValid = useStore(form.store, (state) => state.isValid);

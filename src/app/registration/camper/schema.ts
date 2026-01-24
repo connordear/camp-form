@@ -28,7 +28,7 @@ export const camperInfoInsertSchema = createInsertSchema(campers, {
   gender: z.string().min(1, "Please specify a gender"),
   hasBeenToCamp: z.boolean(),
   shirtSize: z.string().min(1, "Please specify a shirt size"),
-  dietaryRestrictions: z.string().nullish().optional(),
+  dietaryRestrictions: z.string().nullable(),
 })
   .extend({
     addressId: z

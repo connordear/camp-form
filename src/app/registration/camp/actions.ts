@@ -6,10 +6,11 @@ import { registrationDetails, registrations } from "@/lib/data/schema";
 import { getRegistrationDetailsForUser } from "@/lib/services/registration-service";
 import {
   insertRegistrationDetailSchema,
+  type RegistrationDetail,
   type RegistrationDetailFormValues,
 } from "./schema";
 
-export async function getRegistrations() {
+export async function getRegistrations(): Promise<RegistrationDetail[]> {
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Must be logged in to view this data.");

@@ -26,7 +26,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
     },
   });
 
-  const { status, lastSaved } = useOverviewAutoSave(form);
+  const { status, lastSaved } = useOverviewAutoSave();
 
   return (
     <>
