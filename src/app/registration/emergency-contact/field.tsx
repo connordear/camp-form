@@ -3,7 +3,7 @@
 import { Minus, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import FormStatusBadge from "@/components/forms/form-status-badge";
+import { StaticFormStatusBadge } from "@/components/forms/form-status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
-import type { FormStatus } from "@/lib/types/common-types";
 import { saveCamperEmergencyContacts } from "./actions";
 import type { OpenContactModalArgs } from "./form";
 import type {
@@ -51,13 +50,20 @@ export default function EmergencyContactField({
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  // Determine form status based on number of assigned contacts
-  const getStatus = (): FormStatus => {
-    if (selectedContactIds.length >= 2) return "complete";
-    return "draft";
-  };
+  // Derive status from current state
+  const savedContactIds = assignedContacts.map((c) => c.id);
+  const isDirty =
+    selectedContactIds.length !== savedContactIds.length ||
+    selectedContactIds.some((id) => !savedContactIds.includes(id));
+  const isValid = selectedContactIds.length >= 2;
 
-  const [status, setStatus] = useState<FormStatus>(getStatus());
+  const status = isSaving
+    ? "submitting"
+    : isDirty
+      ? "unsaved"
+      : isValid
+        ? "complete"
+        : "draft";
 
   // Get contacts that are selected
   const selectedContacts = selectedContactIds
@@ -93,7 +99,6 @@ export default function EmergencyContactField({
     try {
       await saveCamperEmergencyContacts(camper.id, selectedContactIds);
       toast.success(`Saved contacts for ${camper.firstName}`, { id: toastId });
-      setStatus("complete");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to save contacts",
@@ -124,7 +129,7 @@ export default function EmergencyContactField({
           <CardTitle className="truncate">
             Emergency Contacts - {camper.firstName} {camper.lastName}
           </CardTitle>
-          <FormStatusBadge status={status} />
+          <StaticFormStatusBadge status={status} />
         </div>
       </CardHeader>
 

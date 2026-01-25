@@ -1,6 +1,7 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import AutoSaver from "@/components/forms/auto-saver";
 import { WithErrors } from "@/components/forms/field-errors";
+import FormStatusBadge from "@/components/forms/form-status-badge";
 import Select from "@/components/forms/select";
 import SubmitButton from "@/components/forms/submit-button";
 import Switch from "@/components/forms/switch";
@@ -20,6 +21,7 @@ const fieldComponents = {
 const formComponents = {
   SubmitButton,
   AutoSaver,
+  StatusBadge: FormStatusBadge,
 };
 
 // 3. Generate the Hook

@@ -1,8 +1,6 @@
 "use client";
-import { useStore } from "@tanstack/react-form";
-import { useEffect, useState } from "react";
+
 import { toast } from "sonner";
-import FormStatusBadge from "@/components/forms/form-status-badge";
 import {
   Card,
   CardContent,
@@ -12,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
-import type { FormStatus } from "@/lib/types/common-types";
 import { getAge } from "@/lib/utils";
 import { saveRegistrationDetails } from "./actions";
 import {
@@ -30,14 +27,14 @@ export default function CampField({ registration }: CampFieldProps) {
   const form = useAppForm({
     defaultValues: {
       registrationId: registration.id,
-      cabinRequest: registration.details?.cabinRequest ?? null,
-      parentSignature: registration.details?.parentSignature ?? null,
-      additionalInfo: registration.details?.additionalInfo ?? null,
+      cabinRequest: registration.details?.cabinRequest ?? "",
+      parentSignature: registration.details?.parentSignature ?? "",
+      additionalInfo: registration.details?.additionalInfo ?? "",
     },
     validators: {
       onSubmit: insertRegistrationDetailSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({ value, formApi }) => {
       console.log(value);
       const toastId = toast.loading("Saving camp info...");
       try {
@@ -50,7 +47,8 @@ export default function CampField({ registration }: CampFieldProps) {
             id: toastId,
           },
         );
-        setStatus("complete");
+        // Reset form with current values to update baseline and clear isDirty
+        formApi.reset(value);
       } catch (err) {
         toast.error("Failed to save changes", {
           id: toastId,
@@ -59,17 +57,6 @@ export default function CampField({ registration }: CampFieldProps) {
       }
     },
   });
-
-  const hasSubmitted = useStore(form.store, (s) => s.isSubmitted);
-
-  // for now just check if we pulled an id out, if so, we know it saved
-  const [status, setStatus] = useState<FormStatus>(
-    camper.addressId ? "complete" : "draft",
-  );
-
-  useEffect(() => {
-    hasSubmitted && setStatus("complete");
-  }, [hasSubmitted]);
 
   return (
     <form.AppForm>
@@ -85,7 +72,7 @@ export default function CampField({ registration }: CampFieldProps) {
             <div className="flex gap-3 justify-between items-center">
               <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName} - ${registration.campYear.camp.name}`}</CardTitle>
 
-              <FormStatusBadge status={status} />
+              <form.StatusBadge />
             </div>
           </CardHeader>
           <CardContent>

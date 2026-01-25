@@ -1,8 +1,5 @@
 "use client";
-import { useStore } from "@tanstack/react-form";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import FormStatusBadge from "@/components/forms/form-status-badge";
 import {
   Card,
   CardContent,
@@ -13,7 +10,6 @@ import {
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { OTC_MEDICATIONS_LIST } from "@/lib/data/schema";
-import type { FormStatus } from "@/lib/types/common-types";
 import { saveMedicalInfo } from "./actions";
 import { type CamperWithMedicalInfo, medicalInfoSchema } from "./schema";
 
@@ -53,7 +49,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
     validators: {
       onSubmit: medicalInfoSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({ value, formApi }) => {
       // 1. Submit to Server Action
       const toastId = toast.loading("Saving medical info...");
       try {
@@ -63,7 +59,8 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
         toast.success(`Saved info for ${data.camper.firstName}`, {
           id: toastId, // This replaces the loading spinner with a checkmark
         });
-        setStatus("complete");
+        // Reset form with current values to update baseline and clear isDirty
+        formApi.reset(value);
       } catch (err) {
         toast.error("Failed to save changes", {
           id: toastId,
@@ -72,17 +69,6 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
       }
     },
   });
-
-  const hasSubmitted = useStore(form.store, (s) => s.isSubmitted);
-
-  // Status is complete if we have a record ID (meaning it exists in DB)
-  const [status, setStatus] = useState<FormStatus>(
-    medicalInfo?.camperId ? "complete" : "draft",
-  );
-
-  useEffect(() => {
-    hasSubmitted && setStatus("complete");
-  }, [hasSubmitted]);
 
   return (
     <form.AppForm>
@@ -100,7 +86,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               <CardTitle className="truncate">
                 Medical Info - {camper.firstName} {camper.lastName}
               </CardTitle>
-              <FormStatusBadge status={status} />
+              <form.StatusBadge />
             </div>
           </CardHeader>
 
