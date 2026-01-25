@@ -58,7 +58,7 @@ export function getDaysBetweenDates(
   const end = new Date(endDate);
 
   // Validate dates
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     console.error("Invalid date passed to getDaysBetweenDates", {
       startDate,
       endDate,

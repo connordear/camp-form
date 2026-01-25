@@ -12,6 +12,7 @@ const statusLookup: Record<
 > = {
   complete: "default",
   draft: "secondary",
+  unsaved: "destructive",
 };
 
 export default function FormStatusBadge({ status }: FormStatusProps) {

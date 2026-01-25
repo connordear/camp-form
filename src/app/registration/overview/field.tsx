@@ -127,7 +127,7 @@ export const OverviewFieldGroup = withFieldGroup({
                                     <itemField.Select
                                       placeholder="Full Week"
                                       className="w-[110px]"
-                                      disabled={!hasDayPrice}
+                                      disabled={!isDraft || !hasDayPrice}
                                       isNumber
                                       options={Array.from({
                                         length: numDays,

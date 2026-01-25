@@ -7,24 +7,11 @@ export async function addNewUser(clerkUser: User) {
   const [newUser] = await db
     .insert(users)
     .values({
-      clerkId: clerkUser.id,
+      id: clerkUser.id,
       email: clerkUser.emailAddresses[0].emailAddress,
     })
     .returning();
   return newUser;
-}
-
-export async function getUser(clerkId: string) {
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.clerkId, clerkId))
-    .limit(1);
-
-  if (!user) {
-    throw new Error("No user found");
-  }
-  return user;
 }
 
 export async function getAddressesForUser(clerkId: string) {
@@ -32,7 +19,7 @@ export async function getAddressesForUser(clerkId: string) {
     .select()
     .from(addresses)
     .leftJoin(users, eq(users.id, addresses.userId))
-    .where(eq(users.clerkId, clerkId));
+    .where(eq(users.id, clerkId));
 
   return res.map((r) => r.addresses);
 }

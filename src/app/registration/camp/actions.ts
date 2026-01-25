@@ -25,8 +25,8 @@ export async function getRegistrations(): Promise<RegistrationDetail[]> {
 export async function saveRegistrationDetails(
   data: RegistrationDetailFormValues,
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Not logged in");
   }
 
@@ -44,7 +44,7 @@ export async function saveRegistrationDetails(
     },
   });
 
-  if (!registration || registration.camper?.user?.clerkId !== clerkId) {
+  if (!registration || registration.camper?.user?.id !== userId) {
     throw new Error("Unable to save data for that registration");
   }
 

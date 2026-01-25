@@ -7,7 +7,7 @@ export async function getCampersForUser(
   includeMedical: true | undefined = undefined,
 ) {
   return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, clerkId),
     with: {
       campers: {
         orderBy: (t) => asc(t.createdAt),

@@ -15,4 +15,4 @@ class FormApiInfer<T> {
 
 export type AppFormApi<T> = FormApiInfer<T>["api"];
 
-export type FormStatus = "draft" | "complete";
+export type FormStatus = "draft" | "complete" | "unsaved";

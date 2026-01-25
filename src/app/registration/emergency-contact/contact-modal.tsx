@@ -3,9 +3,11 @@
 import { createId } from "@paralleldrive/cuid2";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { useStore } from "@tanstack/react-form";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +18,7 @@ import {
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
-import { saveEmergencyContact } from "./actions";
+import { deleteEmergencyContact, saveEmergencyContact } from "./actions";
 import {
   type EmergencyContactFormValues,
   emergencyContactInsertSchema,
@@ -35,15 +37,20 @@ type ContactModalProps = {
   contact?: EmergencyContactFormValues;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onContactCreated?: (contactId: string) => void;
+  isAssignedToCamper?: boolean;
 };
 
 export default function ContactModal({
   contact,
   isOpen,
   onOpenChange,
+  onContactCreated,
+  isAssignedToCamper = false,
 }: ContactModalProps) {
   const isNew = !contact?.name;
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useAppForm({
     defaultValues: contact ?? { ...defaultContactValues, id: createId() },
@@ -59,6 +66,10 @@ export default function ContactModal({
         toast.success(isNew ? "Contact created" : "Contact updated", {
           id: toastId,
         });
+        // Auto-assign new contact to the camper who initiated the modal
+        if (isNew && onContactCreated && value.id) {
+          onContactCreated(value.id);
+        }
         router.refresh();
         onOpenChange(false);
       } catch (err) {
@@ -69,6 +80,27 @@ export default function ContactModal({
   });
 
   const relationshipValue = useStore(form.store, (s) => s.values.relationship);
+
+  const handleDelete = async () => {
+    if (!contact?.id) return;
+
+    setIsDeleting(true);
+    const toastId = toast.loading("Deleting contact...");
+
+    try {
+      await deleteEmergencyContact(contact.id);
+      toast.success("Contact deleted", { id: toastId });
+      router.refresh();
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete contact",
+        { id: toastId },
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -183,11 +215,33 @@ export default function ContactModal({
             )}
           </FieldSet>
           <DialogFooter className="pt-3">
-            <form.AppForm>
-              <form.SubmitButton>
-                {isNew ? "Create Contact" : "Save Changes"}
-              </form.SubmitButton>
-            </form.AppForm>
+            <div className="flex w-full justify-between">
+              {!isNew && (
+                <div className="flex flex-col items-start gap-1">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={isDeleting || isAssignedToCamper}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </Button>
+                  {isAssignedToCamper && (
+                    <p className="text-xs text-muted-foreground">
+                      Remove from all campers first
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className={isNew ? "w-full" : ""}>
+                <form.AppForm>
+                  <form.SubmitButton>
+                    {isNew ? "Create Contact" : "Save Changes"}
+                  </form.SubmitButton>
+                </form.AppForm>
+              </div>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -95,7 +95,7 @@ export default function CampField({ registration }: CampFieldProps) {
                   <Field>
                     <FieldLabel>Cabin Request</FieldLabel>
                     <field.WithErrors>
-                      <field.TextArea />
+                      <field.TextArea placeholder="None (e.g. would like to be in a cabin with their friend/sibling/cousin...)" />
                     </field.WithErrors>
                   </Field>
                 )}

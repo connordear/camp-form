@@ -4,7 +4,7 @@ import { registrations, users } from "@/lib/data/schema";
 
 export async function getRegistrationsForUser(clerkId: string) {
   return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, clerkId),
     with: {
       campers: {
         with: {
@@ -17,7 +17,7 @@ export async function getRegistrationsForUser(clerkId: string) {
 
 export async function getRegistrationDetailsForUser(clerkId: string) {
   return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, clerkId),
     with: {
       campers: {
         with: {
@@ -40,7 +40,7 @@ export async function getRegistrationDetailsForUser(clerkId: string) {
 
 export async function getCheckoutRegistrationsForUser(clerkId: string) {
   return await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, clerkId),
     with: {
       campers: {
         with: {

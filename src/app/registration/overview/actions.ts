@@ -35,25 +35,26 @@ export async function getCampsForYear(
 }
 
 export async function getRegistrations(): Promise<CampFormUser | undefined> {
-  const { userId } = await auth();
-  if (!userId) {
+  const user = await currentUser();
+  if (!user) {
     throw new Error("Must be logged in to view this data.");
   }
 
-  const res = await getRegistrationsForUser(userId);
+  console.log(user.id);
+  const res = await getRegistrationsForUser(user.id);
 
-  // Temporary measure to handle users that don't exist
-  // TODO: remove once webhook is up
   if (!res) {
-    const user = await currentUser();
-    if (!user) {
-      throw new Error("Must be logged in");
+    try {
+      const newUser = await addNewUser(user);
+      return {
+        ...newUser,
+        campers: [],
+      };
+    } catch (err) {
+      // maybe the webhook went through in time?
+      console.error(err);
+      return;
     }
-    const newUser = await addNewUser(user);
-    return {
-      ...newUser,
-      campers: [],
-    };
   }
 
   return res;
@@ -62,15 +63,15 @@ export async function getRegistrations(): Promise<CampFormUser | undefined> {
 export async function saveRegistrationsForUser(
   rawCampersData: unknown,
 ): Promise<CampFormUser> {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) throw new Error("Must be logged in.");
+  const { userId } = await auth();
+  if (!userId) throw new Error("Must be logged in.");
 
   const campersData = saveCampersSchema.parse(rawCampersData);
 
   return await db.transaction(async (tx) => {
     // 1. Get User
     const user = await tx.query.users.findFirst({
-      where: eq(users.clerkId, clerkId),
+      where: eq(users.id, userId),
       columns: { id: true },
     });
 

@@ -10,7 +10,6 @@ import {
   emergencyContacts,
   users,
 } from "@/lib/data/schema";
-import { getUser } from "@/lib/services/user-service";
 import {
   type CamperWithEmergencyContacts,
   type EmergencyContact,
@@ -18,13 +17,13 @@ import {
 } from "./schema";
 
 export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Must be logged in to view this data.");
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, userId),
     with: {
       emergencyContacts: {
         orderBy: (t) => asc(t.createdAt),
@@ -38,13 +37,13 @@ export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
 export async function getCampersWithEmergencyContacts(): Promise<
   CamperWithEmergencyContacts[]
 > {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Must be logged in to view this data.");
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, userId),
     with: {
       campers: {
         orderBy: (t) => asc(t.createdAt),
@@ -87,12 +86,10 @@ export async function getCampersWithEmergencyContacts(): Promise<
 }
 
 export async function saveEmergencyContact(rawInput: unknown) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Not logged in");
   }
-
-  const { id: odlUserId } = await getUser(clerkId);
 
   const data = emergencyContactInsertSchema.parse(rawInput);
 
@@ -103,7 +100,7 @@ export async function saveEmergencyContact(rawInput: unknown) {
     });
 
     // Only check ownership if the contact already exists
-    if (existing && existing.userId !== odlUserId) {
+    if (existing && existing.userId !== userId) {
       throw new Error("Unable to update that contact");
     }
   }
@@ -114,13 +111,13 @@ export async function saveEmergencyContact(rawInput: unknown) {
     .insert(emergencyContacts)
     .values({
       id,
-      userId: odlUserId,
+      userId,
       ...contactPayload,
     })
     .onConflictDoUpdate({
       target: emergencyContacts.id,
       set: contactPayload,
-      where: eq(emergencyContacts.userId, odlUserId),
+      where: eq(emergencyContacts.userId, userId),
     })
     .returning();
 
@@ -130,18 +127,16 @@ export async function saveEmergencyContact(rawInput: unknown) {
 }
 
 export async function deleteEmergencyContact(contactId: string) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Not logged in");
   }
-
-  const { id: odlUserId } = await getUser(clerkId);
 
   // Verify ownership
   const contact = await db.query.emergencyContacts.findFirst({
     where: and(
       eq(emergencyContacts.id, contactId),
-      eq(emergencyContacts.userId, odlUserId),
+      eq(emergencyContacts.userId, userId),
     ),
     with: {
       camperAssignments: true,
@@ -164,7 +159,7 @@ export async function deleteEmergencyContact(contactId: string) {
     .where(
       and(
         eq(emergencyContacts.id, contactId),
-        eq(emergencyContacts.userId, odlUserId),
+        eq(emergencyContacts.userId, userId),
       ),
     );
 
@@ -177,16 +172,14 @@ export async function saveCamperEmergencyContacts(
   camperId: string,
   contactIds: string[],
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const { userId } = await auth();
+  if (!userId) {
     throw new Error("Not logged in");
   }
 
-  const { id: odlUserId } = await getUser(clerkId);
-
   // Verify camper belongs to user
   const camper = await db.query.campers.findFirst({
-    where: and(eq(campers.id, camperId), eq(campers.userId, odlUserId)),
+    where: and(eq(campers.id, camperId), eq(campers.userId, userId)),
   });
 
   if (!camper) {
@@ -196,7 +189,7 @@ export async function saveCamperEmergencyContacts(
   // Verify all contacts belong to user
   if (contactIds.length > 0) {
     const contacts = await db.query.emergencyContacts.findMany({
-      where: and(eq(emergencyContacts.userId, odlUserId)),
+      where: and(eq(emergencyContacts.userId, userId)),
     });
 
     const userContactIds = new Set(contacts.map((c) => c.id));

@@ -154,93 +154,90 @@ export default function CamperField({
                     </Field>
                   )}
                 </form.AppField>
-
-                <form.AppField name="hasBeenToCamp">
+                <form.AppField name="swimmingLevel">
                   {(field) => (
-                    <Field orientation="horizontal" className="w-fit md:mt-6">
-                      <field.Switch />
-                      <FieldLabel>
-                        {field.state.value
-                          ? "Has been to camp before"
-                          : "Has not been to camp before"}
-                      </FieldLabel>
+                    <Field>
+                      <FieldLabel>Swimming Level</FieldLabel>
+                      <field.WithErrors>
+                        <field.Select
+                          className="min-w-0 max-w-full flex-1"
+                          placeholder="Select swimming level"
+                          options={swimmingLevelOptions}
+                        />
+                      </field.WithErrors>
                     </Field>
                   )}
                 </form.AppField>
               </div>
-              <form.AppField name="swimmingLevel">
+              <form.AppField name="addressId">
+                {(field) => {
+                  const currentAddress = addresses.find(
+                    (a) => a.id === field.state.value,
+                  );
+                  return (
+                    <Field>
+                      <FieldLabel>Address</FieldLabel>
+                      <field.WithErrors>
+                        <div className="flex gap-1">
+                          <field.Select
+                            className="w-max"
+                            placeholder={
+                              addresses.length
+                                ? "Select an address"
+                                : "Create an address first ->"
+                            }
+                            disabled={!addresses.length}
+                            options={addressOptions}
+                          />
+                          <EditButton
+                            disabled={!currentAddress}
+                            tooltip={`Edit Address ${currentAddress?.postalZip}`}
+                            onClick={() =>
+                              openAddressForm({
+                                camperId: camper.id,
+                                address: currentAddress,
+                              })
+                            }
+                          />
+                          <AddButton
+                            onClick={() =>
+                              openAddressForm({
+                                camperId: camper.id,
+                              })
+                            }
+                            tooltip="Add new address"
+                          />
+                        </div>
+                      </field.WithErrors>
+                    </Field>
+                  );
+                }}
+              </form.AppField>
+
+              <form.AppField name="hasBeenToCamp">
                 {(field) => (
-                  <Field>
-                    <FieldLabel>Swimming Level</FieldLabel>
-                    <field.WithErrors>
-                      <field.Select
-                        className="min-w-0 max-w-full flex-1"
-                        placeholder="Select swimming level"
-                        options={swimmingLevelOptions}
-                      />
-                    </field.WithErrors>
+                  <Field orientation="horizontal" className="w-fit">
+                    <field.Switch />
+                    <FieldLabel>
+                      {field.state.value
+                        ? "Has been to camp before"
+                        : "Has not been to camp before"}
+                    </FieldLabel>
                   </Field>
                 )}
               </form.AppField>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="addressId">
-                  {(field) => {
-                    const currentAddress = addresses.find(
-                      (a) => a.id === field.state.value,
-                    );
-                    return (
-                      <Field>
-                        <FieldLabel>Address</FieldLabel>
-                        <field.WithErrors>
-                          <div className="flex gap-1">
-                            <field.Select
-                              className="w-max"
-                              placeholder={
-                                addresses.length
-                                  ? "Select an address"
-                                  : "Create an address first ->"
-                              }
-                              disabled={!addresses.length}
-                              options={addressOptions}
-                            />
-                            <EditButton
-                              disabled={!currentAddress}
-                              tooltip={`Edit Address ${currentAddress?.postalZip}`}
-                              onClick={() =>
-                                openAddressForm({
-                                  camperId: camper.id,
-                                  address: currentAddress,
-                                })
-                              }
-                            />
-                            <AddButton
-                              onClick={() =>
-                                openAddressForm({
-                                  camperId: camper.id,
-                                })
-                              }
-                              tooltip="Add new address"
-                            />
-                          </div>
-                        </field.WithErrors>
-                      </Field>
-                    );
-                  }}
-                </form.AppField>
-
-                <form.AppField name="arePhotosAllowed">
-                  {(field) => (
-                    <Field orientation="horizontal" className="w-fit md:mt-6">
-                      <field.Switch />
-                      <FieldLabel>
-                        {field.state.value
-                          ? "Photos are allowed"
-                          : "Photos are not allowed"}
-                      </FieldLabel>
-                    </Field>
-                  )}
-                </form.AppField>
-              </div>
+              <form.AppField name="arePhotosAllowed">
+                {(field) => (
+                  <Field orientation="horizontal" className="w-fit">
+                    <field.Switch />
+                    <FieldLabel>
+                      {field.state.value
+                        ? "Photos are allowed"
+                        : "Photos are not allowed"}
+                    </FieldLabel>
+                  </Field>
+                )}
+              </form.AppField>
               <form.AppField name="dietaryRestrictions">
                 {(field) => (
                   <Field className="w-full">

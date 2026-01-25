@@ -28,9 +28,8 @@ const timestamps = {
 };
 
 export const users = pgTable("users", {
-  id: id(),
-  clerkId: text("clerk_id").unique().notNull(),
-  email: text("email").notNull(),
+  id: id(), // should be the clerk id
+  email: text("email").notNull().unique(),
   stripeCustomerId: text("stripe_customer_id"),
   ...timestamps,
 });

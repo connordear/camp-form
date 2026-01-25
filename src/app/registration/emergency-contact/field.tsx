@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Minus, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import FormStatusBadge from "@/components/forms/form-status-badge";
@@ -132,14 +132,15 @@ export default function EmergencyContactField({
         {/* Assigned Contacts List */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">
-              Assigned Contacts ({selectedContacts.length}/4)
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {selectedContactIds.length < 2
-                ? `Need ${2 - selectedContactIds.length} more`
-                : "Minimum met"}
-            </p>
+            <p className="text-sm font-medium">Assigned Contacts</p>
+            {selectedContactIds.length < 2 && (
+              <p className="text-xs text-muted-foreground">
+                {2 - selectedContactIds.length} more needed
+              </p>
+            )}
+            {selectedContactIds.length >= 4 && (
+              <p className="text-xs text-muted-foreground">Maximum reached</p>
+            )}
           </div>
 
           {selectedContacts.length === 0 ? (
@@ -180,10 +181,10 @@ export default function EmergencyContactField({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      className="h-8 w-8"
                       onClick={() => handleRemoveContact(contact.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Minus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -201,7 +202,19 @@ export default function EmergencyContactField({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => openContactModal({})}
+                onClick={() =>
+                  openContactModal({
+                    onContactCreated: (contactId) => {
+                      if (selectedContactIds.length >= 4) {
+                        toast.warning(
+                          "Contact created but not auto-assigned - maximum contacts reached",
+                        );
+                        return;
+                      }
+                      setSelectedContactIds((prev) => [...prev, contactId]);
+                    },
+                  })
+                }
               >
                 <Plus className="h-4 w-4 mr-1" />
                 New Contact
@@ -211,20 +224,37 @@ export default function EmergencyContactField({
             {availableContacts.length > 0 ? (
               <div className="space-y-1">
                 {availableContacts.map((contact) => (
-                  <button
+                  <div
                     key={contact.id}
-                    type="button"
-                    className="w-full flex items-center justify-between p-2 text-left border rounded-md hover:bg-muted/50 transition-colors"
-                    onClick={() => handleAddContact(contact.id)}
+                    className="flex items-center justify-between p-2 border rounded-md"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <span className="font-medium">{contact.name}</span>
                       <span className="text-sm text-muted-foreground ml-2">
                         ({getRelationshipDisplay(contact)})
                       </span>
                     </div>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  </button>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditContact(contact)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleAddContact(contact.id)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
