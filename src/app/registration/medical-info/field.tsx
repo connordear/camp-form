@@ -86,7 +86,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               <CardTitle className="truncate">
                 Medical Info - {camper.firstName} {camper.lastName}
               </CardTitle>
-              <form.StatusBadge />
+              <form.StatusBadge schema={medicalInfoSchema} />
             </div>
           </CardHeader>
 

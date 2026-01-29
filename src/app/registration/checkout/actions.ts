@@ -1,94 +1,151 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
-import type Stripe from "stripe";
-import { getCheckoutRegistrationsForUser } from "@/lib/services/registration-service";
-import { stripe } from "@/lib/stripe";
-import { COLORS } from "@/lib/theme";
-import { getBaseUrl } from "@/lib/utils";
 
-// Define your color palettes here
-const THEMES = {
-  dark: {
-    bg: COLORS.background,
-    btn: COLORS.background, // Teal-400
-    border: "rounded",
-  },
+import { auth } from "@clerk/nextjs/server";
+import {
+  type CheckoutStatus,
+  getCheckoutStatus,
+  getRegistrationCompleteness,
+  type IncompleteStep,
+} from "@/lib/registration-completeness";
+import { getRegistrationsForCheckoutPage } from "@/lib/services/registration-service";
+
+/**
+ * Individual registration data for display.
+ */
+export type CheckoutRegistration = {
+  id: string;
+  campName: string;
+  campDates: string;
+  price: number; // in cents
+  numDays: number | null;
+  status: CheckoutStatus;
+  incompleteSteps?: IncompleteStep[];
 };
 
-export async function fetchClientSecret() {
+/**
+ * Camper with their registrations grouped together.
+ */
+export type CheckoutCamper = {
+  id: string;
+  name: string;
+  registrations: CheckoutRegistration[];
+};
+
+/**
+ * Formats a date range string from start and end dates.
+ */
+function formatDateRange(startDate: string, endDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+  };
+
+  const startStr = start.toLocaleDateString("en-US", options);
+  const endStr = end.toLocaleDateString("en-US", {
+    ...options,
+    year: "numeric",
+  });
+
+  return `${startStr} - ${endStr}`;
+}
+
+/**
+ * Calculates the price for a registration based on camp year pricing.
+ */
+function calculatePrice(
+  numDays: number | null,
+  dayPrice: number | null,
+  basePrice: number,
+): number {
+  if (numDays && dayPrice) {
+    return numDays * dayPrice;
+  }
+  return basePrice;
+}
+
+/**
+ * Server action to fetch all checkout data for the current user.
+ * Returns campers with their registrations grouped together.
+ */
+export async function getCheckoutData(
+  year: number = new Date().getFullYear(),
+): Promise<CheckoutCamper[]> {
   const { userId } = await auth();
   if (!userId) {
     throw new Error("Not logged in");
   }
 
-  const user = await getCheckoutRegistrationsForUser(userId);
-
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  const user = await getRegistrationsForCheckoutPage(userId, year);
 
   if (!user) {
-    throw new Error("No user.");
+    return [];
   }
 
-  user.campers.forEach((camper) => {
-    camper.registrations.forEach((reg) => {
-      if (reg.numDays && reg.campYear.dayPrice) {
-        lineItems.push({
-          price_data: {
-            currency: "cad",
-            unit_amount: reg.campYear.dayPrice,
-            product_data: {
-              name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - ${reg.numDays} Days`,
-              metadata: {
-                userId: user.id,
-                registrationId: reg.id,
-                camperName: `${camper.firstName} ${camper.lastName}`,
-                camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
-                numDays: reg.numDays,
-              },
-            },
-          },
-          quantity: reg.numDays,
-        });
-      } else {
-        lineItems.push({
-          price_data: {
-            currency: "cad",
-            unit_amount: reg.campYear.basePrice,
-            product_data: {
-              name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - Full Week`,
-              metadata: {
-                userId: user.id,
-                registrationId: reg.id,
-                camperName: `${camper.firstName} ${camper.lastName}`,
-                camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
-              },
-            },
-          },
-          quantity: 1,
-        });
-      }
+  const checkoutCampers: CheckoutCamper[] = [];
+
+  for (const camper of user.campers) {
+    // Skip campers with no registrations for this year
+    if (camper.registrations.length === 0) {
+      continue;
+    }
+
+    const camperRegistrations: CheckoutRegistration[] = [];
+
+    for (const registration of camper.registrations) {
+      // Get completeness data
+      // Note: registration.campYear is the relation object (due to `with`),
+      // so we get the year integer from registration.campYear.year
+      const completeness = getRegistrationCompleteness({
+        registration: {
+          id: registration.id,
+          campId: registration.campId,
+          campYear: registration.campYear.year,
+          status: registration.status,
+        },
+        camper: {
+          id: camper.id,
+          firstName: camper.firstName,
+          lastName: camper.lastName,
+          dateOfBirth: camper.dateOfBirth,
+          addressId: camper.addressId,
+          gender: camper.gender,
+          shirtSize: camper.shirtSize,
+          swimmingLevel: camper.swimmingLevel,
+        },
+        medicalInfo: camper.medicalInfo ?? null,
+        emergencyContacts: camper.emergencyContacts ?? [],
+      });
+
+      const status = getCheckoutStatus(registration.status, completeness);
+
+      const campYear = registration.campYear;
+      const price = calculatePrice(
+        registration.numDays,
+        campYear.dayPrice,
+        campYear.basePrice,
+      );
+
+      camperRegistrations.push({
+        id: registration.id,
+        campName: campYear.camp.name,
+        campDates: formatDateRange(campYear.startDate, campYear.endDate),
+        price,
+        numDays: registration.numDays,
+        status,
+        incompleteSteps:
+          status === "incomplete" ? completeness.incompleteSteps : undefined,
+      });
+    }
+
+    checkoutCampers.push({
+      id: camper.id,
+      name: `${camper.firstName} ${camper.lastName}`.trim() || "Unnamed Camper",
+      registrations: camperRegistrations,
     });
-  });
-
-  if (!lineItems.length) {
-    return null;
   }
 
-  const palette = THEMES.dark;
-  const session = await stripe.checkout.sessions.create({
-    ui_mode: "embedded",
-    line_items: lineItems,
-    mode: "payment",
-    return_url: `${getBaseUrl()}/registration/overview?session_id={CHECKOUT_SESSION_ID}`,
-    automatic_tax: { enabled: true },
-    branding_settings: {
-      display_name: "Mulhurst Camp",
-      font_family: "roboto",
-      border_style: "rounded",
-      background_color: palette.bg,
-      button_color: palette.btn,
-    },
-  });
-
-  return session.client_secret ?? "";
+  return checkoutCampers;
 }

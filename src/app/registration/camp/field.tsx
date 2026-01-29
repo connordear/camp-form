@@ -72,7 +72,7 @@ export default function CampField({ registration }: CampFieldProps) {
             <div className="flex gap-3 justify-between items-center">
               <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName} - ${registration.campYear.camp.name}`}</CardTitle>
 
-              <form.StatusBadge />
+              <form.StatusBadge schema={insertRegistrationDetailSchema} />
             </div>
           </CardHeader>
           <CardContent>

@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import type { ZodTypeAny } from "zod";
 import { useFormContext } from "@/hooks/use-camp-form";
 import type { FormStatus } from "@/lib/types/common-types";
 import { Badge } from "../ui/badge";
@@ -37,6 +38,16 @@ export function StaticFormStatusBadge({ status }: StaticFormStatusBadgeProps) {
   );
 }
 
+type FormStatusBadgeProps = {
+  /**
+   * Optional Zod schema for silent validation.
+   * When provided, uses schema.safeParse() to determine if form is complete,
+   * without triggering error displays. This allows accurate status display
+   * even when form validation only runs onSubmit.
+   */
+  schema?: ZodTypeAny;
+};
+
 /**
  * Form-aware status badge that derives status from TanStack Form state.
  * Must be used within a form.AppForm context.
@@ -51,25 +62,30 @@ export function StaticFormStatusBadge({ status }: StaticFormStatusBadgeProps) {
  * (stays true even after undoing changes), while `isDefaultValue` dynamically
  * compares current values against defaultValues using deep equality.
  */
-export default function FormStatusBadge() {
+export default function FormStatusBadge({ schema }: FormStatusBadgeProps) {
   const form = useFormContext();
 
   return (
     <form.Subscribe
-      selector={(state) => [
-        state.isDefaultValue,
-        state.isValid,
-        state.isSubmitting,
-      ]}
+      selector={(state) => ({
+        isDefaultValue: state.isDefaultValue,
+        isValid: state.isValid,
+        isSubmitting: state.isSubmitting,
+        values: state.values,
+      })}
     >
-      {([isDefaultValue, isValid, isSubmitting]) => {
+      {({ isDefaultValue, isValid, isSubmitting, values }) => {
         const hasUnsavedChanges = !isDefaultValue;
+
+        // If a schema is provided, use silent validation to determine completeness
+        // Otherwise fall back to TanStack Form's isValid state
+        const isComplete = schema ? schema.safeParse(values).success : isValid;
 
         const status = isSubmitting
           ? "submitting"
           : hasUnsavedChanges
             ? "unsaved"
-            : isValid
+            : isComplete
               ? "complete"
               : "draft";
 

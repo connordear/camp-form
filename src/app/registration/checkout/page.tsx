@@ -1,10 +1,9 @@
-import { fetchClientSecret } from "./actions";
-import CheckoutForm from "./checkout-form";
+import { getCheckoutData } from "./actions";
+import { CheckoutClient } from "./checkout-client";
 
 export default async function CheckoutPage() {
-  const clientSecret = await fetchClientSecret();
-  if (!clientSecret) {
-    return <div>No valid registrations</div>;
-  }
-  return <CheckoutForm clientSecret={clientSecret} />;
+  const year = new Date().getFullYear();
+  const campers = await getCheckoutData(year);
+
+  return <CheckoutClient campers={campers} year={year} />;
 }

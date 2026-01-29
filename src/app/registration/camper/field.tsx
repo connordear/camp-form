@@ -97,7 +97,7 @@ export default function CamperField({
           <CardHeader>
             <div className="flex gap-3 justify-between items-center">
               <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName}`}</CardTitle>
-              <form.StatusBadge />
+              <form.StatusBadge schema={camperInfoInsertSchema} />
             </div>
           </CardHeader>
           <CardContent>

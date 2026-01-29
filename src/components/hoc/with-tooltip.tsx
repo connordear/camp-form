@@ -11,7 +11,7 @@ export function WithTooltip({ children, text }: WithTooltipProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>
+      <TooltipContent side="right">
         <p>{text}</p>
       </TooltipContent>
     </Tooltip>
