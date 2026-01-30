@@ -1,7 +1,6 @@
 import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -26,7 +25,7 @@ export default async function NavSignedIn() {
       </NavigationMenu>
       <div className="flex gap-4 items-center">
         <ThemeToggle />
-        {role === "admin" && <Button>Admin</Button>}
+        {role === "admin" && <Link href="/admin">Admin</Link>}
         <UserButton />
       </div>
     </header>
