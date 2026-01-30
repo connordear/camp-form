@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -174,40 +174,6 @@ export function CampCard({ camp, year }: CampCardProps) {
                   )}
                 </campForm.AppField>
               </div>
-              <div className="flex items-center gap-2">
-                <campForm.StatusBadge schema={campUpdateSchema} />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      disabled={isDeleting}
-                    >
-                      <Trash2Icon className="size-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Camp</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete &quot;{camp.name}&quot;?
-                        This will also delete all year configurations. This
-                        action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteCamp}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
             </div>
             <campForm.AppField name="description">
               {(field) => (
@@ -222,13 +188,48 @@ export function CampCard({ camp, year }: CampCardProps) {
               )}
             </campForm.AppField>
           </CardHeader>
-          <CardFooter className="border-b pb-4">
-            <campForm.SubmitButton
-              name="Save Camp"
-              onClick={() => campForm.handleSubmit()}
-            >
-              Save Camp Details
-            </campForm.SubmitButton>
+          <CardFooter className="border-b pb-4 mt-2 flex justify-between items-center">
+            <div className="flex gap-2 items-center">
+              <campForm.SubmitButton
+                name="Save Camp"
+                onClick={() => campForm.handleSubmit()}
+              >
+                <SaveIcon className="size-4 sm:mr-2" />
+                <span className="hidden sm:inline">Save Camp Details</span>
+              </campForm.SubmitButton>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    disabled={isDeleting}
+                  >
+                    <Trash2Icon className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Camp</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete &quot;{camp.name}&quot;?
+                      This will also delete all year configurations. This action
+                      cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteCamp}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <campForm.StatusBadge schema={campUpdateSchema} />
           </CardFooter>
         </form>
       </campForm.AppForm>
@@ -241,47 +242,10 @@ export function CampCard({ camp, year }: CampCardProps) {
             e.stopPropagation();
           }}
         >
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                {year} Configuration
-              </h4>
-              {hasCampYear && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                    >
-                      <Trash2Icon className="size-3 mr-1" />
-                      Remove {year}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Remove {year} Configuration
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to remove the {year} configuration
-                        for &quot;{camp.name}&quot;? This action cannot be
-                        undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteCampYear}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Remove
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
+          <CardContent>
+            <h4 className="text-sm font-medium text-muted-foreground mb-4">
+              {year} Configuration
+            </h4>
 
             <FieldSet>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -414,20 +378,67 @@ export function CampCard({ camp, year }: CampCardProps) {
               </div>
             </FieldSet>
           </CardContent>
-          <CardFooter>
-            <campYearForm.SubmitButton
-              name={hasCampYear ? "Save Year" : "Add Year"}
-              onClick={() => campYearForm.handleSubmit()}
-            >
-              {hasCampYear ? (
-                "Save Year Configuration"
-              ) : (
-                <>
-                  <PlusIcon className="size-4 mr-1" />
-                  Add {year} Configuration
-                </>
+          <CardFooter className="flex justify-between items-center">
+            <div className="flex gap-2 items-center">
+              <campYearForm.SubmitButton
+                name={hasCampYear ? "Save Year" : "Add Year"}
+                onClick={() => campYearForm.handleSubmit()}
+                className="mt-2"
+              >
+                {hasCampYear ? (
+                  <>
+                    <SaveIcon className="size-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      Save Year Configuration
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="size-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      Add {year} Configuration
+                    </span>
+                  </>
+                )}
+              </campYearForm.SubmitButton>
+              {hasCampYear && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2Icon className="size-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Remove {year} Configuration
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to remove the {year} configuration
+                        for &quot;{camp.name}&quot;? This action cannot be
+                        undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteCampYear}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Remove
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
-            </campYearForm.SubmitButton>
+            </div>
+            <campYearForm.StatusBadge
+              schema={hasCampYear ? campYearUpdateSchema : campYearInsertSchema}
+            />
           </CardFooter>
         </form>
       </campYearForm.AppForm>

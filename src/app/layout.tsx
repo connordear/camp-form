@@ -47,7 +47,7 @@ export default async function RootLayout({
                 <NavSignedOut />
               </SignedOut>
             </nav>
-            <main className="px-4">{children}</main>
+            <main>{children}</main>
             <Toaster />
           </ThemeProvider>
         </body>

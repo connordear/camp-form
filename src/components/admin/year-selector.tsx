@@ -20,13 +20,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAdminYear } from "@/hooks/use-admin-year";
 
 interface YearSelectorProps {
   availableYears: number[];
+  collapsed?: boolean;
 }
 
-export function YearSelector({ availableYears }: YearSelectorProps) {
+export function YearSelector({
+  availableYears,
+  collapsed = false,
+}: YearSelectorProps) {
   const { currentYear, setYear } = useAdminYear();
   const [isAddYearOpen, setIsAddYearOpen] = useState(false);
   const [newYear, setNewYear] = useState("");
@@ -58,13 +67,27 @@ export function YearSelector({ availableYears }: YearSelectorProps) {
     }
   };
 
+  const selectTrigger = (
+    <SelectTrigger
+      className={collapsed ? "w-10 px-0 justify-center" : "w-[140px]"}
+      hideChevron={collapsed}
+    >
+      <CalendarIcon className="size-4 shrink-0" />
+      {!collapsed && <SelectValue placeholder="Select year" className="ml-1" />}
+    </SelectTrigger>
+  );
+
   return (
     <>
       <Select value={currentYear.toString()} onValueChange={handleValueChange}>
-        <SelectTrigger className="w-[140px]">
-          <CalendarIcon className="size-4 mr-1" />
-          <SelectValue placeholder="Select year" />
-        </SelectTrigger>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{selectTrigger}</TooltipTrigger>
+            <TooltipContent side="right">Year: {currentYear}</TooltipContent>
+          </Tooltip>
+        ) : (
+          selectTrigger
+        )}
         <SelectContent>
           {sortedYears.map((year) => (
             <SelectItem key={year} value={year.toString()}>
