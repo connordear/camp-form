@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
 import { saveCamperEmergencyContacts } from "./actions";
 import type { OpenContactModalArgs } from "./form";
@@ -56,6 +57,8 @@ export default function EmergencyContactField({
     selectedContactIds.length !== savedContactIds.length ||
     selectedContactIds.some((id) => !savedContactIds.includes(id));
   const isValid = selectedContactIds.length >= 2;
+
+  useUnsavedChangesWarning(() => isDirty);
 
   const status = isSaving
     ? "submitting"

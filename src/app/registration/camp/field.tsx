@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { getAge } from "@/lib/utils";
 import { saveRegistrationDetails } from "./actions";
 import {
@@ -57,6 +58,8 @@ export default function CampField({ registration }: CampFieldProps) {
       }
     },
   });
+
+  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
   return (
     <form.AppForm>

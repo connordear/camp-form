@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import type { Camp } from "@/lib/types/common-types";
 import { OverviewFieldGroup } from "./field";
 import type { CampFormUser } from "./schema";
@@ -31,6 +32,8 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
   const { status, lastSaved } = useOverviewAutoSave(
     form as unknown as CampFormApi,
   );
+
+  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
   return (
     <>

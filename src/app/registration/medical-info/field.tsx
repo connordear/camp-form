@@ -10,6 +10,7 @@ import {
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { useAppForm } from "@/hooks/use-camp-form";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { OTC_MEDICATIONS_LIST } from "@/lib/data/schema";
 import { saveMedicalInfo } from "./actions";
 import { type CamperWithMedicalInfo, medicalInfoSchema } from "./schema";
@@ -70,6 +71,8 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
       }
     },
   });
+
+  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
   return (
     <form.AppForm>

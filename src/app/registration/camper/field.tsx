@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { saveCamper } from "./actions";
 import type { OpenAddressFormArgs } from "./form";
 import {
@@ -83,6 +84,8 @@ export default function CamperField({
       }
     },
   });
+
+  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
   return (
     <form.AppForm>

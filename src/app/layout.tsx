@@ -6,6 +6,7 @@ import "./globals.css";
 import NavSignedIn from "@/components/nav/signed-in";
 import NavSignedOut from "@/components/nav/signed-out";
 import { Toaster } from "@/components/ui/sonner";
+import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +48,9 @@ export default async function RootLayout({
                 <NavSignedOut />
               </SignedOut>
             </nav>
-            <main>{children}</main>
+            <main>
+              <UnsavedChangesProvider>{children}</UnsavedChangesProvider>
+            </main>
             <Toaster />
           </ThemeProvider>
         </body>
