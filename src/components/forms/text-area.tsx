@@ -3,7 +3,7 @@ import { Textarea } from "../ui/textarea";
 
 export default function TextArea({
   ...props
-}: {} & React.InputHTMLAttributes<HTMLTextAreaElement>) {
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const field = useFieldContext<string>();
   return (
     <Textarea

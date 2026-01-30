@@ -37,6 +37,7 @@ export const users = pgTable("users", {
 export const camps = pgTable("camps", {
   id: id(),
   name: text().notNull(),
+  description: text(),
   ...timestamps,
 });
 

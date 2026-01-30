@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function NavSignedOut() {
   return (
-    <header className="flex justify-between items-center p-4 gap-4 h-16 w-full">
+    <header className="flex justify-between items-center p-4 gap-4 h-16 w-full bg-background border-b">
       <NavigationMenu>
         <NavigationMenuList className="flex gap-4">
           <NavigationMenuItem>

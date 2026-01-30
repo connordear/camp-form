@@ -13,7 +13,7 @@ export default async function NavSignedIn() {
   const clerkUser = await currentUser();
   const role = clerkUser?.publicMetadata.role as string;
   return (
-    <header className="flex justify-between items-center p-4 gap-4 h-16 w-full">
+    <header className="flex justify-between items-center p-4 gap-4 h-16 w-full bg-background border-b">
       <NavigationMenu>
         <NavigationMenuList className="flex gap-4">
           <NavigationMenuItem>

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function AdminPage() {
-  return <>Admin Only Page</>;
+  redirect("/admin/camps");
 }

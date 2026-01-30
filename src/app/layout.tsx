@@ -39,7 +39,7 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <nav>
+            <nav className="sticky top-0 z-50">
               <SignedIn>
                 <NavSignedIn />
               </SignedIn>
