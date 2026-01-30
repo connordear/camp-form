@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { OTC_MEDICATIONS_LIST } from "@/lib/data/schema";
 import { saveMedicalInfo } from "./actions";
@@ -132,20 +133,23 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               <form.AppField name="hasAllergies">
                 {(field) => (
                   <div className="space-y-3 p-4 border rounded-md">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`alg-${camper.id}`}
-                        checked={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
+                    <div className="flex items-center justify-between gap-4">
                       <label
                         htmlFor={`alg-${camper.id}`}
                         className="font-medium text-sm"
                       >
                         Does {camper.firstName} have any allergies?
                       </label>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Switch
+                          id={`alg-${camper.id}`}
+                          checked={field.state.value}
+                          onCheckedChange={field.handleChange}
+                        />
+                        <span className="font-medium w-7">
+                          {field.state.value ? "Yes" : "No"}
+                        </span>
+                      </div>
                     </div>
 
                     {field.state.value && (
@@ -168,20 +172,23 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               <form.AppField name="hasMedicationsAtCamp">
                 {(field) => (
                   <div className="space-y-3 p-4 border rounded-md">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`meds-${camper.id}`}
-                        checked={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
+                    <div className="flex items-center justify-between gap-4">
                       <label
                         htmlFor={`meds-${camper.id}`}
                         className="font-medium text-sm"
                       >
                         Will {camper.firstName} take medications at camp?
                       </label>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Switch
+                          id={`meds-${camper.id}`}
+                          checked={field.state.value}
+                          onCheckedChange={field.handleChange}
+                        />
+                        <span className="font-medium w-7">
+                          {field.state.value ? "Yes" : "No"}
+                        </span>
+                      </div>
                     </div>
 
                     {field.state.value && (
@@ -204,20 +211,23 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               <form.AppField name="hasMedicalConditions">
                 {(field) => (
                   <div className="space-y-3 p-4 border rounded-md">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`cond-${camper.id}`}
-                        checked={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
+                    <div className="flex items-center justify-between gap-4">
                       <label
                         htmlFor={`cond-${camper.id}`}
                         className="font-medium text-sm"
                       >
                         Any other medical conditions? (e.g. ADHD, Sleepwalking)
                       </label>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Switch
+                          id={`cond-${camper.id}`}
+                          checked={field.state.value}
+                          onCheckedChange={field.handleChange}
+                        />
+                        <span className="font-medium w-7">
+                          {field.state.value ? "Yes" : "No"}
+                        </span>
+                      </div>
                     </div>
 
                     {field.state.value && (
@@ -238,40 +248,57 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
 
               {/* --- SECTION 3: OTC MEDICATIONS --- */}
               <form.AppField name="otcPermissions">
-                {(field) => (
-                  <div className="border rounded-md p-4">
-                    <FieldLabel className="mb-2 block">
-                      Allowed Over-the-Counter Medications
-                    </FieldLabel>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Check all that the camp nurse is allowed to administer.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {OTC_MEDICATIONS_LIST.map((med) => (
-                        <label
-                          key={med}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={field.state.value.includes(med)}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              const current = field.state.value;
-                              field.handleChange(
-                                isChecked
-                                  ? [...current, med]
-                                  : current.filter((m) => m !== med),
-                              );
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          {med}
-                        </label>
-                      ))}
+                {(field) => {
+                  const allSelected =
+                    field.state.value.length === OTC_MEDICATIONS_LIST.length;
+                  return (
+                    <div className="border rounded-md p-4">
+                      <FieldLabel className="mb-2 block">
+                        Allowed Over-the-Counter Medications
+                      </FieldLabel>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Check all that the camp nurse is allowed to administer.
+                      </p>
+                      <label className="flex items-center gap-2 text-sm font-medium mb-3 pb-3 border-b">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={(e) => {
+                            field.handleChange(
+                              e.target.checked ? [...OTC_MEDICATIONS_LIST] : [],
+                            );
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        Allow All
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {OTC_MEDICATIONS_LIST.map((med) => (
+                          <label
+                            key={med}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={field.state.value.includes(med)}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                const current = field.state.value;
+                                field.handleChange(
+                                  isChecked
+                                    ? [...current, med]
+                                    : current.filter((m) => m !== med),
+                                );
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            {med}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                }}
               </form.AppField>
             </FieldSet>
           </CardContent>
