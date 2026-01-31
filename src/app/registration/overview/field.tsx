@@ -197,9 +197,7 @@ export const OverviewFieldGroup = withFieldGroup({
                                         );
                                         group.setFieldValue(
                                           `registrations[${j}].numDays`,
-                                          defaultPrice.isDayPrice
-                                            ? 1
-                                            : undefined,
+                                          defaultPrice.isDayPrice ? 1 : null,
                                         );
                                       }
                                     }}
@@ -228,7 +226,7 @@ export const OverviewFieldGroup = withFieldGroup({
                                     if (!newPrice.isDayPrice) {
                                       group.setFieldValue(
                                         `registrations[${j}].numDays`,
-                                        undefined,
+                                        null,
                                       );
                                     } else {
                                       group.setFieldValue(
