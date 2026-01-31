@@ -1,10 +1,7 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
 import type Stripe from "stripe";
-import {
-  getCheckoutRegistrationsForUser,
-  getRegistrationsByIds,
-} from "@/lib/services/registration-service";
+import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
 import { getBaseUrl } from "@/lib/utils";
 
@@ -26,10 +23,12 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     throw new Error("Not logged in");
   }
 
+  if (!registrationIds?.length) {
+    throw new Error("Please specify the registrations you wish to pay for");
+  }
+
   // Fetch registrations - either specific IDs or all draft registrations
-  const user = registrationIds?.length
-    ? await getRegistrationsByIds(userId, registrationIds)
-    : await getCheckoutRegistrationsForUser(userId);
+  const user = await getRegistrationsByIds(userId, registrationIds);
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
