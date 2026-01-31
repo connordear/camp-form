@@ -3,16 +3,19 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { and, eq, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import z from "zod";
 import { db } from "@/lib/data/db";
 import {
   campers,
   camps,
+  campYearPrices,
   campYears,
   registrations,
   users,
 } from "@/lib/data/schema";
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
 import { addNewUser } from "@/lib/services/user-service";
+import { campSchema } from "@/lib/types/common-schema";
 import type { Camp } from "@/lib/types/common-types";
 import { type CampFormUser, saveCampersSchema } from "./schema";
 
@@ -22,16 +25,43 @@ export async function getCamps() {
 
 export async function getCampsForYear(
   year = new Date().getFullYear(),
-): Promise<Array<Camp>> {
-  const res = await db
+): Promise<Camp[]> {
+  const rows = await db
     .select()
     .from(camps)
     .innerJoin(campYears, eq(camps.id, campYears.campId))
+    // 1. Join prices where CampId AND Year match
+    .leftJoin(
+      campYearPrices,
+      and(
+        eq(campYearPrices.campId, campYears.campId),
+        eq(campYearPrices.year, campYears.year),
+      ),
+    )
     .where(eq(campYears.year, year));
-  return res.map((cy) => ({
-    ...cy.camps,
-    ...cy.camp_years,
-  }));
+
+  // 2. Reduce flat rows into nested objects
+  const result = rows.reduce<Record<string, any>>((acc, row) => {
+    const camp = row.camps;
+    const campYear = row.camp_years;
+    const price = row.camp_year_prices;
+
+    if (!acc[camp.id]) {
+      acc[camp.id] = {
+        ...camp,
+        ...campYear,
+        prices: [],
+      };
+    }
+
+    if (price) {
+      acc[camp.id].prices.push(price);
+    }
+
+    return acc;
+  }, {});
+
+  return z.array(campSchema).parse(Object.values(result));
 }
 
 export async function getRegistrations(): Promise<CampFormUser | undefined> {
@@ -40,7 +70,6 @@ export async function getRegistrations(): Promise<CampFormUser | undefined> {
     throw new Error("Must be logged in to view this data.");
   }
 
-  console.log(user.id);
   const res = await getRegistrationsForUser(user.id);
 
   if (!res) {

@@ -76,8 +76,6 @@ export function CampCard({ camp, year }: CampCardProps) {
     defaultValues: {
       campId: camp.id,
       year: year,
-      basePrice: camp.campYear?.basePrice ?? 0,
-      dayPrice: camp.campYear?.dayPrice ?? null,
       capacity: camp.campYear?.capacity ?? null,
       startDate: camp.campYear?.startDate ?? "",
       endDate: camp.campYear?.endDate ?? "",
@@ -248,110 +246,27 @@ export function CampCard({ camp, year }: CampCardProps) {
             </h4>
 
             <FieldSet>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <campYearForm.AppField
-                  name="basePrice"
-                  validators={{
-                    onChange: ({ value }) =>
-                      typeof value === "number" && value >= 0
-                        ? undefined
-                        : "Must be 0 or greater",
-                  }}
-                >
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Base Price ($)</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={formatPriceForDisplay(field.state.value)}
-                          onChange={(e) =>
-                            field.handleChange(
-                              parsePriceFromInput(e.target.value),
-                            )
-                          }
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </campYearForm.AppField>
-
-                <campYearForm.AppField name="dayPrice">
-                  {(field) => {
-                    const isEnabled = field.state.value !== null;
-                    return (
-                      <Field>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`dayPrice-enabled-${camp.id}`}
-                            checked={isEnabled}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                field.handleChange(0);
-                              } else {
-                                field.handleChange(null);
-                              }
-                            }}
-                            className="size-4"
-                          />
-                          <FieldLabel
-                            htmlFor={`dayPrice-enabled-${camp.id}`}
-                            className="mb-0 cursor-pointer"
-                          >
-                            Day Price ($)
-                          </FieldLabel>
-                        </div>
-                        <field.WithErrors>
-                          <field.TextInput
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            disabled={!isEnabled}
-                            value={
-                              isEnabled
-                                ? formatPriceForDisplay(field.state.value)
-                                : ""
-                            }
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              field.handleChange(
-                                val === "" ? 0 : parsePriceFromInput(val),
-                              );
-                            }}
-                          />
-                        </field.WithErrors>
-                      </Field>
-                    );
-                  }}
-                </campYearForm.AppField>
-
-                <campYearForm.AppField name="capacity">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Capacity</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput
-                          type="number"
-                          min="0"
-                          placeholder="Unlimited"
-                          value={field.state.value ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            field.handleChange(
-                              val === "" ? null : parseInt(val, 10),
-                            );
-                          }}
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </campYearForm.AppField>
-              </div>
+              <campYearForm.AppField name="capacity">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Capacity</FieldLabel>
+                    <field.WithErrors>
+                      <field.TextInput
+                        type="number"
+                        min="0"
+                        placeholder="Unlimited"
+                        value={field.state.value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          field.handleChange(
+                            val === "" ? null : parseInt(val, 10),
+                          );
+                        }}
+                      />
+                    </field.WithErrors>
+                  </Field>
+                )}
+              </campYearForm.AppField>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <campYearForm.AppField name="startDate">

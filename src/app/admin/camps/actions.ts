@@ -63,8 +63,6 @@ export async function createCampWithYear(data: CreateCampWithYearForm) {
       .values({
         campId: newCamp.id,
         year: validated.year,
-        basePrice: validated.basePrice,
-        dayPrice: validated.dayPrice ?? null,
         capacity: validated.capacity ?? null,
         startDate: validated.startDate,
         endDate: validated.endDate,
@@ -170,8 +168,6 @@ export async function createCampYear(data: CampYearInsertForm) {
     .values({
       campId: validated.campId,
       year: validated.year,
-      basePrice: validated.basePrice,
-      dayPrice: validated.dayPrice ?? null,
       capacity: validated.capacity ?? null,
       startDate: validated.startDate,
       endDate: validated.endDate,
@@ -190,8 +186,6 @@ export async function updateCampYear(data: CampYearUpdateForm) {
   const [updatedCampYear] = await db
     .update(campYears)
     .set({
-      basePrice: validated.basePrice,
-      dayPrice: validated.dayPrice ?? null,
       capacity: validated.capacity ?? null,
       startDate: validated.startDate,
       endDate: validated.endDate,

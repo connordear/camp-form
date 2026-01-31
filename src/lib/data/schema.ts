@@ -48,14 +48,32 @@ export const campYears = pgTable(
     campId: text("camp_id")
       .references(() => camps.id)
       .notNull(),
-    basePrice: integer("base_price").notNull().default(0),
-    dayPrice: integer("day_price"),
     capacity: integer(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     ...timestamps,
   },
   (t) => [primaryKey({ columns: [t.campId, t.year] })],
+);
+
+export const campYearPrices = pgTable(
+  "camp_year_prices",
+  {
+    id: id(),
+    name: text().notNull(),
+    campId: text("camp_id").notNull(),
+    year: integer("year").notNull(),
+    price: integer("base_price").notNull().default(0),
+    isDayPrice: boolean("is_day_price").notNull().default(false),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.campId, t.year],
+      foreignColumns: [campYears.campId, campYears.year],
+    }),
+    // create a unique composite index so it can be referenced by registrations
+    unique().on(t.id, t.campId, t.year),
+  ],
 );
 
 export const campers = pgTable("campers", {
@@ -105,12 +123,9 @@ export const registrations = pgTable(
   "registrations",
   {
     id: id(),
-    campId: text("camp_id")
-      .notNull()
-      .references(() => camps.id, {
-        onDelete: "restrict",
-      }),
+    campId: text("camp_id").notNull(),
     campYear: integer("camp_year").notNull(),
+    priceId: text("price_id").notNull(),
     camperId: text("camper_id")
       .references(() => campers.id, {
         onDelete: "cascade",
@@ -129,10 +144,20 @@ export const registrations = pgTable(
   },
   (t) => [
     foreignKey({
+      name: "fk_reg_camp_year",
       columns: [t.campId, t.campYear],
       foreignColumns: [campYears.campId, campYears.year],
     }).onDelete("cascade"),
     unique().on(t.camperId, t.campId, t.campYear),
+    foreignKey({
+      name: "fk_reg_price",
+      columns: [t.priceId, t.campId, t.campYear],
+      foreignColumns: [
+        campYearPrices.id,
+        campYearPrices.campId,
+        campYearPrices.year,
+      ],
+    }).onDelete("restrict"),
   ],
 );
 
@@ -171,19 +196,33 @@ export const emergencyContacts = pgTable("emergency_contacts", {
   ...timestamps,
 });
 
+// schema.ts
+
 export const camperEmergencyContacts = pgTable(
   "camper_emergency_contacts",
   {
-    camperId: text("camper_id")
-      .references(() => campers.id, { onDelete: "cascade" })
-      .notNull(),
-    emergencyContactId: text("emergency_contact_id")
-      .references(() => emergencyContacts.id, { onDelete: "restrict" })
-      .notNull(),
+    camperId: text("camper_id").notNull(),
+
+    emergencyContactId: text("emergency_contact_id").notNull(),
+
     priority: integer("priority").notNull(),
     ...timestamps,
   },
-  (t) => [primaryKey({ columns: [t.camperId, t.emergencyContactId] })],
+  (t) => [
+    primaryKey({ columns: [t.camperId, t.emergencyContactId] }),
+
+    foreignKey({
+      name: "fk_cec_camper", // "cec" = camper_emergency_contacts
+      columns: [t.camperId],
+      foreignColumns: [campers.id],
+    }).onDelete("cascade"),
+
+    foreignKey({
+      name: "fk_cec_contact",
+      columns: [t.emergencyContactId],
+      foreignColumns: [emergencyContacts.id],
+    }).onDelete("restrict"),
+  ],
 );
 
 export const RELATIONSHIP_OPTIONS = [
@@ -245,6 +284,14 @@ export const campYearRelations = relations(campYears, ({ one, many }) => ({
     references: [camps.id],
   }),
   registrations: many(registrations),
+  prices: many(campYearPrices),
+}));
+
+export const campYearPricesRelations = relations(campYearPrices, ({ one }) => ({
+  campYear: one(campYears, {
+    fields: [campYearPrices.campId, campYearPrices.year],
+    references: [campYears.campId, campYears.year],
+  }),
 }));
 
 export const campRelations = relations(camps, ({ many }) => ({
@@ -309,6 +356,10 @@ export const registrationsRelations = relations(registrations, ({ one }) => ({
   campYear: one(campYears, {
     fields: [registrations.campId, registrations.campYear],
     references: [campYears.campId, campYears.year],
+  }),
+  price: one(campYearPrices, {
+    fields: [registrations.priceId],
+    references: [campYearPrices.id],
   }),
   details: one(registrationDetails, {
     fields: [registrations.id],

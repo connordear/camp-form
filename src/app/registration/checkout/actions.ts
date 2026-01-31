@@ -53,20 +53,6 @@ function formatDateRange(startDate: string, endDate: string): string {
 }
 
 /**
- * Calculates the price for a registration based on camp year pricing.
- */
-function calculatePrice(
-  numDays: number | null,
-  dayPrice: number | null,
-  basePrice: number,
-): number {
-  if (numDays && dayPrice) {
-    return numDays * dayPrice;
-  }
-  return basePrice;
-}
-
-/**
  * Server action to fetch all checkout data for the current user.
  * Returns campers with their registrations grouped together.
  */
@@ -122,11 +108,10 @@ export async function getCheckoutData(
       const status = getCheckoutStatus(registration.status, completeness);
 
       const campYear = registration.campYear;
-      const price = calculatePrice(
-        registration.numDays,
-        campYear.dayPrice,
-        campYear.basePrice,
-      );
+      const price =
+        registration.numDays && registration.price.isDayPrice
+          ? registration.price.price * registration.numDays
+          : registration.price.price;
 
       camperRegistrations.push({
         id: registration.id,

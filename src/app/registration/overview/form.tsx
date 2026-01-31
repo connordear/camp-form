@@ -33,7 +33,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
     form as unknown as CampFormApi,
   );
 
-  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
+  useUnsavedChangesWarning(() => !(status === "saved" || status === "idle"));
 
   return (
     <>

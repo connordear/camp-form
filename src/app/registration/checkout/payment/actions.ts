@@ -6,14 +6,11 @@ import {
   getRegistrationsByIds,
 } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
-import { COLORS } from "@/lib/theme";
 import { getBaseUrl } from "@/lib/utils";
 
 // Define your color palettes here
 const THEMES = {
   dark: {
-    bg: COLORS.background,
-    btn: COLORS.background, // Teal-400
     border: "rounded",
   },
 };
@@ -42,42 +39,22 @@ export async function fetchClientSecret(registrationIds?: string[]) {
 
   user.campers.forEach((camper) => {
     camper.registrations.forEach((reg) => {
-      if (reg.numDays && reg.campYear.dayPrice) {
-        lineItems.push({
-          price_data: {
-            currency: "cad",
-            unit_amount: reg.campYear.dayPrice,
-            product_data: {
-              name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - ${reg.numDays} Days`,
-              metadata: {
-                userId: user.id,
-                registrationId: reg.id,
-                camperName: `${camper.firstName} ${camper.lastName}`,
-                camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
-                numDays: reg.numDays,
-              },
+      lineItems.push({
+        price_data: {
+          currency: "cad",
+          unit_amount: reg.price.price,
+          product_data: {
+            name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - ${reg.price.name}`,
+            metadata: {
+              userId: user.id,
+              registrationId: reg.id,
+              camperName: `${camper.firstName} ${camper.lastName}`,
+              camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
             },
           },
-          quantity: reg.numDays,
-        });
-      } else {
-        lineItems.push({
-          price_data: {
-            currency: "cad",
-            unit_amount: reg.campYear.basePrice,
-            product_data: {
-              name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - Full Week`,
-              metadata: {
-                userId: user.id,
-                registrationId: reg.id,
-                camperName: `${camper.firstName} ${camper.lastName}`,
-                camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
-              },
-            },
-          },
-          quantity: 1,
-        });
-      }
+        },
+        quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
+      });
     });
   });
 
@@ -93,11 +70,9 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     return_url: `${getBaseUrl()}/registration/overview?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
     branding_settings: {
-      display_name: "Mulhurst Camp",
+      display_name: "Mulhurst Camp", // TODO: Update to pull this from config somehow
       font_family: "roboto",
       border_style: "rounded",
-      background_color: palette.bg,
-      button_color: palette.btn,
     },
   });
 

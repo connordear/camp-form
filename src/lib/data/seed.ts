@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { fake, setFaker } from "zod-schema-faker/v4";
-import { camps, campYears } from "@/lib/data/schema";
-import { campSchema } from "../types/common-schema";
+import { setFaker } from "zod-schema-faker/v4";
+import { camps, campYearPrices, campYears } from "@/lib/data/schema";
 import { db } from "./db";
 
 setFaker(faker);
@@ -9,57 +8,105 @@ faker.seed(Number(process.env.SEED_VALUE || 1234));
 
 async function seed() {
   console.log("🌱 Starting Drizzle seeding...");
+
+  // 1. Generate Base Camp Data
   const devCamps = Array.from({ length: 10 }, () => {
-    const base = fake(
-      campSchema.omit({ id: true, createdAt: true, updatedAt: true }),
-    );
-    const adjective = faker.commerce.productAdjective(); // e.g., "Silver", "Rustic"
-    const noun = faker.commerce.productName();
+    // Note: We use the base properties, but we'll overwrite the name
+    const adjective = faker.commerce.productAdjective();
+    const noun = faker.helpers.arrayElement([
+      "Adventure",
+      "Coding",
+      "Music",
+      "Space",
+      "Soccer",
+      "MADD",
+      "Outdoor",
+      "Science",
+      "Math",
+      "Volleyball",
+      "Drama",
+    ]);
     const name = `${adjective} ${noun} Camp`;
+
     return {
-      ...base,
       name,
+      slug: faker.helpers.slugify(name).toLowerCase(), // Assuming you have a slug field
+      description: faker.lorem.sentence(),
+      // Add other required base camp fields here if your schema has them
     };
   });
 
+  // 2. Clear existing data
+  // Order matters due to Foreign Keys!
+  await db.delete(campYearPrices);
   await db.delete(campYears);
   await db.delete(camps);
 
+  // 3. Insert Camps
   const campRes = await db
     .insert(camps)
     .values(devCamps)
-    .returning({ id: camps.id });
+    .returning({ id: camps.id, name: camps.name });
 
   const currYear = 2026;
+
+  // 4. Prepare Camp Years
   const cyValues = campRes.map((camp, i) => {
     const start = new Date("2026-06-01");
+    // Stagger start dates by weeks
     start.setDate(start.getDate() + i * 7);
 
-    const hasDayPrice = Math.random() > 0.5;
-
     const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    const campData = devCamps[i];
+    end.setDate(end.getDate() + 5); // 5 day camp
+
     return {
-      ...campData,
-      startDate: start.toDateString(),
-      endDate: end.toDateString(),
       campId: camp.id,
       year: currYear,
-      basePrice: faker.helpers.arrayElement([10000, 20000, 30000]),
-      dayPrice: hasDayPrice ? faker.helpers.arrayElement([8000, 10000]) : null,
+      startDate: start.toISOString(), // Use ISO string for dates usually
+      endDate: end.toISOString(),
       capacity: faker.helpers.arrayElement([20, 30, 40, 50]),
+      isOpen: true,
     };
   });
 
-  const result = await db.insert(campYears).values(cyValues);
+  // 5. Insert Camp Years
+  // We need the result to link prices correctly (though we know the composite key is campId + year)
+  await db.insert(campYears).values(cyValues);
 
-  console.log("✅ Seeding complete!", result);
+  // 6. Generate & Insert Prices
+  // For every camp year, we will create 2 prices: a base rate and a day rate
+  const priceValues = cyValues.flatMap((cy) => {
+    const basePrice =
+      Number(faker.commerce.price({ min: 150, max: 400, dec: 0 })) * 100;
+
+    return [
+      // Option A: Full Week Standard Price
+      {
+        name: "Standard Registration",
+        campId: cy.campId,
+        year: cy.year,
+        price: basePrice, // Store as integer if your DB expects cents/dollars? Usually integers are safer.
+        isDayPrice: false,
+      },
+      // Option B: Daily Rate (slightly more expensive per day)
+      {
+        name: "Day Drop-in Rate",
+        campId: cy.campId,
+        year: cy.year,
+        price: Math.floor(basePrice / 5) + 10, // Cost of 1 day + premium
+        isDayPrice: true,
+      },
+    ];
+  });
+
+  const priceResult = await db.insert(campYearPrices).values(priceValues);
+
+  console.log(
+    `✅ Seeding complete! Created ${campRes.length} camps and ${priceValues.length} price options.`,
+  );
 }
 
-// Bun runs this script directly without needing a separate runner!
 seed().catch((err) => {
   console.error("❌ Seeding failed:", err);
-  // Explicitly exit the process
   process.exit(1);
 });

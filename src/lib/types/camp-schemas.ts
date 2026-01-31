@@ -18,9 +18,6 @@ export type CampUpdateForm = z.infer<typeof campUpdateSchema>;
 // CampYear schemas
 export const campYearInsertSchema = createInsertSchema(campYears, {
   year: (schema) => schema.min(2000, "Year must be 2000 or later"),
-  basePrice: (schema) => schema.min(0, "Base price must be 0 or greater"),
-  dayPrice: (schema) =>
-    schema.min(0, "Day price must be 0 or greater").nullable(),
   capacity: (schema) =>
     schema.min(0, "Capacity must be 0 or greater").nullable(),
   startDate: (schema) => schema.min(1, "Start date is required"),
@@ -28,8 +25,6 @@ export const campYearInsertSchema = createInsertSchema(campYears, {
 }).pick({
   year: true,
   campId: true,
-  basePrice: true,
-  dayPrice: true,
   capacity: true,
   startDate: true,
   endDate: true,
@@ -43,8 +38,6 @@ export type CampYearUpdateForm = z.infer<typeof campYearUpdateSchema>;
 // Combined schema for creating a new camp with its first year
 export const createCampWithYearSchema = campInsertSchema.extend({
   year: z.number().min(2000, "Year must be 2000 or later"),
-  basePrice: z.number().min(0, "Base price must be 0 or greater"),
-  dayPrice: z.number().min(0, "Day price must be 0 or greater").nullable(),
   capacity: z.number().min(0, "Capacity must be 0 or greater").nullable(),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),

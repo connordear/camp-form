@@ -22,6 +22,7 @@ interface AddCampDialogProps {
   year: number;
 }
 
+// TODO: Add ability to add multiple camp year prices (e.g. day price, adult price, etc.)
 export function AddCampDialog({ year }: AddCampDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,8 +31,6 @@ export function AddCampDialog({ year }: AddCampDialogProps) {
       name: "",
       description: null as string | null,
       year: year,
-      basePrice: 0,
-      dayPrice: null as number | null,
       capacity: null as number | null,
       startDate: "",
       endDate: "",
@@ -124,81 +123,6 @@ export function AddCampDialog({ year }: AddCampDialogProps) {
                   <h4 className="text-sm font-medium mb-3">
                     {year} Configuration
                   </h4>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <form.AppField name="basePrice">
-                      {(field) => (
-                        <Field>
-                          <FieldLabel>Base Price ($) *</FieldLabel>
-                          <field.WithErrors>
-                            <field.TextInput
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                              value={formatPriceForDisplay(field.state.value)}
-                              onChange={(e) =>
-                                field.handleChange(
-                                  parsePriceFromInput(e.target.value),
-                                )
-                              }
-                            />
-                          </field.WithErrors>
-                        </Field>
-                      )}
-                    </form.AppField>
-
-                    <form.AppField name="dayPrice">
-                      {(field) => {
-                        const isEnabled = field.state.value !== null;
-                        return (
-                          <Field>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id="dayPrice-enabled"
-                                checked={isEnabled}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    field.handleChange(0);
-                                  } else {
-                                    field.handleChange(null);
-                                  }
-                                }}
-                                className="size-4"
-                              />
-                              <FieldLabel
-                                htmlFor="dayPrice-enabled"
-                                className="mb-0 cursor-pointer"
-                              >
-                                Day Price ($)
-                              </FieldLabel>
-                            </div>
-                            <field.WithErrors>
-                              <field.TextInput
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                disabled={!isEnabled}
-                                value={
-                                  isEnabled
-                                    ? formatPriceForDisplay(field.state.value)
-                                    : ""
-                                }
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  field.handleChange(
-                                    val === "" ? 0 : parsePriceFromInput(val),
-                                  );
-                                }}
-                              />
-                            </field.WithErrors>
-                          </Field>
-                        );
-                      }}
-                    </form.AppField>
-                  </div>
 
                   <form.AppField name="capacity">
                     {(field) => (

@@ -19,8 +19,8 @@ export default function CheckoutForm({
 }) {
   return (
     <ThemeProvider forcedTheme="dark">
-      <Card className="w-full max-w-[1080px] m-auto">
-        <CardContent>
+      <Card className="w-full max-w-[1080px] m-auto p-0 border-r-2 overflow-clip">
+        <CardContent className="p-0 m-0">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{ clientSecret }}

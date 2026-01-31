@@ -1,5 +1,5 @@
 {
-  "id": "bbdb1c4f-83ef-47ad-919b-c992d8b2c14a",
+  "id": "2ad97503-a027-4ebf-85f3-ef3fd80b1603",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -117,6 +117,83 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.camp_year_prices": {
+      "name": "camp_year_prices",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "camp_id": {
+          "name": "camp_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_price": {
+          "name": "base_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "is_day_price": {
+          "name": "is_day_price",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "camp_year_prices_camp_id_year_camp_years_camp_id_year_fk": {
+          "name": "camp_year_prices_camp_id_year_camp_years_camp_id_year_fk",
+          "tableFrom": "camp_year_prices",
+          "tableTo": "camp_years",
+          "columnsFrom": [
+            "camp_id",
+            "year"
+          ],
+          "columnsTo": [
+            "camp_id",
+            "year"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "camp_year_prices_id_camp_id_year_unique": {
+          "name": "camp_year_prices_id_camp_id_year_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "camp_id",
+            "year"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.camp_years": {
       "name": "camp_years",
       "schema": "",
@@ -133,13 +210,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "base_price": {
-          "name": "base_price",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
         "capacity": {
           "name": "capacity",
           "type": "integer",
@@ -150,13 +220,13 @@
           "name": "start_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "end_date": {
           "name": "end_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "createdAt": {
           "name": "createdAt",
@@ -195,6 +265,86 @@
           "columns": [
             "camp_id",
             "year"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.camper_emergency_contacts": {
+      "name": "camper_emergency_contacts",
+      "schema": "",
+      "columns": {
+        "camper_id": {
+          "name": "camper_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emergency_contact_id": {
+          "name": "emergency_contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_cec_camper": {
+          "name": "fk_cec_camper",
+          "tableFrom": "camper_emergency_contacts",
+          "tableTo": "campers",
+          "columnsFrom": [
+            "camper_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_cec_contact": {
+          "name": "fk_cec_contact",
+          "tableFrom": "camper_emergency_contacts",
+          "tableTo": "emergency_contacts",
+          "columnsFrom": [
+            "emergency_contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "camper_emergency_contacts_camper_id_emergency_contact_id_pk": {
+          "name": "camper_emergency_contacts_camper_id_emergency_contact_id_pk",
+          "columns": [
+            "camper_id",
+            "emergency_contact_id"
           ]
         }
       },
@@ -274,6 +424,19 @@
           "notNull": false,
           "default": "''"
         },
+        "are_photos_allowed": {
+          "name": "are_photos_allowed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "dietary_restrictions": {
+          "name": "dietary_restrictions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -340,6 +503,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -357,6 +526,275 @@
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.emergency_contacts": {
+      "name": "emergency_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "relationship": {
+          "name": "relationship",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relationship_other": {
+          "name": "relationship_other",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "emergency_contacts_user_id_users_id_fk": {
+          "name": "emergency_contacts_user_id_users_id_fk",
+          "tableFrom": "emergency_contacts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.medical_info": {
+      "name": "medical_info",
+      "schema": "",
+      "columns": {
+        "camper_id": {
+          "name": "camper_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "health_care_number": {
+          "name": "health_care_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "family_doctor": {
+          "name": "family_doctor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "doctor_phone": {
+          "name": "doctor_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "has_allergies": {
+          "name": "has_allergies",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "allergies_details": {
+          "name": "allergies_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uses_epi_pen": {
+          "name": "uses_epi_pen",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "has_medications_at_camp": {
+          "name": "has_medications_at_camp",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "medications_at_camp_details": {
+          "name": "medications_at_camp_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "has_medications_not_at_camp": {
+          "name": "has_medications_not_at_camp",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "medications_not_at_camp_details": {
+          "name": "medications_not_at_camp_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "otc_permissions": {
+          "name": "otc_permissions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "has_medical_conditions": {
+          "name": "has_medical_conditions",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "medical_conditions_details": {
+          "name": "medical_conditions_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additional_info": {
+          "name": "additional_info",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "medical_info_camper_id_campers_id_fk": {
+          "name": "medical_info_camper_id_campers_id_fk",
+          "tableFrom": "medical_info",
+          "tableTo": "campers",
+          "columnsFrom": [
+            "camper_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.registration_details": {
+      "name": "registration_details",
+      "schema": "",
+      "columns": {
+        "registration_id": {
+          "name": "registration_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cabin_request": {
+          "name": "cabin_request",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_signature": {
+          "name": "parent_signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additional_info": {
+          "name": "additional_info",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "registration_details_registration_id_registrations_id_fk": {
+          "name": "registration_details_registration_id_registrations_id_fk",
+          "tableFrom": "registration_details",
+          "tableTo": "registrations",
+          "columnsFrom": [
+            "registration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -385,9 +823,21 @@
           "primaryKey": false,
           "notNull": true
         },
+        "price_id": {
+          "name": "price_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "camper_id": {
           "name": "camper_id",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "num_days": {
+          "name": "num_days",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -433,19 +883,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "registrations_camp_id_camps_id_fk": {
-          "name": "registrations_camp_id_camps_id_fk",
-          "tableFrom": "registrations",
-          "tableTo": "camps",
-          "columnsFrom": [
-            "camp_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
         "registrations_camper_id_campers_id_fk": {
           "name": "registrations_camper_id_campers_id_fk",
           "tableFrom": "registrations",
@@ -459,8 +896,8 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "registrations_camp_id_camp_year_camp_years_camp_id_year_fk": {
-          "name": "registrations_camp_id_camp_year_camp_years_camp_id_year_fk",
+        "fk_reg_camp_year": {
+          "name": "fk_reg_camp_year",
           "tableFrom": "registrations",
           "tableTo": "camp_years",
           "columnsFrom": [
@@ -472,6 +909,23 @@
             "year"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_reg_price": {
+          "name": "fk_reg_price",
+          "tableFrom": "registrations",
+          "tableTo": "camp_year_prices",
+          "columnsFrom": [
+            "price_id",
+            "camp_id",
+            "camp_year"
+          ],
+          "columnsTo": [
+            "id",
+            "camp_id",
+            "year"
+          ],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -499,12 +953,6 @@
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
-        },
-        "clerk_id": {
-          "name": "clerk_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "email": {
@@ -538,11 +986,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_clerk_id_unique": {
-          "name": "users_clerk_id_unique",
+        "users_email_unique": {
+          "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "clerk_id"
+            "email"
           ]
         }
       },
