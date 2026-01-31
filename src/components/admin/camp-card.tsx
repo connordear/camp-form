@@ -1,9 +1,11 @@
 "use client";
 
+import { createId } from "@paralleldrive/cuid2";
 import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
+  batchUpdatePrices,
   createCampYear,
   deleteCamp,
   deleteCampYear,
@@ -29,12 +31,16 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useAppForm } from "@/hooks/use-camp-form";
 import type { CampWithYear } from "@/lib/services/camp-service";
 import {
+  batchUpdatePricesSchema,
   campUpdateSchema,
   campYearInsertSchema,
   campYearUpdateSchema,
+  type PriceEntry,
 } from "@/lib/types/camp-schemas";
 
 interface CampCardProps {
@@ -42,9 +48,24 @@ interface CampCardProps {
   year: number;
 }
 
+const createEmptyPrice = (): PriceEntry => ({
+  id: createId(), // Temporary ID for React key - server will generate real ID for new prices
+  name: "",
+  price: 0,
+  isDayPrice: false,
+});
+
 export function CampCard({ camp, year }: CampCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const hasCampYear = camp.campYear !== null;
+
+  // Initialize prices from camp data
+  const initialPrices: PriceEntry[] = camp.campYear?.prices?.map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    isDayPrice: p.isDayPrice,
+  })) ?? [createEmptyPrice()];
 
   // Camp details form (name, description)
   const campForm = useAppForm({
@@ -71,7 +92,7 @@ export function CampCard({ camp, year }: CampCardProps) {
     },
   });
 
-  // Camp year form (pricing, dates, capacity)
+  // Camp year form (dates, capacity)
   const campYearForm = useAppForm({
     defaultValues: {
       campId: camp.id,
@@ -100,6 +121,31 @@ export function CampCard({ camp, year }: CampCardProps) {
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to save camp year",
+          { id: toastId },
+        );
+      }
+    },
+  });
+
+  // Prices form - separate form for batch price updates
+  const pricesForm = useAppForm({
+    defaultValues: {
+      campId: camp.id,
+      year: year,
+      prices: initialPrices,
+    },
+    validators: {
+      onSubmit: batchUpdatePricesSchema,
+    },
+    onSubmit: async ({ value, formApi }) => {
+      const toastId = toast.loading("Saving prices...");
+      try {
+        await batchUpdatePrices(value);
+        toast.success("Prices saved", { id: toastId });
+        formApi.reset(value);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save prices",
           { id: toastId },
         );
       }
@@ -135,8 +181,7 @@ export function CampCard({ camp, year }: CampCardProps) {
   };
 
   // Price formatting helpers
-  const formatPriceForDisplay = (cents: number | null): string => {
-    if (cents === null || cents === undefined) return "";
+  const formatPriceForDisplay = (cents: number): string => {
     return (cents / 100).toFixed(2);
   };
 
@@ -293,12 +338,11 @@ export function CampCard({ camp, year }: CampCardProps) {
               </div>
             </FieldSet>
           </CardContent>
-          <CardFooter className="flex justify-between items-center">
+          <CardFooter className="border-b pb-4 mt-2 flex justify-between items-center">
             <div className="flex gap-2 items-center">
               <campYearForm.SubmitButton
                 name={hasCampYear ? "Save Year" : "Add Year"}
                 onClick={() => campYearForm.handleSubmit()}
-                className="mt-2"
               >
                 {hasCampYear ? (
                   <>
@@ -357,6 +401,149 @@ export function CampCard({ camp, year }: CampCardProps) {
           </CardFooter>
         </form>
       </campYearForm.AppForm>
+
+      {/* Prices Section - Only show if camp year exists */}
+      {hasCampYear && (
+        <pricesForm.AppForm>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              pricesForm.handleSubmit();
+            }}
+          >
+            <CardContent>
+              <pricesForm.Field name="prices" mode="array">
+                {(pricesField) => (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-medium text-muted-foreground">
+                        {year} Prices
+                      </h4>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          pricesField.pushValue(createEmptyPrice())
+                        }
+                      >
+                        <PlusIcon className="size-4 mr-1" />
+                        Add Price
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {pricesField.state.value.map((price, index) => (
+                        <div
+                          key={price.id ?? `new-${index}`}
+                          className="flex items-start gap-3 p-3 border rounded-lg bg-muted/30"
+                        >
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <pricesForm.AppField name={`prices[${index}].name`}>
+                              {(field) => (
+                                <Field>
+                                  <FieldLabel className="text-xs">
+                                    Name
+                                  </FieldLabel>
+                                  <field.WithErrors>
+                                    <Input
+                                      placeholder="e.g. Full Week"
+                                      value={field.state.value}
+                                      onChange={(e) =>
+                                        field.handleChange(e.target.value)
+                                      }
+                                      onBlur={field.handleBlur}
+                                    />
+                                  </field.WithErrors>
+                                </Field>
+                              )}
+                            </pricesForm.AppField>
+
+                            <pricesForm.AppField
+                              name={`prices[${index}].price`}
+                            >
+                              {(field) => (
+                                <Field>
+                                  <FieldLabel className="text-xs">
+                                    Price ($)
+                                  </FieldLabel>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={formatPriceForDisplay(
+                                      field.state.value,
+                                    )}
+                                    onChange={(e) =>
+                                      field.handleChange(
+                                        parsePriceFromInput(e.target.value),
+                                      )
+                                    }
+                                    onBlur={field.handleBlur}
+                                  />
+                                </Field>
+                              )}
+                            </pricesForm.AppField>
+
+                            <pricesForm.AppField
+                              name={`prices[${index}].isDayPrice`}
+                            >
+                              {(field) => (
+                                <Field>
+                                  <FieldLabel className="text-xs">
+                                    Day Price?
+                                  </FieldLabel>
+                                  <div className="flex items-center h-9">
+                                    <Switch
+                                      checked={field.state.value}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked)
+                                      }
+                                    />
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      {field.state.value ? "Yes" : "No"}
+                                    </span>
+                                  </div>
+                                </Field>
+                              )}
+                            </pricesForm.AppField>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive shrink-0 mt-5"
+                            onClick={() => pricesField.removeValue(index)}
+                            disabled={pricesField.state.value.length <= 1}
+                          >
+                            <Trash2Icon className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {pricesField.state.value.some((p) => !p.name) && (
+                      <p className="text-sm text-destructive mt-2">
+                        All prices must have a name.
+                      </p>
+                    )}
+                  </>
+                )}
+              </pricesForm.Field>
+
+              <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                <pricesForm.SubmitButton>
+                  <SaveIcon className="size-4 mr-2" />
+                  Save Prices
+                </pricesForm.SubmitButton>
+                <pricesForm.StatusBadge schema={batchUpdatePricesSchema} />
+              </div>
+            </CardContent>
+          </form>
+        </pricesForm.AppForm>
+      )}
     </Card>
   );
 }

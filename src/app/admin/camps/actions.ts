@@ -3,18 +3,25 @@ import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/data/db";
-import { camps, campYears, registrations } from "@/lib/data/schema";
 import {
+  camps,
+  campYearPrices,
+  campYears,
+  registrations,
+} from "@/lib/data/schema";
+import {
+  type BatchUpdatePricesForm,
+  batchUpdatePricesSchema,
   type CampInsertForm,
   type CampUpdateForm,
   type CampYearInsertForm,
   type CampYearUpdateForm,
-  type CreateCampWithYearForm,
+  type CreateCampWithYearAndPricesForm,
   campInsertSchema,
   campUpdateSchema,
   campYearInsertSchema,
   campYearUpdateSchema,
-  createCampWithYearSchema,
+  createCampWithYearAndPricesSchema,
 } from "@/lib/types/camp-schemas";
 
 async function requireAdmin() {
@@ -44,10 +51,12 @@ export async function createCamp(data: CampInsertForm) {
   return newCamp;
 }
 
-export async function createCampWithYear(data: CreateCampWithYearForm) {
+export async function createCampWithYear(
+  data: CreateCampWithYearAndPricesForm,
+) {
   await requireAdmin();
 
-  const validated = createCampWithYearSchema.parse(data);
+  const validated = createCampWithYearAndPricesSchema.parse(data);
 
   return await db.transaction(async (tx) => {
     const [newCamp] = await tx
@@ -69,8 +78,22 @@ export async function createCampWithYear(data: CreateCampWithYearForm) {
       })
       .returning();
 
+    // Insert prices for the camp year
+    const newPrices = await tx
+      .insert(campYearPrices)
+      .values(
+        validated.prices.map((price) => ({
+          name: price.name,
+          campId: newCamp.id,
+          year: validated.year,
+          price: price.price,
+          isDayPrice: price.isDayPrice,
+        })),
+      )
+      .returning();
+
     revalidatePath("/admin/camps");
-    return { camp: newCamp, campYear: newCampYear };
+    return { camp: newCamp, campYear: newCampYear, prices: newPrices };
   });
 }
 
@@ -235,4 +258,126 @@ export async function deleteCampYear(campId: string, year: number) {
 
   revalidatePath("/admin/camps");
   return deletedCampYear;
+}
+
+// ============ CAMP YEAR PRICE ACTIONS ============
+
+export async function batchUpdatePrices(data: BatchUpdatePricesForm) {
+  await requireAdmin();
+
+  const validated = batchUpdatePricesSchema.parse(data);
+
+  return await db.transaction(async (tx) => {
+    // Get existing prices for this camp year
+    const existingPrices = await tx
+      .select({ id: campYearPrices.id })
+      .from(campYearPrices)
+      .where(
+        and(
+          eq(campYearPrices.campId, validated.campId),
+          eq(campYearPrices.year, validated.year),
+        ),
+      );
+
+    const existingPriceIds = new Set(existingPrices.map((p) => p.id));
+    const incomingPriceIds = new Set(
+      validated.prices.filter((p) => p.id).map((p) => p.id as string),
+    );
+
+    // Find prices to delete (exist in DB but not in incoming)
+    const priceIdsToDelete = [...existingPriceIds].filter(
+      (id) => !incomingPriceIds.has(id),
+    );
+
+    // Check if any prices being deleted have registrations
+    if (priceIdsToDelete.length > 0) {
+      const registrationsUsingPrices = await tx
+        .select({ id: registrations.id, priceId: registrations.priceId })
+        .from(registrations)
+        .where(
+          and(
+            eq(registrations.campId, validated.campId),
+            eq(registrations.campYear, validated.year),
+          ),
+        );
+
+      const usedPriceIds = registrationsUsingPrices
+        .map((r) => r.priceId)
+        .filter((id) => priceIdsToDelete.includes(id));
+
+      if (usedPriceIds.length > 0) {
+        throw new Error(
+          "Cannot delete prices that have existing registrations. Please reassign or delete registrations first.",
+        );
+      }
+
+      // Delete prices that are no longer in the list
+      for (const priceId of priceIdsToDelete) {
+        await tx.delete(campYearPrices).where(eq(campYearPrices.id, priceId));
+      }
+    }
+
+    // Update existing prices and insert new ones
+    const results = [];
+    for (const price of validated.prices) {
+      if (price.id && existingPriceIds.has(price.id)) {
+        // Update existing price
+        const [updated] = await tx
+          .update(campYearPrices)
+          .set({
+            name: price.name,
+            price: price.price,
+            isDayPrice: price.isDayPrice,
+          })
+          .where(eq(campYearPrices.id, price.id))
+          .returning();
+        results.push(updated);
+      } else {
+        // Insert new price
+        const [inserted] = await tx
+          .insert(campYearPrices)
+          .values({
+            name: price.name,
+            campId: validated.campId,
+            year: validated.year,
+            price: price.price,
+            isDayPrice: price.isDayPrice,
+          })
+          .returning();
+        results.push(inserted);
+      }
+    }
+
+    revalidatePath("/admin/camps");
+    return results;
+  });
+}
+
+export async function deleteCampYearPrice(priceId: string) {
+  await requireAdmin();
+
+  // Check if there are any registrations using this price
+  const existingRegistrations = await db
+    .select({ id: registrations.id })
+    .from(registrations)
+    .where(eq(registrations.priceId, priceId))
+    .limit(1);
+
+  if (existingRegistrations.length > 0) {
+    throw new Error(
+      "Cannot delete price: There are existing registrations using this price. Please reassign or delete registrations first.",
+    );
+  }
+
+  const [deletedPrice] = await db
+    .delete(campYearPrices)
+    .where(eq(campYearPrices.id, priceId))
+    .returning();
+
+  if (!deletedPrice) {
+    throw new Error("Price not found");
+  }
+
+  revalidatePath("/admin/camps");
+  return deletedPrice;
 }

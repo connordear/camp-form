@@ -15,7 +15,7 @@ export async function getAvailableYears(): Promise<number[]> {
 }
 
 /**
- * Get all camps with their campYear data for a specific year
+ * Get all camps with their campYear data and prices for a specific year
  * Camps without data for that year will have campYear as undefined
  */
 export async function getCampsForYear(year: number) {
@@ -24,14 +24,25 @@ export async function getCampsForYear(year: number) {
     with: {
       campYears: {
         where: eq(campYears.year, year),
+        with: {
+          prices: true,
+        },
       },
     },
   });
 
-  return allCamps.map((camp) => ({
-    ...camp,
-    campYear: camp.campYears[0] ?? null,
-  }));
+  return allCamps.map((camp) => {
+    const campYear = camp.campYears[0] ?? null;
+    return {
+      ...camp,
+      campYear: campYear
+        ? {
+            ...campYear,
+            prices: campYear.prices ?? [],
+          }
+        : null,
+    };
+  });
 }
 
 /**

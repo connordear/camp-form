@@ -1,6 +1,16 @@
 "use client";
 
 import { TentIcon } from "lucide-react";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampCard } from "./camp-card";
@@ -13,6 +23,13 @@ interface CampsListProps {
 export function CampsList({ camps, year }: CampsListProps) {
   const campsWithYear = camps.filter((camp) => camp.campYear !== null);
   const campsWithoutYear = camps.filter((camp) => camp.campYear === null);
+
+  // Auto-select first camp (prioritize configured camps)
+  const defaultCampId = campsWithYear[0]?.id ?? campsWithoutYear[0]?.id ?? "";
+  const [selectedCampId, setSelectedCampId] = useState<string>(defaultCampId);
+
+  // Find the selected camp
+  const selectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
     <div className="space-y-6">
@@ -36,38 +53,46 @@ export function CampsList({ camps, year }: CampsListProps) {
           <AddCampDialog year={year} />
         </div>
       ) : (
-        <div className="space-y-8">
-          {/* Camps configured for this year */}
-          {campsWithYear.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-muted-foreground">
-                Configured for {year} ({campsWithYear.length})
-              </h2>
-              <div className="grid gap-4">
-                {campsWithYear.map((camp) => (
-                  <CampCard key={camp.id} camp={camp} year={year} />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-6">
+          {/* Camp selector dropdown */}
+          <div className="space-y-2">
+            <label
+              htmlFor="camp-selector"
+              className="text-sm font-medium text-muted-foreground"
+            >
+              Select Camp
+            </label>
+            <Select value={selectedCampId} onValueChange={setSelectedCampId}>
+              <SelectTrigger id="camp-selector" className="w-full max-w-md">
+                <SelectValue placeholder="Select a camp..." />
+              </SelectTrigger>
+              <SelectContent>
+                {campsWithYear.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Configured for {year}</SelectLabel>
+                    {campsWithYear.map((camp) => (
+                      <SelectItem key={camp.id} value={camp.id}>
+                        {camp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                {campsWithoutYear.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Not configured for {year}</SelectLabel>
+                    {campsWithoutYear.map((camp) => (
+                      <SelectItem key={camp.id} value={camp.id}>
+                        {camp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* Camps not configured for this year */}
-          {campsWithoutYear.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-muted-foreground">
-                Not configured for {year} ({campsWithoutYear.length})
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                These camps exist but don&apos;t have {year} pricing/dates set
-                up yet.
-              </p>
-              <div className="grid gap-4">
-                {campsWithoutYear.map((camp) => (
-                  <CampCard key={camp.id} camp={camp} year={year} />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Selected camp card */}
+          {selectedCamp && <CampCard camp={selectedCamp} year={year} />}
         </div>
       )}
     </div>
