@@ -1,10 +1,13 @@
 "use client";
 
+import { TagIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { CheckoutCamper } from "./actions";
+import type { DiscountEvaluationResult } from "@/lib/services/discount-service";
+import { type CheckoutCamper, evaluateCheckoutDiscounts } from "./actions";
 import { CamperCard } from "./camper-card";
 
 type CheckoutClientProps = {
@@ -21,6 +24,9 @@ function formatPrice(cents: number): string {
 
 export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [discountResult, setDiscountResult] =
+    useState<DiscountEvaluationResult | null>(null);
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -43,10 +49,33 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     [allRegistrations, selectedIds],
   );
 
-  const totalPrice = useMemo(
+  const subtotal = useMemo(
     () => selectedRegistrations.reduce((sum, r) => sum + r.price, 0),
     [selectedRegistrations],
   );
+
+  // Evaluate discounts when selection changes
+  useEffect(() => {
+    if (selectedRegistrations.length === 0) {
+      setDiscountResult(null);
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await evaluateCheckoutDiscounts(
+        selectedRegistrations.map((r) => ({
+          id: r.id,
+          camperId: r.camperId,
+          price: r.price,
+          numDays: r.numDays,
+        })),
+      );
+      setDiscountResult(result);
+    });
+  }, [selectedRegistrations]);
+
+  const totalPrice = discountResult?.total ?? subtotal;
+  const totalSavings = discountResult?.totalSavings ?? 0;
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -136,25 +165,63 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       {/* Checkout Footer */}
       {hasReadyRegistrations && (
         <Card className="sticky bottom-4 border-2">
-          <CardContent className="flex items-center justify-between py-4">
-            <div>
-              <p className="text-muted-foreground text-sm">
-                {selectedIds.size} registration
-                {selectedIds.size !== 1 ? "s" : ""} selected
-              </p>
-              <p className="text-xl font-bold">
-                Total: {formatPrice(totalPrice)}
-              </p>
+          <CardContent className="py-4">
+            {/* Discount badges */}
+            {discountResult &&
+              discountResult.applicableDiscounts.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {discountResult.applicableDiscounts.map((ad) => (
+                    <Badge
+                      key={ad.discount.id}
+                      variant="secondary"
+                      className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    >
+                      <TagIcon className="size-3 mr-1" />
+                      {ad.discount.name}: -{formatPrice(ad.savings)}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-muted-foreground text-sm">
+                  {selectedIds.size} registration
+                  {selectedIds.size !== 1 ? "s" : ""} selected
+                </p>
+                {totalSavings > 0 ? (
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-muted-foreground line-through">
+                      Subtotal: {formatPrice(subtotal)}
+                    </p>
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                      Total: {formatPrice(totalPrice)}{" "}
+                      <span className="text-sm font-normal">
+                        (You save {formatPrice(totalSavings)})
+                      </span>
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xl font-bold">
+                    Total: {formatPrice(totalPrice)}
+                    {isPending && (
+                      <span className="text-sm text-muted-foreground ml-2">
+                        ...
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+              <Button
+                size="lg"
+                onClick={handleCheckout}
+                disabled={selectedIds.size === 0}
+              >
+                Go to Checkout
+                {selectedIds.size > 0 &&
+                  ` (${selectedIds.size} registration${selectedIds.size !== 1 ? "s" : ""})`}
+              </Button>
             </div>
-            <Button
-              size="lg"
-              onClick={handleCheckout}
-              disabled={selectedIds.size === 0}
-            >
-              Go to Checkout
-              {selectedIds.size > 0 &&
-                ` (${selectedIds.size} registration${selectedIds.size !== 1 ? "s" : ""})`}
-            </Button>
           </CardContent>
         </Card>
       )}

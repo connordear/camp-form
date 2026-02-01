@@ -1,6 +1,6 @@
 "use client";
 
-import { MenuIcon, TentIcon, UsersIcon } from "lucide-react";
+import { MenuIcon, TagIcon, TentIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -90,6 +90,9 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
           <AdminNavLink href="/admin/camps" icon={TentIcon}>
             Camps
           </AdminNavLink>
+          <AdminNavLink href="/admin/discounts" icon={TagIcon}>
+            Discounts
+          </AdminNavLink>
         </nav>
 
         <div className="mt-auto pt-4 border-t">
@@ -105,6 +108,9 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
           </AdminNavLink>
           <AdminNavLink href="/admin/camps" icon={TentIcon} collapsed>
             Camps
+          </AdminNavLink>
+          <AdminNavLink href="/admin/discounts" icon={TagIcon} collapsed>
+            Discounts
           </AdminNavLink>
         </nav>
 
@@ -156,6 +162,13 @@ function MobileNav({ availableYears }: AdminNavProps) {
               onClick={closeSheet}
             >
               Camps
+            </AdminNavLink>
+            <AdminNavLink
+              href="/admin/discounts"
+              icon={TagIcon}
+              onClick={closeSheet}
+            >
+              Discounts
             </AdminNavLink>
           </nav>
 

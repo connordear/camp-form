@@ -233,6 +233,44 @@ export const RELATIONSHIP_OPTIONS = [
   { value: "other", name: "Other" },
 ] as const;
 
+// Discount condition types - determines when a discount applies
+export const DISCOUNT_CONDITION_TYPES = [
+  "deadline", // Applies if checkout is before a specific date
+  "sibling", // Applies if multiple campers in same checkout
+] as const;
+
+export type DiscountConditionType = (typeof DISCOUNT_CONDITION_TYPES)[number];
+
+// Discount types - how the discount is calculated
+export const DISCOUNT_TYPES = ["percentage", "fixed"] as const;
+
+export type DiscountType = (typeof DISCOUNT_TYPES)[number];
+
+export const discounts = pgTable("discounts", {
+  id: id(),
+  name: text().notNull(), // e.g., "Early Bird 2026", "Sibling Discount"
+  description: text(), // Optional description for admin reference
+
+  // Discount value
+  type: text({ enum: DISCOUNT_TYPES }).notNull(), // "percentage" or "fixed"
+  amount: integer().notNull(), // 10 for 10%, or 2500 for $25.00 off (in cents)
+
+  // Stripe integration
+  stripeCouponId: text("stripe_coupon_id"), // Synced Stripe coupon ID
+
+  // Condition configuration
+  conditionType: text("condition_type", {
+    enum: DISCOUNT_CONDITION_TYPES,
+  }).notNull(),
+  deadlineDate: date("deadline_date"), // For deadline-based discounts
+  minCampers: integer("min_campers"), // For sibling-based discounts (e.g., 2)
+
+  // Status
+  isActive: boolean("is_active").default(true).notNull(),
+
+  ...timestamps,
+});
+
 export const medicalInfo = pgTable("medical_info", {
   camperId: text("camper_id")
     .primaryKey()

@@ -7,6 +7,11 @@ import {
   getRegistrationCompleteness,
   type IncompleteStep,
 } from "@/lib/registration-completeness";
+import {
+  type DiscountEvaluationResult,
+  evaluateDiscounts,
+  type RegistrationForDiscount,
+} from "@/lib/services/discount-service";
 import { getRegistrationsForCheckoutPage } from "@/lib/services/registration-service";
 
 /**
@@ -14,6 +19,7 @@ import { getRegistrationsForCheckoutPage } from "@/lib/services/registration-ser
  */
 export type CheckoutRegistration = {
   id: string;
+  camperId: string;
   campName: string;
   campDates: string;
   price: number; // in cents
@@ -115,6 +121,7 @@ export async function getCheckoutData(
 
       camperRegistrations.push({
         id: registration.id,
+        camperId: camper.id,
         campName: campYear.camp.name,
         campDates: formatDateRange(campYear.startDate, campYear.endDate),
         price,
@@ -133,4 +140,33 @@ export async function getCheckoutData(
   }
 
   return checkoutCampers;
+}
+
+/**
+ * Evaluates which discounts apply to a set of selected registrations.
+ * This is called dynamically as the user selects/deselects registrations.
+ */
+export async function evaluateCheckoutDiscounts(
+  registrations: Array<{
+    id: string;
+    camperId: string;
+    price: number;
+    numDays: number | null;
+  }>,
+): Promise<DiscountEvaluationResult> {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Not logged in");
+  }
+
+  // Convert to format expected by discount service
+  const registrationsForDiscount: RegistrationForDiscount[] = registrations.map(
+    (r) => ({
+      camperId: r.camperId,
+      price: r.price,
+      quantity: r.numDays ?? 1,
+    }),
+  );
+
+  return evaluateDiscounts(registrationsForDiscount);
 }
