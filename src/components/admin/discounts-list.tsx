@@ -1,8 +1,16 @@
 "use client";
 
-import { CalendarIcon, PercentIcon, TagIcon, UsersIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  PencilIcon,
+  PercentIcon,
+  PlusIcon,
+  TagIcon,
+  UsersIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,8 +24,7 @@ import {
   CONDITION_TYPE_LABELS,
   DISCOUNT_TYPE_LABELS,
 } from "@/lib/types/discount-schemas";
-import { AddDiscountDialog } from "./add-discount-dialog";
-import { EditDiscountDialog } from "./edit-discount-dialog";
+import { DiscountDialog } from "./discount-dialog";
 
 interface DiscountsListProps {
   discounts: Discount[];
@@ -88,7 +95,15 @@ function DiscountCard({ discount }: { discount: Discount }) {
               disabled={isToggling}
               aria-label="Toggle discount active"
             />
-            <EditDiscountDialog discount={discount} />
+            <DiscountDialog
+              discount={discount}
+              trigger={
+                <Button variant="outline" size="sm">
+                  <PencilIcon className="size-4 mr-1" />
+                  Edit
+                </Button>
+              }
+            />
           </div>
         </div>
       </CardHeader>
@@ -146,7 +161,14 @@ export function DiscountsList({ discounts }: DiscountsListProps) {
             Configure automatic discounts for checkout
           </p>
         </div>
-        <AddDiscountDialog />
+        <DiscountDialog
+          trigger={
+            <Button>
+              <PlusIcon className="size-4 mr-2" />
+              Add Discount
+            </Button>
+          }
+        />
       </div>
 
       {discounts.length === 0 ? (
@@ -158,7 +180,14 @@ export function DiscountsList({ discounts }: DiscountsListProps) {
               Create discounts to offer early bird pricing, sibling discounts,
               and more.
             </p>
-            <AddDiscountDialog />
+            <DiscountDialog
+              trigger={
+                <Button>
+                  <PlusIcon className="size-4 mr-2" />
+                  Add Discount
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       ) : (

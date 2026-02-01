@@ -160,11 +160,13 @@ export async function evaluateCheckoutDiscounts(
   }
 
   // Convert to format expected by discount service
+  // Note: r.price is already the total (unitPrice * numDays for day prices),
+  // so we always use quantity: 1 to avoid double-counting
   const registrationsForDiscount: RegistrationForDiscount[] = registrations.map(
     (r) => ({
       camperId: r.camperId,
       price: r.price,
-      quantity: r.numDays ?? 1,
+      quantity: 1,
     }),
   );
 

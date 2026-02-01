@@ -1,10 +1,14 @@
 "use client";
 
 import { useStore } from "@tanstack/react-form";
-import { PencilIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteDiscount, updateDiscount } from "@/app/admin/discounts/actions";
+import {
+  createDiscount,
+  deleteDiscount,
+  updateDiscount,
+} from "@/app/admin/discounts/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,42 +47,55 @@ import type { Discount } from "@/lib/services/discount-service";
 import {
   CONDITION_TYPE_LABELS,
   DISCOUNT_TYPE_LABELS,
-  discountUpdateSchema,
+  discountFormSchema,
 } from "@/lib/types/discount-schemas";
 
-interface EditDiscountDialogProps {
-  discount: Discount;
+interface DiscountDialogProps {
+  /** If provided, dialog is in edit mode. Otherwise, create mode. */
+  discount?: Discount;
+  /** The trigger element that opens the dialog */
+  trigger: React.ReactNode;
 }
 
-export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
+export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
+  const isEditMode = !!discount;
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useAppForm({
     defaultValues: {
-      id: discount.id,
-      name: discount.name,
-      description: discount.description,
-      type: discount.type as (typeof DISCOUNT_TYPES)[number],
-      amount: discount.amount,
-      conditionType:
-        discount.conditionType as (typeof DISCOUNT_CONDITION_TYPES)[number],
-      deadlineDate: discount.deadlineDate,
-      minCampers: discount.minCampers,
-      isActive: discount.isActive,
+      name: discount?.name ?? "",
+      description: discount?.description ?? (null as string | null),
+      type: (discount?.type ?? "percentage") as (typeof DISCOUNT_TYPES)[number],
+      amount: discount?.amount ?? 10,
+      conditionType: (discount?.conditionType ??
+        "deadline") as (typeof DISCOUNT_CONDITION_TYPES)[number],
+      deadlineDate: discount?.deadlineDate ?? (null as string | null),
+      minCampers: discount?.minCampers ?? (2 as number | null),
+      isActive: discount?.isActive ?? true,
     },
     validators: {
-      onSubmit: discountUpdateSchema,
+      onSubmit: discountFormSchema,
     },
-    onSubmit: async ({ value }) => {
-      const toastId = toast.loading("Updating discount...");
+    onSubmit: async ({ value, formApi }) => {
+      const toastId = toast.loading(
+        isEditMode ? "Updating discount..." : "Creating discount...",
+      );
       try {
-        await updateDiscount(value);
-        toast.success("Discount updated", { id: toastId });
+        if (isEditMode) {
+          await updateDiscount({ ...value, id: discount.id });
+          toast.success("Discount updated", { id: toastId });
+        } else {
+          await createDiscount(value);
+          toast.success("Discount created", { id: toastId });
+          formApi.reset();
+        }
         setIsOpen(false);
       } catch (err) {
         toast.error(
-          err instanceof Error ? err.message : "Failed to update discount",
+          err instanceof Error
+            ? err.message
+            : `Failed to ${isEditMode ? "update" : "create"} discount`,
           { id: toastId },
         );
       }
@@ -86,6 +103,7 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
   });
 
   const handleDelete = async () => {
+    if (!discount) return;
     setIsDeleting(true);
     const toastId = toast.loading("Deleting discount...");
     try {
@@ -118,7 +136,7 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
     type: (typeof DISCOUNT_TYPES)[number],
   ): number => {
     const num = parseFloat(value);
-    if (isNaN(num)) return 0;
+    if (Number.isNaN(num)) return 0;
     if (type === "percentage") {
       return Math.min(100, Math.max(0, Math.round(num)));
     }
@@ -133,12 +151,7 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PencilIcon className="size-4 mr-1" />
-          Edit
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <form.AppForm>
           <form
@@ -149,9 +162,13 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Edit Discount</DialogTitle>
+              <DialogTitle>
+                {isEditMode ? "Edit Discount" : "Add New Discount"}
+              </DialogTitle>
               <DialogDescription>
-                Update this discount&apos;s configuration.
+                {isEditMode
+                  ? "Update this discount's configuration."
+                  : "Create a discount that will be automatically applied at checkout."}
               </DialogDescription>
             </DialogHeader>
 
@@ -330,53 +347,65 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
                       <div>
                         <FieldLabel className="mb-0">Active</FieldLabel>
                         <p className="text-sm text-muted-foreground">
-                          Enable this discount
+                          {isEditMode
+                            ? "Enable this discount"
+                            : "Enable this discount immediately"}
                         </p>
                       </div>
-                      <Switch
-                        checked={field.state.value}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked)
-                        }
-                      />
+                      <div>
+                        <Switch
+                          checked={field.state.value}
+                          onCheckedChange={(checked) =>
+                            field.handleChange(checked)
+                          }
+                        />
+                      </div>
                     </Field>
                   )}
                 </form.AppField>
               </FieldSet>
             </div>
 
-            <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={isDeleting}
-                  >
-                    <Trash2Icon className="size-4 mr-1" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Discount</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete &quot;{discount.name}
-                      &quot;? This will also delete the associated Stripe
-                      coupon. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-destructive text-white hover:bg-destructive/90"
+            <DialogFooter
+              className={
+                isEditMode
+                  ? "flex-col gap-2 sm:flex-row sm:justify-between"
+                  : undefined
+              }
+            >
+              {isEditMode && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={isDeleting}
                     >
+                      <Trash2Icon className="size-4 mr-1" />
                       Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Discount</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete &quot;{discount?.name}
+                        &quot;? This will also delete the associated Stripe
+                        coupon. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-white hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
 
               <div className="flex gap-2">
                 <Button
@@ -386,7 +415,9 @@ export function EditDiscountDialog({ discount }: EditDiscountDialogProps) {
                 >
                   Cancel
                 </Button>
-                <form.SubmitButton>Save Changes</form.SubmitButton>
+                <form.SubmitButton>
+                  {isEditMode ? "Save Changes" : "Create Discount"}
+                </form.SubmitButton>
               </div>
             </DialogFooter>
           </form>

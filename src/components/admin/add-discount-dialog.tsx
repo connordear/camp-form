@@ -83,7 +83,7 @@ export function AddDiscountDialog() {
     type: (typeof DISCOUNT_TYPES)[number],
   ): number => {
     const num = parseFloat(value);
-    if (isNaN(num)) return 0;
+    if (Number.isNaN(num)) return 0;
     if (type === "percentage") {
       return Math.min(100, Math.max(0, Math.round(num)));
     }
@@ -299,12 +299,14 @@ export function AddDiscountDialog() {
                           Enable this discount immediately
                         </p>
                       </div>
-                      <Switch
-                        checked={field.state.value}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked)
-                        }
-                      />
+                      <div>
+                        <Switch
+                          checked={field.state.value}
+                          onCheckedChange={(checked) =>
+                            field.handleChange(checked)
+                          }
+                        />
+                      </div>
                     </Field>
                   )}
                 </form.AppField>
