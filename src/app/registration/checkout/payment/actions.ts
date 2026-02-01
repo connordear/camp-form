@@ -66,7 +66,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     ui_mode: "embedded",
     line_items: lineItems,
     mode: "payment",
-    return_url: `${getBaseUrl()}/registration/overview?session_id={CHECKOUT_SESSION_ID}`,
+    return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
     branding_settings: {
       display_name: "Mulhurst Camp", // TODO: Update to pull this from config somehow
