@@ -1,6 +1,7 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
 import type Stripe from "stripe";
+import { siteConfig } from "@/config/site";
 import {
   evaluateDiscounts,
   type RegistrationForDiscount,
@@ -97,7 +98,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
     branding_settings: {
-      display_name: "Mulhurst Camp", // TODO: Update to pull this from config somehow
+      display_name: siteConfig.name, // TODO: Update to pull this from config somehow
       font_family: "roboto",
       border_style: "rounded",
     },
