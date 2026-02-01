@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
 } from "@/components/ui/dialog";
-import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Field, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { saveAddress } from "./actions";
 import type { OpenAddressFormArgs } from "./form";
@@ -81,13 +81,13 @@ export default function AddressForm({
             form.handleSubmit();
           }}
         >
-          <FieldSet className="flex-1 min-h-0 overflow-y-auto">
+          <FieldSet name="address" className="flex-1 min-h-0 overflow-y-auto">
             <form.AppField name="addressLine1">
               {(field) => (
                 <Field>
-                  <FieldLabel>Address</FieldLabel>
+                  <field.Label>Address</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="street-address" />
                   </field.WithErrors>
                 </Field>
               )}
@@ -96,9 +96,9 @@ export default function AddressForm({
             <form.AppField name="addressLine2">
               {(field) => (
                 <Field>
-                  <FieldLabel>Address Line 2</FieldLabel>
+                  <field.Label>Address Line 2</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="address-line2" />
                   </field.WithErrors>
                 </Field>
               )}
@@ -107,9 +107,9 @@ export default function AddressForm({
             <form.AppField name="city">
               {(field) => (
                 <Field>
-                  <FieldLabel>City</FieldLabel>
+                  <field.Label>City</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="address-level2" />
                   </field.WithErrors>
                 </Field>
               )}
@@ -117,9 +117,9 @@ export default function AddressForm({
             <form.AppField name="stateProv">
               {(field) => (
                 <Field>
-                  <FieldLabel>Province/State</FieldLabel>
+                  <field.Label>Province/State</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="address-level1" />
                   </field.WithErrors>
                 </Field>
               )}
@@ -128,9 +128,9 @@ export default function AddressForm({
             <form.AppField name="country">
               {(field) => (
                 <Field>
-                  <FieldLabel>Country</FieldLabel>
+                  <field.Label>Country</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="country" />
                   </field.WithErrors>
                 </Field>
               )}
@@ -139,9 +139,9 @@ export default function AddressForm({
             <form.AppField name="postalZip">
               {(field) => (
                 <Field>
-                  <FieldLabel>Postal/Zip Code</FieldLabel>
+                  <field.Label>Postal/Zip Code</field.Label>
                   <field.WithErrors>
-                    <field.TextInput />
+                    <field.TextInput autoComplete="postal-code" />
                   </field.WithErrors>
                 </Field>
               )}

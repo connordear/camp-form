@@ -16,6 +16,8 @@ const THEMES = {
   },
 };
 
+const TAX_RATE = process.env.TAX_RATE;
+
 /**
  * Fetches a Stripe client secret for checkout.
  * @param registrationIds - Optional array of registration IDs to filter.
