@@ -19,6 +19,9 @@ export default function TextInput({
   return (
     <Input
       {...props}
+      type="text"
+      name={field.name}
+      id={field.name}
       className="flex-1 border p-2 rounded"
       value={value}
       onChange={handleChange}

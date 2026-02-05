@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Field, FieldSet } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -95,13 +95,13 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
           </CardHeader>
 
           <CardContent>
-            <FieldSet className="w-full min-w-0 grid gap-6">
+            <FieldSet name="medical-info" className="w-full min-w-0 grid gap-6">
               {/* --- SECTION 1: BASIC CONTACT --- */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <form.AppField name="healthCareNumber">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Health Care Number</FieldLabel>
+                      <field.Label>Health Care Number</field.Label>
                       <field.WithErrors>
                         <field.TextInput placeholder="XXXXX-XXXX" />
                       </field.WithErrors>
@@ -111,7 +111,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                 <form.AppField name="familyDoctor">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Family Doctor</FieldLabel>
+                      <field.Label>Family Doctor</field.Label>
                       <field.WithErrors>
                         <field.TextInput />
                       </field.WithErrors>
@@ -121,7 +121,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                 <form.AppField name="doctorPhone">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Doctor Phone</FieldLabel>
+                      <field.Label>Doctor Phone</field.Label>
                       <field.WithErrors>
                         <field.TextInput type="tel" />
                       </field.WithErrors>
@@ -159,7 +159,9 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                       <form.AppField name="allergiesDetails">
                         {(subField) => (
                           <Field>
-                            <FieldLabel>Please list all allergies</FieldLabel>
+                            <subField.Label>
+                              Please list all allergies
+                            </subField.Label>
                             <subField.WithErrors>
                               <subField.TextArea />
                             </subField.WithErrors>
@@ -198,7 +200,9 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                       <form.AppField name="medicationsAtCampDetails">
                         {(subField) => (
                           <Field>
-                            <FieldLabel>List medications & dosage</FieldLabel>
+                            <subField.Label>
+                              List medications & dosage
+                            </subField.Label>
                             <subField.WithErrors>
                               <subField.TextArea />
                             </subField.WithErrors>
@@ -237,7 +241,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                       <form.AppField name="medicalConditionsDetails">
                         {(subField) => (
                           <Field>
-                            <FieldLabel>Please describe</FieldLabel>
+                            <subField.Label>Please describe</subField.Label>
                             <subField.WithErrors>
                               <subField.TextArea />
                             </subField.WithErrors>
@@ -256,9 +260,9 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
                     field.state.value.length === OTC_MEDICATIONS_LIST.length;
                   return (
                     <div className="border rounded-md p-4">
-                      <FieldLabel className="mb-2 block">
+                      <field.Label className="mb-2 block">
                         Allowed Over-the-Counter Medications
-                      </FieldLabel>
+                      </field.Label>
                       <p className="text-xs text-muted-foreground mb-4">
                         Check all that the camp nurse is allowed to administer.
                       </p>

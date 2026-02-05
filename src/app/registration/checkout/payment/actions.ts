@@ -1,6 +1,11 @@
 "use server";
 import { auth } from "@clerk/nextjs/server";
 import type Stripe from "stripe";
+import { siteConfig } from "@/config/site";
+import {
+  evaluateDiscounts,
+  type RegistrationForDiscount,
+} from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
 import { getBaseUrl } from "@/lib/utils";
@@ -11,6 +16,8 @@ const THEMES = {
     border: "rounded",
   },
 };
+
+const TAX_RATE = process.env.TAX_RATE;
 
 /**
  * Fetches a Stripe client secret for checkout.
@@ -36,6 +43,9 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     throw new Error("No user.");
   }
 
+  // Build registrations for discount evaluation
+  const registrationsForDiscount: RegistrationForDiscount[] = [];
+
   user.campers.forEach((camper) => {
     camper.registrations.forEach((reg) => {
       lineItems.push({
@@ -54,6 +64,13 @@ export async function fetchClientSecret(registrationIds?: string[]) {
         },
         quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
       });
+
+      // Track for discount evaluation
+      registrationsForDiscount.push({
+        camperId: camper.id,
+        price: reg.price.price,
+        quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
+      });
     });
   });
 
@@ -61,15 +78,27 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     return null;
   }
 
-  const palette = THEMES.dark;
+  // Evaluate applicable discounts
+  const discountResult = await evaluateDiscounts(registrationsForDiscount);
+
+  // Build discounts array for Stripe (use coupon IDs)
+  const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
+    discountResult.applicableDiscounts
+      .filter((ad) => ad.discount.stripeCouponId)
+      .map((ad) => ({
+        coupon: ad.discount.stripeCouponId!,
+      }));
+
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     line_items: lineItems,
     mode: "payment",
-    return_url: `${getBaseUrl()}/registration/overview?session_id={CHECKOUT_SESSION_ID}`,
+    return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
+    // Apply discounts if any are applicable
+    ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
     branding_settings: {
-      display_name: "Mulhurst Camp", // TODO: Update to pull this from config somehow
+      display_name: siteConfig.name, // TODO: Update to pull this from config somehow
       font_family: "roboto",
       border_style: "rounded",
     },
