@@ -128,6 +128,7 @@ export default function EmergencyContactField({
       title={title}
       statusBadge={<StaticFormStatusBadge status={status} />}
       isComplete={isComplete}
+      isDirty={isDirty}
     >
       <CardContent className="space-y-4">
         {/* Assigned Contacts List */}

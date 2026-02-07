@@ -18,6 +18,8 @@ type CollapsibleFormCardProps = {
   statusBadge: ReactNode;
   /** Whether the form section is complete - triggers auto-collapse when transitioning to true */
   isComplete: boolean;
+  /** Whether the form has been interacted with (sticky - stays true even if changes are reverted) */
+  isDirty?: boolean;
   /** Card content (CardContent and CardFooter) */
   children: ReactNode;
   /** Additional className for the Card */
@@ -31,7 +33,8 @@ type CollapsibleFormCardProps = {
  *
  * Behavior:
  * - Starts expanded (even if already complete, so users can review)
- * - Auto-collapses when isComplete transitions from false to true (after a save)
+ * - Auto-collapses when isComplete transitions from false to true (after a save),
+ *   but only if the form hasn't been touched (isDirty is false)
  * - Users can manually toggle expand/collapse at any time
  * - When collapsed, shows only the header with title and status badge
  */
@@ -39,6 +42,7 @@ export function CollapsibleFormCard({
   title,
   statusBadge,
   isComplete,
+  isDirty,
   children,
   className,
   maxWidth = "max-w-xl",
@@ -46,13 +50,14 @@ export function CollapsibleFormCard({
   const [isOpen, setIsOpen] = useState(true);
   const prevIsCompleteRef = useRef(isComplete);
 
-  // Auto-collapse when isComplete transitions from false to true
+  // Auto-collapse when isComplete transitions from false to true,
+  // but only if the form hasn't been touched yet
   useEffect(() => {
-    if (!prevIsCompleteRef.current && isComplete) {
+    if (!prevIsCompleteRef.current && isComplete && !isDirty) {
       setIsOpen(false);
     }
     prevIsCompleteRef.current = isComplete;
-  }, [isComplete]);
+  }, [isComplete, isDirty]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>

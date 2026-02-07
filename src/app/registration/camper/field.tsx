@@ -89,10 +89,11 @@ export default function CamperField({
       <form.Subscribe
         selector={(state) => ({
           isDefaultValue: state.isDefaultValue,
+          isDirty: state.isDirty,
           values: state.values,
         })}
       >
-        {({ isDefaultValue, values }) => {
+        {({ isDefaultValue, isDirty, values }) => {
           const isComplete =
             isDefaultValue && camperInfoInsertSchema.safeParse(values).success;
 
@@ -101,6 +102,7 @@ export default function CamperField({
               title={title}
               statusBadge={<form.StatusBadge schema={camperInfoInsertSchema} />}
               isComplete={isComplete}
+              isDirty={isDirty}
             >
               <form
                 onSubmit={(e) => {

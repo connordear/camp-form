@@ -63,10 +63,11 @@ function CampFieldContent({ registration, age }: CampFieldContentProps) {
       <form.Subscribe
         selector={(state) => ({
           isDefaultValue: state.isDefaultValue,
+          isDirty: state.isDirty,
           values: state.values,
         })}
       >
-        {({ isDefaultValue, values }) => {
+        {({ isDefaultValue, isDirty, values }) => {
           const isComplete =
             isDefaultValue &&
             insertRegistrationDetailSchema.safeParse(values).success;
@@ -78,6 +79,7 @@ function CampFieldContent({ registration, age }: CampFieldContentProps) {
                 <form.StatusBadge schema={insertRegistrationDetailSchema} />
               }
               isComplete={isComplete}
+              isDirty={isDirty}
             >
               <form
                 onSubmit={(e) => {

@@ -76,10 +76,11 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
       <form.Subscribe
         selector={(state) => ({
           isDefaultValue: state.isDefaultValue,
+          isDirty: state.isDirty,
           values: state.values,
         })}
       >
-        {({ isDefaultValue, values }) => {
+        {({ isDefaultValue, isDirty, values }) => {
           const isComplete =
             isDefaultValue && medicalInfoSchema.safeParse(values).success;
 
@@ -88,6 +89,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
               title={title}
               statusBadge={<form.StatusBadge schema={medicalInfoSchema} />}
               isComplete={isComplete}
+              isDirty={isDirty}
               maxWidth="max-w-2xl"
             >
               <form
