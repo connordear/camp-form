@@ -3,15 +3,10 @@
 import { Minus, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
 import { StaticFormStatusBadge } from "@/components/forms/form-status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CardContent, CardFooter } from "@/components/ui/card";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
 import { saveCamperEmergencyContacts } from "./actions";
@@ -125,17 +120,15 @@ export default function EmergencyContactField({
     openContactModal({ contact: formValues });
   };
 
-  return (
-    <Card className="w-full max-w-xl">
-      <CardHeader>
-        <div className="flex gap-3 justify-between items-center">
-          <CardTitle className="truncate">
-            Emergency Contacts - {camper.firstName} {camper.lastName}
-          </CardTitle>
-          <StaticFormStatusBadge status={status} />
-        </div>
-      </CardHeader>
+  const title = `Emergency Contacts - ${camper.firstName} ${camper.lastName}`;
+  const isComplete = status === "complete";
 
+  return (
+    <CollapsibleFormCard
+      title={title}
+      statusBadge={<StaticFormStatusBadge status={status} />}
+      isComplete={isComplete}
+    >
       <CardContent className="space-y-4">
         {/* Assigned Contacts List */}
         <div className="space-y-2">
@@ -285,6 +278,6 @@ export default function EmergencyContactField({
           {isSaving ? "Saving..." : "Save Emergency Contacts"}
         </Button>
       </CardFooter>
-    </Card>
+    </CollapsibleFormCard>
   );
 }

@@ -1,13 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
+import { CardContent, CardFooter } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -18,13 +13,13 @@ import {
   type RegistrationDetail,
 } from "./schema";
 
-type CampFieldProps = {
+type CampFieldContentProps = {
   registration: RegistrationDetail;
+  age: number;
 };
 
-export default function CampField({ registration }: CampFieldProps) {
+function CampFieldContent({ registration, age }: CampFieldContentProps) {
   const camper = registration.camper;
-  const age = getAge(camper.dateOfBirth);
   const form = useAppForm({
     defaultValues: {
       registrationId: registration.id,
@@ -61,71 +56,96 @@ export default function CampField({ registration }: CampFieldProps) {
 
   useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
+  const title = `${camper.firstName} ${camper.lastName} - ${registration.campYear.camp.name}`;
+
   return (
     <form.AppForm>
-      <Card className="w-full max-w-xl">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="flex flex-col gap-3"
-        >
-          <CardHeader>
-            <div className="flex gap-3 justify-between items-center">
-              <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName} - ${registration.campYear.camp.name}`}</CardTitle>
+      <form.Subscribe
+        selector={(state) => ({
+          isDefaultValue: state.isDefaultValue,
+          values: state.values,
+        })}
+      >
+        {({ isDefaultValue, values }) => {
+          const isComplete =
+            isDefaultValue &&
+            insertRegistrationDetailSchema.safeParse(values).success;
 
-              <form.StatusBadge schema={insertRegistrationDetailSchema} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <FieldSet className="w-full min-w-0">
-              <form.AppField name="cabinRequest">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Cabin Request</FieldLabel>
-                    <field.WithErrors>
-                      <field.TextArea placeholder="None (e.g. would like to be in a cabin with their friend/sibling/cousin...)" />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
-
-              <form.AppField name="additionalInfo">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Additional Info</FieldLabel>
-                    <field.WithErrors>
-                      <field.TextArea />
-                    </field.WithErrors>
-                  </Field>
-                )}
-              </form.AppField>
-
-              {age < 18 && (
-                <form.AppField name="parentSignature">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Parent/Guardian Signature</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
-              )}
-            </FieldSet>
-          </CardContent>
-          <CardFooter>
-            <form.SubmitButton
-              name="Save Camper"
-              onClick={() => form.handleSubmit()}
+          return (
+            <CollapsibleFormCard
+              title={title}
+              statusBadge={
+                <form.StatusBadge schema={insertRegistrationDetailSchema} />
+              }
+              isComplete={isComplete}
             >
-              Submit
-            </form.SubmitButton>
-          </CardFooter>
-        </form>
-      </Card>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="flex flex-col gap-3"
+              >
+                <CardContent>
+                  <FieldSet className="w-full min-w-0">
+                    <form.AppField name="cabinRequest">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Cabin Request</FieldLabel>
+                          <field.WithErrors>
+                            <field.TextArea placeholder="None (e.g. would like to be in a cabin with their friend/sibling/cousin...)" />
+                          </field.WithErrors>
+                        </Field>
+                      )}
+                    </form.AppField>
+
+                    <form.AppField name="additionalInfo">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Additional Info</FieldLabel>
+                          <field.WithErrors>
+                            <field.TextArea />
+                          </field.WithErrors>
+                        </Field>
+                      )}
+                    </form.AppField>
+
+                    {age < 18 && (
+                      <form.AppField name="parentSignature">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Parent/Guardian Signature</FieldLabel>
+                            <field.WithErrors>
+                              <field.TextInput />
+                            </field.WithErrors>
+                          </Field>
+                        )}
+                      </form.AppField>
+                    )}
+                  </FieldSet>
+                </CardContent>
+                <CardFooter>
+                  <form.SubmitButton
+                    name="Save Camper"
+                    onClick={() => form.handleSubmit()}
+                  >
+                    Submit
+                  </form.SubmitButton>
+                </CardFooter>
+              </form>
+            </CollapsibleFormCard>
+          );
+        }}
+      </form.Subscribe>
     </form.AppForm>
   );
+}
+
+type CampFieldProps = {
+  registration: RegistrationDetail;
+};
+
+export default function CampField({ registration }: CampFieldProps) {
+  const age = getAge(registration.camper.dateOfBirth);
+  return <CampFieldContent registration={registration} age={age} />;
 }

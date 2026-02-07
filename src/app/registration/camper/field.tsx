@@ -1,14 +1,9 @@
 "use client";
 import { toast } from "sonner";
 import AddButton from "@/components/forms/add-button";
+import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
 import EditButton from "@/components/forms/edit-button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CardContent, CardFooter } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-camp-form";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -87,166 +82,180 @@ export default function CamperField({
 
   useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
 
+  const title = `${camper.firstName} ${camper.lastName}`;
+
   return (
     <form.AppForm>
-      <Card className="w-full max-w-xl">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="flex flex-col gap-3"
-        >
-          <CardHeader>
-            <div className="flex gap-3 justify-between items-center">
-              <CardTitle className="truncate">{`${camper.firstName} ${camper.lastName}`}</CardTitle>
-              <form.StatusBadge schema={camperInfoInsertSchema} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <FieldSet className="w-full min-w-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="dateOfBirth">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Date of Birth</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
+      <form.Subscribe
+        selector={(state) => ({
+          isDefaultValue: state.isDefaultValue,
+          values: state.values,
+        })}
+      >
+        {({ isDefaultValue, values }) => {
+          const isComplete =
+            isDefaultValue && camperInfoInsertSchema.safeParse(values).success;
 
-                <form.AppField name="gender">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Gender</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.AppField name="shirtSize">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Shirt Size</FieldLabel>
-                      <field.WithErrors>
-                        <field.Select
-                          placeholder="Select a shirt size"
-                          options={shirtSizeOptions}
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
-                <form.AppField name="swimmingLevel">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Swimming Level</FieldLabel>
-                      <field.WithErrors>
-                        <field.Select
-                          className="min-w-0 max-w-full flex-1"
-                          placeholder="Select swimming level"
-                          options={swimmingLevelOptions}
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </form.AppField>
-              </div>
-              <form.AppField name="addressId">
-                {(field) => {
-                  const currentAddress = addresses.find(
-                    (a) => a.id === field.state.value,
-                  );
-                  return (
-                    <Field>
-                      <FieldLabel>Address</FieldLabel>
-                      <field.WithErrors>
-                        <div className="flex gap-1">
-                          <field.Select
-                            className="w-max"
-                            placeholder={
-                              addresses.length
-                                ? "Select an address"
-                                : "Create an address first ->"
-                            }
-                            disabled={!addresses.length}
-                            options={addressOptions}
-                          />
-                          <EditButton
-                            disabled={!currentAddress}
-                            tooltip={`Edit Address ${currentAddress?.postalZip}`}
-                            onClick={() =>
-                              openAddressForm({
-                                camperId: camper.id,
-                                address: currentAddress,
-                              })
-                            }
-                          />
-                          <AddButton
-                            onClick={() =>
-                              openAddressForm({
-                                camperId: camper.id,
-                              })
-                            }
-                            tooltip="Add new address"
-                          />
-                        </div>
-                      </field.WithErrors>
-                    </Field>
-                  );
-                }}
-              </form.AppField>
-
-              <form.AppField name="hasBeenToCamp">
-                {(field) => (
-                  <Field orientation="horizontal" className="w-fit">
-                    <field.Switch />
-                    <FieldLabel>
-                      {field.state.value
-                        ? "Has been to camp before"
-                        : "Has not been to camp before"}
-                    </FieldLabel>
-                  </Field>
-                )}
-              </form.AppField>
-              <form.AppField name="arePhotosAllowed">
-                {(field) => (
-                  <Field orientation="horizontal" className="w-fit">
-                    <field.Switch />
-                    <FieldLabel>
-                      {field.state.value
-                        ? "Photos are allowed"
-                        : "Photos are not allowed"}
-                    </FieldLabel>
-                  </Field>
-                )}
-              </form.AppField>
-              <form.AppField name="dietaryRestrictions">
-                {(field) => (
-                  <Field className="w-full">
-                    <FieldLabel>Dietary Restrictions</FieldLabel>
-                    <field.TextArea placeholder="None" />
-                  </Field>
-                )}
-              </form.AppField>
-            </FieldSet>
-          </CardContent>
-          <CardFooter>
-            <form.SubmitButton
-              name="Save Camper"
-              onClick={() => form.handleSubmit()}
+          return (
+            <CollapsibleFormCard
+              title={title}
+              statusBadge={<form.StatusBadge schema={camperInfoInsertSchema} />}
+              isComplete={isComplete}
             >
-              Submit
-            </form.SubmitButton>
-          </CardFooter>
-        </form>
-      </Card>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="flex flex-col gap-3"
+              >
+                <CardContent>
+                  <FieldSet className="w-full min-w-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <form.AppField name="dateOfBirth">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Date of Birth</FieldLabel>
+                            <field.WithErrors>
+                              <field.TextInput />
+                            </field.WithErrors>
+                          </Field>
+                        )}
+                      </form.AppField>
+
+                      <form.AppField name="gender">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Gender</FieldLabel>
+                            <field.WithErrors>
+                              <field.TextInput />
+                            </field.WithErrors>
+                          </Field>
+                        )}
+                      </form.AppField>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <form.AppField name="shirtSize">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Shirt Size</FieldLabel>
+                            <field.WithErrors>
+                              <field.Select
+                                placeholder="Select a shirt size"
+                                options={shirtSizeOptions}
+                              />
+                            </field.WithErrors>
+                          </Field>
+                        )}
+                      </form.AppField>
+                      <form.AppField name="swimmingLevel">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Swimming Level</FieldLabel>
+                            <field.WithErrors>
+                              <field.Select
+                                className="min-w-0 max-w-full flex-1"
+                                placeholder="Select swimming level"
+                                options={swimmingLevelOptions}
+                              />
+                            </field.WithErrors>
+                          </Field>
+                        )}
+                      </form.AppField>
+                    </div>
+                    <form.AppField name="addressId">
+                      {(field) => {
+                        const currentAddress = addresses.find(
+                          (a) => a.id === field.state.value,
+                        );
+                        return (
+                          <Field>
+                            <FieldLabel>Address</FieldLabel>
+                            <field.WithErrors>
+                              <div className="flex gap-1">
+                                <field.Select
+                                  className="w-max"
+                                  placeholder={
+                                    addresses.length
+                                      ? "Select an address"
+                                      : "Create an address first ->"
+                                  }
+                                  disabled={!addresses.length}
+                                  options={addressOptions}
+                                />
+                                <EditButton
+                                  disabled={!currentAddress}
+                                  tooltip={`Edit Address ${currentAddress?.postalZip}`}
+                                  onClick={() =>
+                                    openAddressForm({
+                                      camperId: camper.id,
+                                      address: currentAddress,
+                                    })
+                                  }
+                                />
+                                <AddButton
+                                  onClick={() =>
+                                    openAddressForm({
+                                      camperId: camper.id,
+                                    })
+                                  }
+                                  tooltip="Add new address"
+                                />
+                              </div>
+                            </field.WithErrors>
+                          </Field>
+                        );
+                      }}
+                    </form.AppField>
+
+                    <form.AppField name="hasBeenToCamp">
+                      {(field) => (
+                        <Field orientation="horizontal" className="w-fit">
+                          <field.Switch />
+                          <FieldLabel>
+                            {field.state.value
+                              ? "Has been to camp before"
+                              : "Has not been to camp before"}
+                          </FieldLabel>
+                        </Field>
+                      )}
+                    </form.AppField>
+                    <form.AppField name="arePhotosAllowed">
+                      {(field) => (
+                        <Field orientation="horizontal" className="w-fit">
+                          <field.Switch />
+                          <FieldLabel>
+                            {field.state.value
+                              ? "Photos are allowed"
+                              : "Photos are not allowed"}
+                          </FieldLabel>
+                        </Field>
+                      )}
+                    </form.AppField>
+                    <form.AppField name="dietaryRestrictions">
+                      {(field) => (
+                        <Field className="w-full">
+                          <FieldLabel>Dietary Restrictions</FieldLabel>
+                          <field.TextArea placeholder="None" />
+                        </Field>
+                      )}
+                    </form.AppField>
+                  </FieldSet>
+                </CardContent>
+                <CardFooter>
+                  <form.SubmitButton
+                    name="Save Camper"
+                    onClick={() => form.handleSubmit()}
+                  >
+                    Submit
+                  </form.SubmitButton>
+                </CardFooter>
+              </form>
+            </CollapsibleFormCard>
+          );
+        }}
+      </form.Subscribe>
     </form.AppForm>
   );
 }
