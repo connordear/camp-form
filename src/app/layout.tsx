@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import Script from "next/script";
 import NavSignedIn from "@/components/nav/signed-in";
 import NavSignedOut from "@/components/nav/signed-out";
 import { Toaster } from "@/components/ui/sonner";
@@ -32,6 +33,13 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <Script
+            async
+            src={process.env.NEXT_PUBLIC_UMAMI_URL}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
+          />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
