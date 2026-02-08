@@ -171,11 +171,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
               discountResult.applicableDiscounts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {discountResult.applicableDiscounts.map((ad) => (
-                    <Badge
-                      key={ad.discount.id}
-                      variant="secondary"
-                      className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    >
+                    <Badge key={ad.discount.id} variant="default">
                       <TagIcon className="size-3 mr-1" />
                       {ad.discount.name}: -{formatPrice(ad.savings)}
                     </Badge>
