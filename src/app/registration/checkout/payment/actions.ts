@@ -17,8 +17,6 @@ const THEMES = {
   },
 };
 
-const TAX_RATE = process.env.TAX_RATE;
-
 /**
  * Fetches a Stripe client secret for checkout.
  * @param registrationIds - Optional array of registration IDs to filter.
@@ -63,6 +61,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
           },
         },
         quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
+        tax_rates: [process.env.TAX_RATE],
       });
 
       // Track for discount evaluation
@@ -94,7 +93,6 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     line_items: lineItems,
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    automatic_tax: { enabled: true },
     billing_address_collection: "required",
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
