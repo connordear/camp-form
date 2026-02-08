@@ -1,13 +1,16 @@
 "use client";
 
 import { Minus, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
+import {
+  CollapsibleFormCard,
+  type CollapsibleFormCardRef,
+} from "@/components/forms/collapsible-form-card";
 import { StaticFormStatusBadge } from "@/components/forms/form-status-badge";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardFooter } from "@/components/ui/card";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { useManualFormRegistry } from "@/hooks/use-form-registry";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
 import { saveCamperEmergencyContacts } from "./actions";
 import type { OpenContactModalArgs } from "./form";
@@ -53,7 +56,37 @@ export default function EmergencyContactField({
     selectedContactIds.some((id) => !savedContactIds.includes(id));
   const isValid = selectedContactIds.length >= 2;
 
-  useUnsavedChangesWarning(() => isDirty);
+  const cardRef = useRef<CollapsibleFormCardRef>(null);
+
+  useManualFormRegistry({
+    cardRef,
+    isDirty: () => isDirty,
+    validate: async () => isValid,
+    save: async () => {
+      if (!isDirty) return true; // Nothing to save
+      if (!isValid) return false;
+
+      setIsSaving(true);
+      const toastId = toast.loading("Saving emergency contacts...");
+
+      try {
+        await saveCamperEmergencyContacts(camper.id, selectedContactIds);
+        toast.success(`Saved contacts for ${camper.firstName}`, {
+          id: toastId,
+        });
+        return true;
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save contacts",
+          { id: toastId },
+        );
+        console.error(err);
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+  });
 
   const status = isSaving
     ? "submitting"
@@ -125,6 +158,7 @@ export default function EmergencyContactField({
 
   return (
     <CollapsibleFormCard
+      ref={cardRef}
       title={title}
       statusBadge={<StaticFormStatusBadge status={status} />}
       isComplete={isComplete}
@@ -270,7 +304,7 @@ export default function EmergencyContactField({
         )}
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="mt-2">
         <Button
           onClick={handleSave}
           disabled={isSaving || selectedContactIds.length < 2}

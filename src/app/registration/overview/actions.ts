@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { and, eq, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 import { db } from "@/lib/data/db";
@@ -38,7 +38,8 @@ export async function getCampsForYear(
         eq(campYearPrices.year, campYears.year),
       ),
     )
-    .where(eq(campYears.year, year));
+    .where(eq(campYears.year, year))
+    .orderBy(asc(campYears.startDate));
 
   // 2. Reduce flat rows into nested objects
   const result = rows.reduce<Record<string, any>>((acc, row) => {

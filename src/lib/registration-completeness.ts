@@ -33,6 +33,10 @@ type EmergencyContactAssignment = {
   emergencyContactId: string;
 };
 
+type RegistrationDetailsData = {
+  parentSignature: string | null;
+} | null;
+
 export type IncompleteStep = {
   step: string; // URL segment: "camper", "camp", "medical-info", "emergency-contact"
   label: string; // Display label
@@ -91,6 +95,16 @@ export function validateEmergencyContactsStep(
 }
 
 /**
+ * Validates that the camp info step is complete.
+ * Requires: signature (for both minors and adults)
+ */
+export function validateCampInfoStep(
+  registrationDetails: RegistrationDetailsData,
+): boolean {
+  return !!registrationDetails?.parentSignature?.trim();
+}
+
+/**
  * Full registration data type for completeness checking
  */
 export type FullRegistrationData = {
@@ -98,6 +112,7 @@ export type FullRegistrationData = {
   camper: CamperData;
   medicalInfo: MedicalInfoData;
   emergencyContacts: EmergencyContactAssignment[];
+  registrationDetails: RegistrationDetailsData;
 };
 
 /**
@@ -118,9 +133,9 @@ export function getRegistrationCompleteness(
     incompleteSteps.push({ step: "camper", label: "Camper Info" });
   }
 
-  // Note: Camp Info step is not validated because all fields are optional
-  // (cabinRequest, additionalInfo are optional; parentSignature is only for minors
-  // and the form handles that validation itself)
+  if (!validateCampInfoStep(data.registrationDetails)) {
+    incompleteSteps.push({ step: "camp", label: "Camp Info" });
+  }
 
   if (!validateMedicalInfoStep(data.medicalInfo)) {
     incompleteSteps.push({ step: "medical-info", label: "Medical Info" });

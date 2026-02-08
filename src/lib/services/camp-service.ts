@@ -20,9 +20,9 @@ export async function getAvailableYears(): Promise<number[]> {
  */
 export async function getCampsForYear(year: number) {
   const allCamps = await db.query.camps.findMany({
-    orderBy: asc(camps.name),
     with: {
       campYears: {
+        orderBy: asc(campYears.startDate),
         where: eq(campYears.year, year),
         with: {
           prices: true,
@@ -56,15 +56,6 @@ export async function getCampById(id: string) {
         orderBy: desc(campYears.year),
       },
     },
-  });
-}
-
-/**
- * Get all camps (without year data)
- */
-export async function getAllCamps() {
-  return await db.query.camps.findMany({
-    orderBy: asc(camps.name),
   });
 }
 

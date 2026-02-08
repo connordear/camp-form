@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export type AutoSaveStatus =
   | "idle"
@@ -29,6 +29,7 @@ export function useAutoSave<T>({
 
   const lastSavedRef = useRef<string>("");
   const isMounted = useRef(false);
+  const valuesRef = useRef(values);
 
   // 1. KEEP CALLBACKS STABLE
   // We store the latest functions in refs so we can call them without
@@ -39,6 +40,7 @@ export function useAutoSave<T>({
   useLayoutEffect(() => {
     onSaveRef.current = onSave;
     onUpdateRef.current = onUpdate;
+    valuesRef.current = values;
   });
 
   useEffect(() => {
@@ -97,5 +99,49 @@ export function useAutoSave<T>({
     // Only 'values' changes should trigger a restart.
   }, [values, isDirty, isValid, debounceMs]);
 
-  return { status, lastSaved };
+  /**
+   * Force an immediate save, bypassing the debounce.
+   * Returns true if save succeeded, false otherwise.
+   */
+  const forceSave = useCallback(async (): Promise<boolean> => {
+    const currentValues = valuesRef.current;
+    const currentJson = JSON.stringify(currentValues);
+
+    // If nothing has changed since last save, consider it a success
+    if (currentJson === lastSavedRef.current) {
+      return true;
+    }
+
+    try {
+      setStatus("saving");
+      const mergedData = await onSaveRef.current(currentValues);
+
+      if (mergedData) {
+        lastSavedRef.current = JSON.stringify(mergedData);
+        onUpdateRef.current(mergedData);
+        setLastSaved(new Date());
+        setStatus("saved");
+        return true;
+      } else {
+        // Drift detected, retry with latest values
+        const retryValues = valuesRef.current;
+        const retryData = await onSaveRef.current(retryValues);
+        if (retryData) {
+          lastSavedRef.current = JSON.stringify(retryData);
+          onUpdateRef.current(retryData);
+          setLastSaved(new Date());
+          setStatus("saved");
+          return true;
+        }
+        setStatus("error");
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+      return false;
+    }
+  }, []);
+
+  return { status, lastSaved, forceSave };
 }

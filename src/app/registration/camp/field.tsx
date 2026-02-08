@@ -1,11 +1,16 @@
 "use client";
 
+import { useRef } from "react";
 import { toast } from "sonner";
-import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
+import {
+  CollapsibleFormCard,
+  type CollapsibleFormCardRef,
+} from "@/components/forms/collapsible-form-card";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { useAppForm } from "@/hooks/use-camp-form";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { useFormRegistry } from "@/hooks/use-form-registry";
 import { getAge } from "@/lib/utils";
 import { saveRegistrationDetails } from "./actions";
 import {
@@ -20,6 +25,7 @@ type CampFieldContentProps = {
 
 function CampFieldContent({ registration, age }: CampFieldContentProps) {
   const camper = registration.camper;
+  const isMinor = age < 18;
   const form = useAppForm({
     defaultValues: {
       registrationId: registration.id,
@@ -54,7 +60,17 @@ function CampFieldContent({ registration, age }: CampFieldContentProps) {
     },
   });
 
-  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
+  const cardRef = useRef<CollapsibleFormCardRef>(null);
+
+  useFormRegistry({
+    formApi: form,
+    cardRef,
+    save: async () => {
+      if (form.state.isDefaultValue) return true; // Nothing to save
+      await form.handleSubmit();
+      return form.state.isSubmitted && !form.state.errors.length;
+    },
+  });
 
   const title = `${camper.firstName} ${camper.lastName} - ${registration.campYear.camp.name}`;
 
@@ -74,6 +90,7 @@ function CampFieldContent({ registration, age }: CampFieldContentProps) {
 
           return (
             <CollapsibleFormCard
+              ref={cardRef}
               title={title}
               statusBadge={
                 <form.StatusBadge schema={insertRegistrationDetailSchema} />
@@ -106,24 +123,66 @@ function CampFieldContent({ registration, age }: CampFieldContentProps) {
                         <Field>
                           <FieldLabel>Additional Info</FieldLabel>
                           <field.WithErrors>
-                            <field.TextArea />
+                            <field.TextArea
+                              placeholder={`Anything else you would like us to know about ${camper.firstName}?`}
+                            />
                           </field.WithErrors>
                         </Field>
                       )}
                     </form.AppField>
 
-                    {age < 18 && (
-                      <form.AppField name="parentSignature">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>Parent/Guardian Signature</FieldLabel>
-                            <field.WithErrors>
-                              <field.TextInput />
-                            </field.WithErrors>
-                          </Field>
-                        )}
-                      </form.AppField>
-                    )}
+                    <form.AppField name="parentSignature">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel className="flex items-center">
+                            {isMinor
+                              ? "Parent/Guardian Signature"
+                              : "Signature"}
+                            <InfoTooltip>
+                              <p className="font-semibold mb-2">
+                                {isMinor ? "Parent Signature" : "Signature"}
+                              </p>
+                              {isMinor ? (
+                                <p>
+                                  I hereby release Mulhurst Lutheran Church Camp
+                                  Association, its agents, members and employees
+                                  not holding them for any liability for any
+                                  accident, injury, or any claim arising out of
+                                  above camper&apos;s use of Mulhurst Camp or
+                                  any of its facilities, or virtue of
+                                  participation in any of its programs. In case
+                                  of emergency, I understand that every effort
+                                  will be made to contact me. In the event that
+                                  I cannot be reached, I hereby authorize the
+                                  camp personnel to secure medical advice and
+                                  services as may be deemed necessary for the
+                                  safety of my child.
+                                </p>
+                              ) : (
+                                <p>
+                                  I hereby release Mulhurst Lutheran Church Camp
+                                  Association, its agents, members and employees
+                                  not holding them for any liability for any
+                                  accident, injury, or any claim arising out of
+                                  my use of Mulhurst Camp or any of its
+                                  facilities, or virtue of participation in any
+                                  of its programs. In case of emergency, I
+                                  understand that every effort will be made to
+                                  contact my emergency contact. In the event
+                                  that they cannot be reached, I hereby
+                                  authorize the camp personnel to secure medical
+                                  advice and services as may be deemed necessary
+                                  for my safety.
+                                </p>
+                              )}
+                            </InfoTooltip>
+                          </FieldLabel>
+                          <field.WithErrors>
+                            <field.TextInput />
+                          </field.WithErrors>
+                        </Field>
+                      )}
+                    </form.AppField>
                   </FieldSet>
                 </CardContent>
                 <CardFooter>

@@ -183,7 +183,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
                 </div>
               )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3">
               <div>
                 <p className="text-muted-foreground text-sm">
                   {selectedIds.size} registration
@@ -214,6 +214,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
               </div>
               <Button
                 size="lg"
+                className="w-full"
                 onClick={handleCheckout}
                 disabled={selectedIds.size === 0}
               >

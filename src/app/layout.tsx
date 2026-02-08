@@ -7,7 +7,7 @@ import NavSignedIn from "@/components/nav/signed-in";
 import NavSignedOut from "@/components/nav/signed-out";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
-import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context";
+import { FormRegistryProvider } from "@/contexts/form-registry-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,7 +50,7 @@ export default async function RootLayout({
               </SignedOut>
             </nav>
             <main>
-              <UnsavedChangesProvider>{children}</UnsavedChangesProvider>
+              <FormRegistryProvider>{children}</FormRegistryProvider>
             </main>
             <Toaster />
           </ThemeProvider>

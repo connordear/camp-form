@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { registrations, users } from "@/lib/data/schema";
 
@@ -7,6 +7,7 @@ export async function getRegistrationsForUser(clerkId: string) {
     where: eq(users.id, clerkId),
     with: {
       campers: {
+        orderBy: (t) => asc(t.createdAt),
         with: {
           registrations: true,
         },
@@ -20,6 +21,7 @@ export async function getRegistrationDetailsForUser(clerkId: string) {
     where: eq(users.id, clerkId),
     with: {
       campers: {
+        orderBy: (t) => asc(t.createdAt),
         with: {
           registrations: {
             with: {
@@ -43,6 +45,7 @@ export async function getCheckoutRegistrationsForUser(clerkId: string) {
     where: eq(users.id, clerkId),
     with: {
       campers: {
+        orderBy: (t) => asc(t.createdAt),
         with: {
           registrations: {
             with: {
@@ -73,6 +76,7 @@ export async function getRegistrationsForCheckoutPage(
     where: eq(users.id, clerkId),
     with: {
       campers: {
+        orderBy: (t) => asc(t.createdAt),
         with: {
           address: true,
           medicalInfo: true,
@@ -107,6 +111,7 @@ export async function getRegistrationsByIds(
     where: eq(users.id, clerkId),
     with: {
       campers: {
+        orderBy: (t) => asc(t.createdAt),
         with: {
           registrations: {
             where: and(
@@ -120,6 +125,7 @@ export async function getRegistrationsByIds(
                 },
               },
               price: true,
+              details: true,
             },
           },
         },

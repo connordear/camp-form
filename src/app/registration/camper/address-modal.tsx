@@ -2,7 +2,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ type AddressFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   camperId?: OpenAddressFormArgs["camperId"];
+  onAddressCreated?: (addressId: string) => void;
 };
 
 export default function AddressForm({
@@ -38,9 +39,16 @@ export default function AddressForm({
   isOpen,
   onOpenChange,
   camperId,
+  onAddressCreated,
 }: AddressFormProps) {
   const isNew = !address.postalZip;
   const router = useRouter();
+
+  // Use ref to avoid stale closure in onSubmit callback
+  const onAddressCreatedRef = useRef(onAddressCreated);
+  useEffect(() => {
+    onAddressCreatedRef.current = onAddressCreated;
+  }, [onAddressCreated]);
 
   const form = useAppForm({
     defaultValues: address,
@@ -50,6 +58,11 @@ export default function AddressForm({
     onSubmit: async ({ value }) => {
       await saveAddress(value, camperId);
       router.refresh();
+      // Auto-assign new address to the camper who initiated the modal
+      // Called after refresh so the new address is available in the addresses array
+      if (isNew && onAddressCreatedRef.current) {
+        onAddressCreatedRef.current(value.id);
+      }
       onOpenChange(false);
     },
   });

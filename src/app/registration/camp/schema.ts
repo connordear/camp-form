@@ -25,7 +25,7 @@ export const insertRegistrationDetailSchema = createInsertSchema(
   {
     registrationId: z.string().min(1),
     cabinRequest: z.string(),
-    parentSignature: z.string(),
+    parentSignature: z.string().min(1, "Signature is required"),
     additionalInfo: z.string(),
   },
 );

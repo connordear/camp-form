@@ -1,7 +1,14 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle } from "../ui/card";
@@ -10,6 +17,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
+
+export type CollapsibleFormCardRef = {
+  /** Expand the card if it's collapsed */
+  expand: () => void;
+  /** Scroll the card into view */
+  scrollIntoView: () => void;
+};
 
 type CollapsibleFormCardProps = {
   /** Title displayed in the card header */
@@ -26,17 +40,23 @@ type CollapsibleFormCardProps = {
   className?: string;
   /** Max width class, defaults to max-w-xl */
   maxWidth?: string;
+  /** Ref to expose expand and scrollIntoView methods */
+  ref?: Ref<CollapsibleFormCardRef>;
 };
 
 /**
  * A Card component that can collapse when the form section is complete.
  *
  * Behavior:
- * - Starts expanded (even if already complete, so users can review)
+ * - Starts collapsed if already complete, expanded otherwise
  * - Auto-collapses when isComplete transitions from false to true (after a save),
  *   but only if the form hasn't been touched (isDirty is false)
  * - Users can manually toggle expand/collapse at any time
  * - When collapsed, shows only the header with title and status badge
+ *
+ * Exposes methods via ref:
+ * - expand(): Expand the card if collapsed
+ * - scrollIntoView(): Scroll the card into view
  */
 export function CollapsibleFormCard({
   title,
@@ -46,9 +66,21 @@ export function CollapsibleFormCard({
   children,
   className,
   maxWidth = "max-w-xl",
+  ref,
 }: CollapsibleFormCardProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(!isComplete);
   const prevIsCompleteRef = useRef(isComplete);
+  const cardElementRef = useRef<HTMLDivElement>(null);
+
+  // Expose expand and scrollIntoView methods via ref
+  useImperativeHandle(ref, () => ({
+    expand: () => setIsOpen(true),
+    scrollIntoView: () =>
+      cardElementRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      }),
+  }));
 
   // Auto-collapse when isComplete transitions from false to true,
   // but only if the form hasn't been touched yet
@@ -61,11 +93,11 @@ export function CollapsibleFormCard({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
-      <Card className={cn("w-full", maxWidth, className)}>
+      <Card ref={cardElementRef} className={cn("w-full", maxWidth, className)}>
         <CardHeader>
-          <div className="flex gap-3 justify-between items-center">
-            <CardTitle className="truncate">{title}</CardTitle>
-            <div className="flex items-center gap-2">
+          <div className="flex gap-3 justify-between items-center min-w-0">
+            <CardTitle className="min-w-0 truncate">{title}</CardTitle>
+            <div className="flex items-center gap-2 shrink-0">
               {statusBadge}
               <CollapsibleTrigger asChild>
                 <Button

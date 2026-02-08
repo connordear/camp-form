@@ -1,11 +1,15 @@
 "use client";
+import { useRef } from "react";
 import { toast } from "sonner";
-import { CollapsibleFormCard } from "@/components/forms/collapsible-form-card";
+import {
+  CollapsibleFormCard,
+  type CollapsibleFormCardRef,
+} from "@/components/forms/collapsible-form-card";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Field, FieldSet } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { useAppForm } from "@/hooks/use-camp-form";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { useFormRegistry } from "@/hooks/use-form-registry";
 import { OTC_MEDICATIONS_LIST } from "@/lib/data/schema";
 import { saveMedicalInfo } from "./actions";
 import { type CamperWithMedicalInfo, medicalInfoSchema } from "./schema";
@@ -33,7 +37,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
       medicationsAtCampDetails: medicalInfo?.medicationsAtCampDetails ?? "",
       hasMedicalConditions: medicalInfo?.hasMedicalConditions ?? false,
       medicalConditionsDetails: medicalInfo?.medicalConditionsDetails ?? "",
-      otcPermissions: medicalInfo?.otcPermissions ?? [],
+      otcPermissions: medicalInfo?.otcPermissions ?? [...OTC_MEDICATIONS_LIST],
       additionalInfo: medicalInfo?.additionalInfo ?? "",
 
       // IMPORTANT: Explicitly set "Logic Gates" to false if null
@@ -67,7 +71,17 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
     },
   });
 
-  useUnsavedChangesWarning(() => !form.store.state.isDefaultValue);
+  const cardRef = useRef<CollapsibleFormCardRef>(null);
+
+  useFormRegistry({
+    formApi: form,
+    cardRef,
+    save: async () => {
+      if (form.state.isDefaultValue) return true; // Nothing to save
+      await form.handleSubmit();
+      return form.state.isSubmitted && !form.state.errors.length;
+    },
+  });
 
   const title = `Medical Info - ${camper.firstName} ${camper.lastName}`;
 
@@ -86,6 +100,7 @@ export default function MedicalInfoField({ data }: MedicalInfoFieldProps) {
 
           return (
             <CollapsibleFormCard
+              ref={cardRef}
               title={title}
               statusBadge={<form.StatusBadge schema={medicalInfoSchema} />}
               isComplete={isComplete}

@@ -75,3 +75,14 @@ export function getDaysBetweenDates(
 
   return inclusive ? diffDays + 1 : diffDays;
 }
+
+export function formatDateRange(dateStr1: string, dateStr2: string) {
+  const d1 = new Date(dateStr1 + "T00:00:00");
+  const d2 = new Date(dateStr2 + "T00:00:00");
+
+  const month = d1.toLocaleString("en-US", { month: "short" });
+  const day1 = d1.getDate();
+  const day2 = d2.getDate();
+
+  return `${month}. ${day1} - ${day2}`;
+}
