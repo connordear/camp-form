@@ -21,8 +21,8 @@ export default function MedicalInfoForm({
         </p>
         <br />
         <p>
-          This data is stored on our secure, Canadian-hosted private gateway and
-          is deleted after 3 years. It is never shared with third parties.
+          This data is stored on our secure, Canadian-hosted server and is
+          deleted after 3 years. It is never shared with third parties.
         </p>
       </div>
       {(campersWithMedicalInfo ?? []).map((c) => (

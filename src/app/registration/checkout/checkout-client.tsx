@@ -162,9 +162,12 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
         </Card>
       )}
 
+      {/* Spacer for fixed checkout footer */}
+      {hasReadyRegistrations && <div className="h-40" />}
+
       {/* Checkout Footer */}
       {hasReadyRegistrations && (
-        <Card className="sticky bottom-4 border-2">
+        <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
             {/* Discount badges */}
             {discountResult &&
