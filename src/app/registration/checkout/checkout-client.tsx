@@ -162,20 +162,19 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
         </Card>
       )}
 
+      {/* Spacer for fixed checkout footer */}
+      {hasReadyRegistrations && <div className="h-40" />}
+
       {/* Checkout Footer */}
       {hasReadyRegistrations && (
-        <Card className="sticky bottom-4 border-2">
+        <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
             {/* Discount badges */}
             {discountResult &&
               discountResult.applicableDiscounts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {discountResult.applicableDiscounts.map((ad) => (
-                    <Badge
-                      key={ad.discount.id}
-                      variant="secondary"
-                      className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    >
+                    <Badge key={ad.discount.id} variant="default">
                       <TagIcon className="size-3 mr-1" />
                       {ad.discount.name}: -{formatPrice(ad.savings)}
                     </Badge>
@@ -183,7 +182,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
                 </div>
               )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3">
               <div>
                 <p className="text-muted-foreground text-sm">
                   {selectedIds.size} registration
@@ -214,6 +213,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
               </div>
               <Button
                 size="lg"
+                className="w-full"
                 onClick={handleCheckout}
                 disabled={selectedIds.size === 0}
               >

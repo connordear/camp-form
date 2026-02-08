@@ -13,17 +13,27 @@ type CamperFormProps = {
 export type OpenAddressFormArgs = {
   camperId: CamperInfo["id"];
   address?: AddressFormValues;
+  onAddressCreated?: (addressId: string) => void;
 };
 
 export default function CamperForm({ campers, addresses }: CamperFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentAddress, setCurrentAddress] = useState<AddressFormValues>();
   const [activeCamperId, setActiveCamperId] = useState<CamperInfo["id"]>();
+  const [onAddressCreated, setOnAddressCreated] = useState<
+    ((addressId: string) => void) | undefined
+  >();
 
-  function openAddressForm({ camperId, address }: OpenAddressFormArgs) {
+  function openAddressForm({
+    camperId,
+    address,
+    onAddressCreated,
+  }: OpenAddressFormArgs) {
     setCurrentAddress(address);
     setIsOpen(true);
     setActiveCamperId(camperId);
+    // Wrap in a function to store the callback properly in state
+    setOnAddressCreated(() => onAddressCreated);
   }
 
   return (
@@ -44,6 +54,7 @@ export default function CamperForm({ campers, addresses }: CamperFormProps) {
         isOpen={isOpen}
         address={currentAddress}
         camperId={activeCamperId}
+        onAddressCreated={onAddressCreated}
       />
     </>
   );

@@ -7,11 +7,11 @@ import { Badge } from "../ui/badge";
 const statusConfig: Record<
   FormStatus | "submitting",
   {
-    variant: "default" | "outline" | "secondary" | "destructive" | "success";
+    variant: "default" | "outline" | "secondary" | "destructive";
     label: string;
   }
 > = {
-  complete: { variant: "success", label: "COMPLETE" },
+  complete: { variant: "default", label: "COMPLETE" },
   draft: { variant: "secondary", label: "DRAFT" },
   unsaved: { variant: "destructive", label: "UNSAVED" },
   submitting: { variant: "outline", label: "SAVING..." },

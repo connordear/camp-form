@@ -5,6 +5,7 @@ import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createCampWithYear } from "@/app/admin/camps/actions";
+import DateRangePicker from "@/components/forms/date-range-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -158,29 +159,14 @@ export function AddCampDialog({ year }: AddCampDialogProps) {
                     )}
                   </form.AppField>
 
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <form.AppField name="startDate">
-                      {(field) => (
-                        <Field>
-                          <FieldLabel>Start Date *</FieldLabel>
-                          <field.WithErrors>
-                            <field.TextInput type="date" />
-                          </field.WithErrors>
-                        </Field>
-                      )}
-                    </form.AppField>
-
-                    <form.AppField name="endDate">
-                      {(field) => (
-                        <Field>
-                          <FieldLabel>End Date *</FieldLabel>
-                          <field.WithErrors>
-                            <field.TextInput type="date" />
-                          </field.WithErrors>
-                        </Field>
-                      )}
-                    </form.AppField>
-                  </div>
+                  <Field className="mt-4">
+                    <FieldLabel>Camp Dates *</FieldLabel>
+                    <DateRangePicker
+                      form={form}
+                      startDateField="startDate"
+                      endDateField="endDate"
+                    />
+                  </Field>
                 </div>
 
                 {/* Prices Section using field array */}

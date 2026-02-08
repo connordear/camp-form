@@ -1,5 +1,6 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import AutoSaver from "@/components/forms/auto-saver";
+import DatePicker from "@/components/forms/date-picker";
 import { WithErrors } from "@/components/forms/field-errors";
 import { FormFieldLabel } from "@/components/forms/field-label";
 import FormStatusBadge from "@/components/forms/form-status-badge";
@@ -13,6 +14,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
   createFormHookContexts();
 
 const fieldComponents = {
+  DatePicker,
   TextInput,
   TextArea,
   Select,

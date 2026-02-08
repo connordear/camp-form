@@ -11,7 +11,7 @@ export default function useOverviewAutoSave(form: CampFormApi) {
   const isDirty = useStore(form.store, (state) => state.isDirty);
   const isValid = useStore(form.store, (state) => state.isValid);
 
-  return useAutoSave({
+  const { status, lastSaved, forceSave } = useAutoSave({
     values,
     isDirty,
     isValid,
@@ -40,4 +40,6 @@ export default function useOverviewAutoSave(form: CampFormApi) {
       form.setFieldValue("campers", mergedValues.campers);
     },
   });
+
+  return { status, lastSaved, forceSave };
 }

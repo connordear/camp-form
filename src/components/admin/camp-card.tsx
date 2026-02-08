@@ -12,6 +12,7 @@ import {
   updateCamp,
   updateCampYear,
 } from "@/app/admin/camps/actions";
+import DateRangePicker from "@/components/forms/date-range-picker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -313,29 +314,14 @@ export function CampCard({ camp, year }: CampCardProps) {
                 )}
               </campYearForm.AppField>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <campYearForm.AppField name="startDate">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Start Date</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput type="date" />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </campYearForm.AppField>
-
-                <campYearForm.AppField name="endDate">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>End Date</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput type="date" />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </campYearForm.AppField>
-              </div>
+              <Field>
+                <FieldLabel>Camp Dates</FieldLabel>
+                <DateRangePicker
+                  form={campYearForm}
+                  startDateField="startDate"
+                  endDateField="endDate"
+                />
+              </Field>
             </FieldSet>
           </CardContent>
           <CardFooter className="border-b pb-4 mt-2 flex justify-between items-center">

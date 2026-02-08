@@ -1,18 +1,16 @@
 "use client";
 
 import { Minus, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  CollapsibleFormCard,
+  type CollapsibleFormCardRef,
+} from "@/components/forms/collapsible-form-card";
 import { StaticFormStatusBadge } from "@/components/forms/form-status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { CardContent, CardFooter } from "@/components/ui/card";
+import { useManualFormRegistry } from "@/hooks/use-form-registry";
 import { RELATIONSHIP_OPTIONS } from "@/lib/data/schema";
 import { saveCamperEmergencyContacts } from "./actions";
 import type { OpenContactModalArgs } from "./form";
@@ -58,7 +56,37 @@ export default function EmergencyContactField({
     selectedContactIds.some((id) => !savedContactIds.includes(id));
   const isValid = selectedContactIds.length >= 2;
 
-  useUnsavedChangesWarning(() => isDirty);
+  const cardRef = useRef<CollapsibleFormCardRef>(null);
+
+  useManualFormRegistry({
+    cardRef,
+    isDirty: () => isDirty,
+    validate: async () => isValid,
+    save: async () => {
+      if (!isDirty) return true; // Nothing to save
+      if (!isValid) return false;
+
+      setIsSaving(true);
+      const toastId = toast.loading("Saving emergency contacts...");
+
+      try {
+        await saveCamperEmergencyContacts(camper.id, selectedContactIds);
+        toast.success(`Saved contacts for ${camper.firstName}`, {
+          id: toastId,
+        });
+        return true;
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save contacts",
+          { id: toastId },
+        );
+        console.error(err);
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+  });
 
   const status = isSaving
     ? "submitting"
@@ -125,17 +153,17 @@ export default function EmergencyContactField({
     openContactModal({ contact: formValues });
   };
 
-  return (
-    <Card className="w-full max-w-xl">
-      <CardHeader>
-        <div className="flex gap-3 justify-between items-center">
-          <CardTitle className="truncate">
-            Emergency Contacts - {camper.firstName} {camper.lastName}
-          </CardTitle>
-          <StaticFormStatusBadge status={status} />
-        </div>
-      </CardHeader>
+  const title = `Emergency Contacts - ${camper.firstName} ${camper.lastName}`;
+  const isComplete = status === "complete";
 
+  return (
+    <CollapsibleFormCard
+      ref={cardRef}
+      title={title}
+      statusBadge={<StaticFormStatusBadge status={status} />}
+      isComplete={isComplete}
+      isDirty={isDirty}
+    >
       <CardContent className="space-y-4">
         {/* Assigned Contacts List */}
         <div className="space-y-2">
@@ -276,7 +304,7 @@ export default function EmergencyContactField({
         )}
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="mt-2">
         <Button
           onClick={handleSave}
           disabled={isSaving || selectedContactIds.length < 2}
@@ -285,6 +313,6 @@ export default function EmergencyContactField({
           {isSaving ? "Saving..." : "Save Emergency Contacts"}
         </Button>
       </CardFooter>
-    </Card>
+    </CollapsibleFormCard>
   );
 }

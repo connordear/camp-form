@@ -109,6 +109,7 @@ export async function getCheckoutData(
         },
         medicalInfo: camper.medicalInfo ?? null,
         emergencyContacts: camper.emergencyContacts ?? [],
+        registrationDetails: registration.details ?? null,
       });
 
       const status = getCheckoutStatus(registration.status, completeness);

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/field";
 import { withFieldGroup } from "@/hooks/use-camp-form";
 import type { Camp } from "@/lib/types/common-types";
-import { getDaysBetweenDates } from "@/lib/utils";
+import { formatDateRange, getDaysBetweenDates } from "@/lib/utils";
 import type { Camper } from "./schema";
 
 // These default values are used for mapping keys, not runtime defaults
@@ -170,14 +170,15 @@ export const OverviewFieldGroup = withFieldGroup({
                             {(itemField) => {
                               const campOptions = validCamps.map((c) => ({
                                 value: c.id,
-                                name: c.name,
+                                name: `${c.name} (${formatDateRange(c.startDate, c.endDate)})`,
                               }));
                               if (itemField.state.value) {
-                                campOptions.push({
-                                  value: itemField.state.value,
-                                  name:
-                                    campLookup[itemField.state.value]?.name ??
-                                    "Unknown Camp",
+                                const c = campLookup[itemField.state.value];
+                                campOptions.unshift({
+                                  value: c.id,
+                                  name: c
+                                    ? `${c.name} (${formatDateRange(c.startDate, c.endDate)})`
+                                    : "Unknown Camp",
                                 });
                               }
                               return (

@@ -1,5 +1,6 @@
 import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import clsx from "clsx";
 import Link from "next/link";
 import {
   NavigationMenu,
@@ -8,17 +9,20 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import Logo from "../ui/logo";
 
 export default async function NavSignedIn() {
   const clerkUser = await currentUser();
   const role = clerkUser?.publicMetadata.role as string;
   return (
     <header className="flex justify-between items-center p-4 gap-4 h-16 w-full bg-background border-b">
-      <NavigationMenu className="pl-14 md:pl-0">
+      <NavigationMenu className={role === "admin" ? clsx("pl-14 md:pl-0") : ""}>
         <NavigationMenuList className="flex gap-4">
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
-              <Link href="/">Home</Link>
+              <Link href="/">
+                <Logo />
+              </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>

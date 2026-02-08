@@ -246,12 +246,10 @@ export function AddDiscountDialog() {
                         <Field className="mt-4">
                           <FieldLabel>Deadline Date *</FieldLabel>
                           <field.WithErrors>
-                            <Input
-                              type="date"
-                              value={field.state.value ?? ""}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value || null)
-                              }
+                            <field.DatePicker
+                              placeholder="Select deadline"
+                              fromYear={new Date().getFullYear()}
+                              toYear={new Date().getFullYear() + 2}
                             />
                           </field.WithErrors>
                           <p className="text-xs text-muted-foreground mt-1">
