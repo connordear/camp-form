@@ -95,6 +95,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
+    billing_address_collection: "required",
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
     branding_settings: {
