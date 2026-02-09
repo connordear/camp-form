@@ -61,7 +61,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
           },
         },
         quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
-        tax_rates: [process.env.TAX_RATE],
+        tax_rates: [process.env.TAX_RATE!],
       });
 
       // Track for discount evaluation
