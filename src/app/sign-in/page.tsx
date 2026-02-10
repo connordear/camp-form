@@ -23,6 +23,8 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +45,11 @@ export default function SignInPage() {
       });
 
       if (error) {
-        setError(error.message || "Failed to sign in");
+        if (error.status === 403) {
+          setUnverifiedEmail(email);
+        } else {
+          setError(error.message || "Failed to sign in");
+        }
       } else {
         router.push("/registration/overview");
         router.refresh();
@@ -122,6 +128,40 @@ export default function SignInPage() {
                 {error}
               </div>
             )}
+
+            {unverifiedEmail && (
+              <div className="p-3 text-sm bg-yellow-50 dark:bg-yellow-950 rounded-md">
+                <p className="text-yellow-800 dark:text-yellow-200 mb-2">
+                  Email not verified
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await authClient.sendVerificationEmail({
+                      email: unverifiedEmail,
+                      callbackURL: "/registration/overview",
+                    });
+                    setResendSuccess(true);
+                  }}
+                  disabled={resendSuccess}
+                >
+                  {resendSuccess
+                    ? "Verification email sent!"
+                    : "Resend verification email"}
+                </Button>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

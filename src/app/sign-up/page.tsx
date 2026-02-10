@@ -52,8 +52,7 @@ export default function SignUpPage() {
       if (error) {
         setError(error.message || "Failed to sign up");
       } else {
-        router.push("/registration/overview");
-        router.refresh();
+        router.push("/auth/check-email");
       }
     } catch (err) {
       setError("An unexpected error occurred");
