@@ -52,7 +52,7 @@ export default function SignUpPage() {
       if (error) {
         setError(error.message || "Failed to sign up");
       } else {
-        router.push("/account/check-email");
+        router.push("/help/check-email");
       }
     } catch (err) {
       setError("An unexpected error occurred");

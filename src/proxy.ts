@@ -6,7 +6,7 @@ const publicRoutes = [
   "/",
   "/sign-in",
   "/sign-up",
-  "/auth/(.*)",
+  "/help/(.*)",
   "/api/auth/(.*)",
   "/api/webhooks/(.*)",
   "/api/health",

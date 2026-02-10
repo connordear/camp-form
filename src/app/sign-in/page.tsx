@@ -156,7 +156,7 @@ export default function SignInPage() {
 
             <div className="flex justify-end">
               <Link
-                href="/account/forgot-password"
+                href="/help/forgot-password"
                 className="text-sm text-muted-foreground hover:text-primary underline"
               >
                 Forgot password?

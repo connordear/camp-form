@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     try {
       await authClient.requestPasswordReset({
         email,
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/account/reset-password`,
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/help/reset-password`,
       });
       setIsSuccess(true);
     } catch {
