@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Script from "next/script";
-import AuthNav from "@/components/nav/auth-nav";
+import NavSignedIn from "@/components/nav/signed-in";
+import NavSignedOut from "@/components/nav/signed-out";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
 import { FormRegistryProvider } from "@/contexts/form-registry-context";
+import { auth } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +31,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -47,7 +54,11 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <nav className="sticky top-0 z-50">
-            <AuthNav />
+            {session ? (
+              <NavSignedIn initialSession={session} />
+            ) : (
+              <NavSignedOut />
+            )}
           </nav>
           <main>
             <FormRegistryProvider>{children}</FormRegistryProvider>

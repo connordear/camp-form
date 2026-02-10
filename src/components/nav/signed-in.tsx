@@ -19,15 +19,21 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import type { Session } from "@/lib/auth";
 import { authClient } from "@/lib/auth-client";
 import Logo from "../ui/logo";
 
-export default function NavSignedIn() {
+interface NavSignedInProps {
+  initialSession: Session;
+}
+
+export default function NavSignedIn({ initialSession }: NavSignedInProps) {
   const { data: session } = authClient.useSession();
+  const user = session?.user ?? initialSession.user;
   const router = useRouter();
 
-  const role = session?.user?.role;
-  const userName = session?.user?.name || session?.user?.email || "User";
+  const role = user.role;
+  const userName = user.name || user.email || "User";
   const userInitials = userName
     .split(" ")
     .map((n) => n[0])
@@ -71,10 +77,8 @@ export default function NavSignedIn() {
             <div className="flex items-center justify-start gap-2 p-2">
               <div className="flex flex-col space-y-1 leading-none">
                 <p className="font-medium">{userName}</p>
-                {session?.user?.email && (
-                  <p className="text-xs text-muted-foreground">
-                    {session.user.email}
-                  </p>
+                {user.email && (
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                 )}
               </div>
             </div>
