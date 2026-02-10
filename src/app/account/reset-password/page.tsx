@@ -80,7 +80,7 @@ function ResetPasswordForm() {
         type="error"
         title="Invalid Link"
         description="This password reset link is invalid or has expired."
-        redirectUrl="/auth/forgot-password"
+        redirectUrl="/account/forgot-password"
         redirectDelaySeconds={5}
       />
     );
