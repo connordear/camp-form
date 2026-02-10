@@ -15,7 +15,7 @@ const CAMPS_DATA = [
       prices: [
         {
           name: "LIT Registration (Grades 8-12)",
-          price: 28500,
+          price: 29355,
           isDayPrice: false,
         },
       ],
@@ -31,7 +31,7 @@ const CAMPS_DATA = [
       endDate: "2026-07-17",
       capacity: 50,
       prices: [
-        { name: "Regular Registration", price: 45000, isDayPrice: false },
+        { name: "Regular Registration", price: 46350, isDayPrice: false },
       ],
     },
   },
@@ -45,7 +45,7 @@ const CAMPS_DATA = [
       endDate: "2026-07-24",
       capacity: 50,
       prices: [
-        { name: "Regular Registration", price: 45000, isDayPrice: false },
+        { name: "Regular Registration", price: 46350, isDayPrice: false },
       ],
     },
   },
@@ -59,16 +59,13 @@ const CAMPS_DATA = [
       endDate: "2026-07-29",
       capacity: 100,
       prices: [
-        // Full Stay (Fixed Price)
-        { name: "Adult (Full Stay)", price: 22500, isDayPrice: false },
-        { name: "Youth 10-18 (Full Stay)", price: 17000, isDayPrice: false },
-        { name: "Child 4-9 (Full Stay)", price: 12000, isDayPrice: false },
+        { name: "Adult (Full Stay)", price: 23175, isDayPrice: false },
+        { name: "Youth 10-18 (Full Stay)", price: 17510, isDayPrice: false },
+        { name: "Child 4-9 (Full Stay)", price: 12360, isDayPrice: false },
         { name: "Infant 0-3 (Full Stay)", price: 0, isDayPrice: false },
-
-        // Per Night (Day Price) - flagged correctly as requested
-        { name: "Adult (Per Night)", price: 8000, isDayPrice: true },
-        { name: "Youth 10-18 (Per Night)", price: 6000, isDayPrice: true },
-        { name: "Child 4-9 (Per Night)", price: 4500, isDayPrice: true },
+        { name: "Adult (Per Night)", price: 8240, isDayPrice: true },
+        { name: "Youth 10-18 (Per Night)", price: 6180, isDayPrice: true },
+        { name: "Child 4-9 (Per Night)", price: 4635, isDayPrice: true },
         { name: "Infant 0-3 (Per Night)", price: 0, isDayPrice: true },
       ],
     },
@@ -83,7 +80,7 @@ const CAMPS_DATA = [
       endDate: "2026-07-31",
       capacity: 40,
       prices: [
-        { name: "Registration (K - Grade 4)", price: 15000, isDayPrice: false },
+        { name: "Registration (K - Grade 4)", price: 15450, isDayPrice: false },
       ],
     },
   },
@@ -97,7 +94,7 @@ const CAMPS_DATA = [
       endDate: "2026-08-07",
       capacity: 50,
       prices: [
-        { name: "Regular Registration", price: 35000, isDayPrice: false },
+        { name: "Regular Registration", price: 36050, isDayPrice: false },
       ],
     },
   },
@@ -113,7 +110,7 @@ const CAMPS_DATA = [
       prices: [
         {
           name: "Regular Registration (Grades 3-10)",
-          price: 45000,
+          price: 46350,
           isDayPrice: false,
         },
       ],

@@ -1,7 +1,7 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
 import type Stripe from "stripe";
 import { siteConfig } from "@/config/site";
+import { requireAuth } from "@/lib/auth-helpers";
 import {
   evaluateDiscounts,
   type RegistrationForDiscount,
@@ -23,10 +23,8 @@ const THEMES = {
  *                          If not provided, uses all draft registrations.
  */
 export async function fetchClientSecret(registrationIds?: string[]) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   if (!registrationIds?.length) {
     throw new Error("Please specify the registrations you wish to pay for");
@@ -44,33 +42,35 @@ export async function fetchClientSecret(registrationIds?: string[]) {
   // Build registrations for discount evaluation
   const registrationsForDiscount: RegistrationForDiscount[] = [];
 
-  user.campers.forEach((camper) => {
-    camper.registrations.forEach((reg) => {
-      lineItems.push({
-        price_data: {
-          currency: "cad",
-          unit_amount: reg.price.price,
-          product_data: {
-            name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - ${reg.price.name}`,
-            metadata: {
-              userId: user.id,
-              registrationId: reg.id,
-              camperName: `${camper.firstName} ${camper.lastName}`,
-              camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
+  user.campers.forEach((camper: (typeof user.campers)[number]) => {
+    camper.registrations.forEach(
+      (reg: (typeof camper.registrations)[number]) => {
+        lineItems.push({
+          price_data: {
+            currency: "cad",
+            unit_amount: reg.price.price,
+            product_data: {
+              name: `${camper.firstName} ${camper.lastName} - ${reg.campYear?.camp.name} - ${reg.price.name}`,
+              metadata: {
+                userId: user.id,
+                registrationId: reg.id,
+                camperName: `${camper.firstName} ${camper.lastName}`,
+                camp: `${reg.campYear.year} ${reg.campYear.camp.name}`,
+              },
             },
           },
-        },
-        quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
-        tax_rates: [process.env.TAX_RATE!],
-      });
+          quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
+          tax_rates: [process.env.TAX_RATE!],
+        });
 
-      // Track for discount evaluation
-      registrationsForDiscount.push({
-        camperId: camper.id,
-        price: reg.price.price,
-        quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
-      });
-    });
+        // Track for discount evaluation
+        registrationsForDiscount.push({
+          camperId: camper.id,
+          price: reg.price.price,
+          quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
+        });
+      },
+    );
   });
 
   if (!lineItems.length) {
@@ -88,7 +88,7 @@ export async function fetchClientSecret(registrationIds?: string[]) {
         coupon: ad.discount.stripeCouponId!,
       }));
 
-  const session = await stripe.checkout.sessions.create({
+  const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     line_items: lineItems,
     mode: "payment",
@@ -103,5 +103,5 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     },
   });
 
-  return session.client_secret ?? "";
+  return stripeSession.client_secret ?? "";
 }

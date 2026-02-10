@@ -8,6 +8,7 @@ async function reset() {
   // Execute raw SQL using Drizzle
   await db.execute(sql`
     DROP SCHEMA IF EXISTS public CASCADE;
+    DROP SCHEMA IF EXISTS drizzle CASCADE;
     CREATE SCHEMA public;
     GRANT ALL ON SCHEMA public TO current_user;
     GRANT ALL ON SCHEMA public TO public;

@@ -1,13 +1,13 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { type AnyColumn, and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
-import { registrations, users } from "@/lib/data/schema";
+import { registrations, user } from "@/lib/data/schema";
 
-export async function getRegistrationsForUser(clerkId: string) {
-  return await db.query.users.findFirst({
-    where: eq(users.id, clerkId),
+export async function getRegistrationsForUser(userId: string) {
+  return await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.createdAt),
+        orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
           registrations: true,
         },
@@ -16,12 +16,12 @@ export async function getRegistrationsForUser(clerkId: string) {
   });
 }
 
-export async function getRegistrationDetailsForUser(clerkId: string) {
-  return await db.query.users.findFirst({
-    where: eq(users.id, clerkId),
+export async function getRegistrationDetailsForUser(userId: string) {
+  return await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.createdAt),
+        orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
           registrations: {
             with: {
@@ -40,12 +40,12 @@ export async function getRegistrationDetailsForUser(clerkId: string) {
   });
 }
 
-export async function getCheckoutRegistrationsForUser(clerkId: string) {
-  return await db.query.users.findFirst({
-    where: eq(users.id, clerkId),
+export async function getCheckoutRegistrationsForUser(userId: string) {
+  return await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.createdAt),
+        orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
           registrations: {
             with: {
@@ -69,14 +69,14 @@ export async function getCheckoutRegistrationsForUser(clerkId: string) {
  * Includes: camper info, address, registration details, medical info, emergency contacts
  */
 export async function getRegistrationsForCheckoutPage(
-  clerkId: string,
+  userId: string,
   year: number,
 ) {
-  return await db.query.users.findFirst({
-    where: eq(users.id, clerkId),
+  return await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.createdAt),
+        orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
           address: true,
           medicalInfo: true,
@@ -104,14 +104,14 @@ export async function getRegistrationsForCheckoutPage(
  * Only returns draft registrations that belong to the user.
  */
 export async function getRegistrationsByIds(
-  clerkId: string,
+  userId: string,
   registrationIds: string[],
 ) {
-  return await db.query.users.findFirst({
-    where: eq(users.id, clerkId),
+  return await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
-        orderBy: (t) => asc(t.createdAt),
+        orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
           registrations: {
             where: and(

@@ -1,5 +1,5 @@
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,12 +10,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { siteConfig } from "@/config/site";
+import { auth } from "@/lib/auth";
 
 export default async function Home() {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   // If signed in, redirect to registration
-  if (userId) {
+  if (session) {
     redirect("/registration/overview");
   }
 
@@ -28,14 +31,12 @@ export default async function Home() {
           <CardDescription>{siteConfig.tagline}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <SignUpButton mode="modal">
-            <Button className="w-full">Sign Up</Button>
-          </SignUpButton>
-          <SignInButton mode="modal">
-            <Button variant="outline" className="w-full">
-              Sign In
-            </Button>
-          </SignInButton>
+          <Button className="w-full" asChild>
+            <Link href="/sign-up">Sign Up</Link>
+          </Button>
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/sign-in">Sign In</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -1,14 +1,14 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { and, asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import {
   camperEmergencyContacts,
   campers,
   emergencyContacts,
-  users,
+  user,
 } from "@/lib/data/schema";
 import {
   type CamperWithEmergencyContacts,
@@ -17,13 +17,11 @@ import {
 } from "./schema";
 
 export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
+  const userData = await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       emergencyContacts: {
         orderBy: (t) => asc(t.createdAt),
@@ -31,19 +29,17 @@ export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
     },
   });
 
-  return user?.emergencyContacts ?? [];
+  return userData?.emergencyContacts ?? [];
 }
 
 export async function getCampersWithEmergencyContacts(): Promise<
   CamperWithEmergencyContacts[]
 > {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
+  const userData = await db.query.user.findFirst({
+    where: eq(user.id, userId),
     with: {
       campers: {
         orderBy: (t) => asc(t.createdAt),
@@ -59,9 +55,9 @@ export async function getCampersWithEmergencyContacts(): Promise<
     },
   });
 
-  if (!user) return [];
+  if (!userData) return [];
 
-  return user.campers.map((camper) => ({
+  return userData.campers.map((camper) => ({
     camper: {
       id: camper.id,
       userId: camper.userId,
@@ -86,10 +82,8 @@ export async function getCampersWithEmergencyContacts(): Promise<
 }
 
 export async function saveEmergencyContact(rawInput: unknown) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const data = emergencyContactInsertSchema.parse(rawInput);
 
@@ -127,10 +121,8 @@ export async function saveEmergencyContact(rawInput: unknown) {
 }
 
 export async function deleteEmergencyContact(contactId: string) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   // Verify ownership
   const contact = await db.query.emergencyContacts.findFirst({
@@ -172,10 +164,8 @@ export async function saveCamperEmergencyContacts(
   camperId: string,
   contactIds: string[],
 ) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   // Verify camper belongs to user
   const camper = await db.query.campers.findFirst({
