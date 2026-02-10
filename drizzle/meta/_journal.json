@@ -15,6 +15,13 @@
       "when": 1769906731855,
       "tag": "0001_curved_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770700491491,
+      "tag": "0002_overjoyed_rhino",
+      "breakpoints": true
     }
   ]
 }

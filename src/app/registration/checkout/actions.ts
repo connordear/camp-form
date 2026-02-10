@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { requireAuth } from "@/lib/auth-helpers";
 import {
   type CheckoutStatus,
   getCheckoutStatus,
@@ -65,10 +65,8 @@ function formatDateRange(startDate: string, endDate: string): string {
 export async function getCheckoutData(
   year: number = new Date().getFullYear(),
 ): Promise<CheckoutCamper[]> {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const user = await getRegistrationsForCheckoutPage(userId, year);
 
@@ -155,10 +153,7 @@ export async function evaluateCheckoutDiscounts(
     numDays: number | null;
   }>,
 ): Promise<DiscountEvaluationResult> {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  await requireAuth();
 
   // Convert to format expected by discount service
   // Note: r.price is already the total (unitPrice * numDays for day prices),

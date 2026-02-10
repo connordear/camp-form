@@ -1,6 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { campers, registrations, users } from "@/lib/data/schema";
+import { campers, registrations, user } from "@/lib/data/schema";
 
 export const registrationSchema = createSelectSchema(registrations);
 export type Registration = z.infer<typeof registrationSchema>;
@@ -10,7 +10,7 @@ export const camperSchema = createSelectSchema(campers).extend({
 });
 export type Camper = z.infer<typeof insertCamperSchema>;
 
-export const userSchema = createSelectSchema(users).extend({
+export const userSchema = createSelectSchema(user).extend({
   campers: z.array(camperSchema),
 });
 export type CampFormUser = z.infer<typeof userSchema>;

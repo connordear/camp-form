@@ -1,8 +1,8 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
+import { requireAdmin } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
@@ -12,14 +12,6 @@ import {
   discountFormSchema,
   discountUpdateSchema,
 } from "@/lib/types/discount-schemas";
-
-async function requireAdmin() {
-  const { sessionClaims } = await auth();
-  if (sessionClaims?.metadata?.role !== "admin") {
-    throw new Error("Unauthorized: Admin access required");
-  }
-  return sessionClaims;
-}
 
 /**
  * Creates a Stripe coupon for a discount

@@ -1,9 +1,9 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { and, asc, eq, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import z from "zod";
+import { requireAuth } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import {
   campers,
@@ -11,10 +11,9 @@ import {
   campYearPrices,
   campYears,
   registrations,
-  users,
+  user,
 } from "@/lib/data/schema";
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
-import { addNewUser } from "@/lib/services/user-service";
 import { campSchema } from "@/lib/types/common-schema";
 import type { Camp } from "@/lib/types/common-types";
 import { type CampFormUser, saveCampersSchema } from "./schema";
@@ -42,7 +41,7 @@ export async function getCampsForYear(
     .orderBy(asc(campYears.startDate));
 
   // 2. Reduce flat rows into nested objects
-  const result = rows.reduce<Record<string, any>>((acc, row) => {
+  const result = rows.reduce<Record<string, Camp>>((acc, row) => {
     const camp = row.camps;
     const campYear = row.camp_years;
     const price = row.camp_year_prices;
@@ -52,7 +51,7 @@ export async function getCampsForYear(
         ...camp,
         ...campYear,
         prices: [],
-      };
+      } as Camp;
     }
 
     if (price) {
@@ -66,25 +65,15 @@ export async function getCampsForYear(
 }
 
 export async function getRegistrations(): Promise<CampFormUser | undefined> {
-  const user = await currentUser();
-  if (!user) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
-  const res = await getRegistrationsForUser(user.id);
+  const res = await getRegistrationsForUser(userId);
 
   if (!res) {
-    try {
-      const newUser = await addNewUser(user);
-      return {
-        ...newUser,
-        campers: [],
-      };
-    } catch (err) {
-      // maybe the webhook went through in time?
-      console.error(err);
-      return;
-    }
+    // User doesn't exist yet in our DB - this shouldn't happen with Better Auth
+    // since users are created on sign-up, but we handle it gracefully
+    return undefined;
   }
 
   return res;
@@ -93,19 +82,19 @@ export async function getRegistrations(): Promise<CampFormUser | undefined> {
 export async function saveRegistrationsForUser(
   rawCampersData: unknown,
 ): Promise<CampFormUser> {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Must be logged in.");
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const campersData = saveCampersSchema.parse(rawCampersData);
 
   return await db.transaction(async (tx) => {
     // 1. Get User
-    const user = await tx.query.users.findFirst({
-      where: eq(users.id, userId),
+    const userData = await tx.query.user.findFirst({
+      where: eq(user.id, userId),
       columns: { id: true },
     });
 
-    if (!user) throw new Error("User not found");
+    if (!userData) throw new Error("User not found");
 
     const activeCamperIds: string[] = [];
 
@@ -120,7 +109,7 @@ export async function saveRegistrationsForUser(
         .insert(campers)
         .values({
           ...camperData,
-          userId: user.id, // Ensure ownership
+          userId: userData.id, // Ensure ownership
         })
         .onConflictDoUpdate({
           target: campers.id,
@@ -194,21 +183,21 @@ export async function saveRegistrationsForUser(
         .delete(campers)
         .where(
           and(
-            eq(campers.userId, user.id),
+            eq(campers.userId, userData.id),
             notInArray(campers.id, activeCamperIds),
           ),
         );
     } else if (campersData.length === 0) {
       // Edge case: User deleted ALL campers
-      await tx.delete(campers).where(eq(campers.userId, user.id));
+      await tx.delete(campers).where(eq(campers.userId, userData.id));
     }
 
     // Revalidate AFTER the transaction commits
     revalidatePath("/registration");
 
     // 2. Return Fresh Data
-    const updatedUser = await tx.query.users.findFirst({
-      where: eq(users.id, user.id),
+    const updatedUser = await tx.query.user.findFirst({
+      where: eq(user.id, userData.id),
       with: {
         campers: {
           with: { registrations: true },

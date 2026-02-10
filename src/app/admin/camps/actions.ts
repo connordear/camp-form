@@ -1,7 +1,7 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import {
   camps,
@@ -23,14 +23,6 @@ import {
   campYearUpdateSchema,
   createCampWithYearAndPricesSchema,
 } from "@/lib/types/camp-schemas";
-
-async function requireAdmin() {
-  const { sessionClaims } = await auth();
-  if (sessionClaims?.metadata?.role !== "admin") {
-    throw new Error("Unauthorized: Admin access required");
-  }
-  return sessionClaims;
-}
 
 // ============ CAMP ACTIONS ============
 

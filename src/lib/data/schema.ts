@@ -14,6 +14,19 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+// Re-export auth schema tables
+export {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  verification,
+} from "./auth-schema";
+
+// Import auth tables for references
+import { account, session, user } from "./auth-schema";
+
 const id = () =>
   text("id")
     .primaryKey()
@@ -26,13 +39,6 @@ const timestamps = {
     .notNull()
     .$onUpdate(() => new Date()),
 };
-
-export const users = pgTable("users", {
-  id: id(), // should be the clerk id
-  email: text("email").notNull().unique(),
-  stripeCustomerId: text("stripe_customer_id"),
-  ...timestamps,
-});
 
 export const camps = pgTable("camps", {
   id: id(),
@@ -79,7 +85,7 @@ export const campYearPrices = pgTable(
 export const campers = pgTable("campers", {
   id: id(),
   userId: text("user_id")
-    .references(() => users.id)
+    .references(() => user.id)
     .notNull(),
   addressId: text("address_id").references(() => addresses.id),
   firstName: text("first_name").notNull().default(""),
@@ -99,7 +105,7 @@ export const addresses = pgTable(
   {
     id: id(),
     userId: text("user_id")
-      .references(() => users.id)
+      .references(() => user.id)
       .notNull(),
     addressLine1: text("address_line_1").notNull(),
     addressLine2: text("address_line_2"),
@@ -186,7 +192,7 @@ export const OTC_MEDICATIONS_LIST = [
 export const emergencyContacts = pgTable("emergency_contacts", {
   id: id(),
   userId: text("user_id")
-    .references(() => users.id)
+    .references(() => user.id)
     .notNull(),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
@@ -336,7 +342,11 @@ export const campRelations = relations(camps, ({ many }) => ({
   campYears: many(campYears),
 }));
 
-export const userRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(user, ({ many }) => ({
+  // Auth relations
+  sessions: many(session),
+  accounts: many(account),
+  // App relations
   campers: many(campers),
   addresses: many(addresses),
   emergencyContacts: many(emergencyContacts),
@@ -344,11 +354,11 @@ export const userRelations = relations(users, ({ many }) => ({
 
 export const addressesRelations = relations(addresses, ({ many, one }) => ({
   campers: many(campers),
-  users: one(users, { fields: [addresses.userId], references: [users.id] }),
+  user: one(user, { fields: [addresses.userId], references: [user.id] }),
 }));
 
 export const campersRelations = relations(campers, ({ one, many }) => ({
-  user: one(users, { fields: [campers.userId], references: [users.id] }),
+  user: one(user, { fields: [campers.userId], references: [user.id] }),
   registrations: many(registrations),
   medicalInfo: one(medicalInfo, {
     fields: [campers.id],
@@ -364,9 +374,9 @@ export const campersRelations = relations(campers, ({ one, many }) => ({
 export const emergencyContactsRelations = relations(
   emergencyContacts,
   ({ one, many }) => ({
-    user: one(users, {
+    user: one(user, {
       fields: [emergencyContacts.userId],
-      references: [users.id],
+      references: [user.id],
     }),
     camperAssignments: many(camperEmergencyContacts),
   }),

@@ -1,6 +1,6 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { requireAuth } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { registrationDetails, registrations } from "@/lib/data/schema";
 import { getRegistrationDetailsForUser } from "@/lib/services/registration-service";
@@ -11,24 +11,23 @@ import {
 } from "./schema";
 
 export async function getRegistrations(): Promise<RegistrationDetail[]> {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const res = await getRegistrationDetailsForUser(userId);
 
-  const regs = res?.campers.flatMap((c) => c.registrations) ?? [];
+  const regs =
+    res?.campers.flatMap(
+      (c: { registrations: RegistrationDetail[] }) => c.registrations,
+    ) ?? [];
   return regs;
 }
 
 export async function saveRegistrationDetails(
   data: RegistrationDetailFormValues,
 ) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const validatedData = insertRegistrationDetailSchema.parse(data);
 

@@ -1,4 +1,3 @@
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,12 +22,12 @@ export default function NavSignedOut() {
       </NavigationMenu>
       <div className="flex gap-4 items-center">
         <ThemeToggle />
-        <SignInButton mode="modal">
-          <Button variant="outline">Sign In</Button>
-        </SignInButton>
-        <SignUpButton mode="modal">
-          <Button>Sign Up</Button>
-        </SignUpButton>
+        <Button variant="outline" asChild>
+          <Link href="/sign-in">Sign In</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/sign-up">Sign Up</Link>
+        </Button>
       </div>
     </header>
   );

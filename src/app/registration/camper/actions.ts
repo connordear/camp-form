@@ -1,7 +1,7 @@
 "use server";
-import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { addresses, campers } from "@/lib/data/schema";
 import { getCampersForUser } from "@/lib/services/camper-service";
@@ -9,10 +9,8 @@ import { getAddressesForUser } from "@/lib/services/user-service";
 import type { AddressFormValues, CamperInfo, CamperInfoForm } from "./schema";
 
 export async function getCampers(): Promise<CamperInfo[] | undefined> {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const res = await getCampersForUser(userId);
 
@@ -20,19 +18,15 @@ export async function getCampers(): Promise<CamperInfo[] | undefined> {
 }
 
 export async function getAddresses() {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Must be logged in to view this data.");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   return await getAddressesForUser(userId);
 }
 
 export async function saveCamper(camper: CamperInfoForm) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   if (userId !== camper.userId) {
     throw new Error("Unable to save data for that camper");
@@ -51,10 +45,8 @@ export async function saveAddress(
   address: AddressFormValues,
   forCamperId?: string,
 ) {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Not logged in");
-  }
+  const session = await requireAuth();
+  const userId = session.user.id;
 
   const { id, ...addressPayload } = address;
   return await db.transaction(async (tx) => {
