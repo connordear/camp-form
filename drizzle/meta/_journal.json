@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1769879193839,
-      "tag": "0000_fat_mulholland_black",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1769906731855,
-      "tag": "0001_curved_omega_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770700491491,
-      "tag": "0002_overjoyed_rhino",
+      "when": 1770710505573,
+      "tag": "0000_flawless_squirrel_girl",
       "breakpoints": true
     }
   ]
