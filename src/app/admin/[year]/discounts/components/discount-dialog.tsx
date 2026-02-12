@@ -8,7 +8,7 @@ import {
   createDiscount,
   deleteDiscount,
   updateDiscount,
-} from "@/app/admin/discounts/actions";
+} from "@/app/admin/[year]/discounts/actions";
 import {
   AlertDialog,
   AlertDialogAction,

@@ -2,7 +2,7 @@
 
 import { MenuIcon, TagIcon, TentIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAdminYear } from "@/hooks/use-admin-year";
 import { cn } from "@/lib/utils";
 import { YearSelector } from "./year-selector";
 
@@ -40,14 +41,12 @@ function AdminNavLink({
   onClick,
 }: AdminNavLinkProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { currentYear } = useAdminYear();
 
-  // Preserve search params when navigating
-  const fullHref = searchParams.toString()
-    ? `${href}?${searchParams.toString()}`
-    : href;
+  // Build full href with year: /admin/2025/registrations
+  const fullHref = `/admin/${currentYear}${href}`;
 
-  const isActive = pathname.startsWith(href);
+  const isActive = pathname.startsWith(fullHref);
 
   const linkContent = (
     <Link
@@ -84,13 +83,13 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
       {/* Desktop Sidebar - full width */}
       <div className="hidden lg:flex w-64 h-[calc(100vh-4rem)] sticky top-16 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col p-4">
         <nav className="flex flex-col gap-1">
-          <AdminNavLink href="/admin/registrations" icon={UsersIcon}>
+          <AdminNavLink href="/registrations" icon={UsersIcon}>
             Registrations
           </AdminNavLink>
-          <AdminNavLink href="/admin/camps" icon={TentIcon}>
+          <AdminNavLink href="/camps" icon={TentIcon}>
             Camps
           </AdminNavLink>
-          <AdminNavLink href="/admin/discounts" icon={TagIcon}>
+          <AdminNavLink href="/discounts" icon={TagIcon}>
             Discounts
           </AdminNavLink>
         </nav>
@@ -103,13 +102,13 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
       {/* Tablet Sidebar - collapsed icon-only */}
       <div className="hidden md:flex lg:hidden w-14 h-[calc(100vh-4rem)] sticky top-16 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col items-center py-4">
         <nav className="flex flex-col gap-1 w-full px-2">
-          <AdminNavLink href="/admin/registrations" icon={UsersIcon} collapsed>
+          <AdminNavLink href="/registrations" icon={UsersIcon} collapsed>
             Registrations
           </AdminNavLink>
-          <AdminNavLink href="/admin/camps" icon={TentIcon} collapsed>
+          <AdminNavLink href="/camps" icon={TentIcon} collapsed>
             Camps
           </AdminNavLink>
-          <AdminNavLink href="/admin/discounts" icon={TagIcon} collapsed>
+          <AdminNavLink href="/discounts" icon={TagIcon} collapsed>
             Discounts
           </AdminNavLink>
         </nav>
@@ -150,24 +149,16 @@ function MobileNav({ availableYears }: AdminNavProps) {
 
           <nav className="flex flex-col gap-1 p-4">
             <AdminNavLink
-              href="/admin/registrations"
+              href="/registrations"
               icon={UsersIcon}
               onClick={closeSheet}
             >
               Registrations
             </AdminNavLink>
-            <AdminNavLink
-              href="/admin/camps"
-              icon={TentIcon}
-              onClick={closeSheet}
-            >
+            <AdminNavLink href="/camps" icon={TentIcon} onClick={closeSheet}>
               Camps
             </AdminNavLink>
-            <AdminNavLink
-              href="/admin/discounts"
-              icon={TagIcon}
-              onClick={closeSheet}
-            >
+            <AdminNavLink href="/discounts" icon={TagIcon} onClick={closeSheet}>
               Discounts
             </AdminNavLink>
           </nav>

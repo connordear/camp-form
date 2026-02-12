@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirectToCurrentYear } from "./actions";
 
-export default function AdminPage() {
-  redirect("/admin/camps");
+export default async function AdminPage() {
+  await redirectToCurrentYear(undefined);
 }

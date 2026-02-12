@@ -1,17 +1,20 @@
 "use server";
+
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type Stripe from "stripe";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { adminAction } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
 import {
   type DiscountFormData,
-  type DiscountUpdateData,
   discountFormSchema,
   discountUpdateSchema,
 } from "@/lib/types/discount-schemas";
+
+export type Discount = typeof discounts.$inferSelect;
 
 /**
  * Creates a Stripe coupon for a discount
@@ -61,43 +64,38 @@ async function updateStripeCoupon(
   return createStripeCoupon(data);
 }
 
-/**
- * Creates a new discount with Stripe coupon sync
- */
-export async function createDiscount(data: DiscountFormData) {
-  await requireAdmin();
+export const getAllDiscountsForAdmin = adminAction(
+  async (): Promise<Discount[]> => {
+    return db.select().from(discounts);
+  },
+);
 
+export const createDiscount = adminAction(async (data: unknown) => {
   const validated = discountFormSchema.parse(data);
 
   // Create Stripe coupon first
   const stripeCouponId = await createStripeCoupon(validated);
 
-  // Create database record
   const [newDiscount] = await db
     .insert(discounts)
     .values({
       name: validated.name,
-      description: validated.description ?? null,
+      description: validated.description,
       type: validated.type,
       amount: validated.amount,
       conditionType: validated.conditionType,
-      deadlineDate: validated.deadlineDate ?? null,
-      minCampers: validated.minCampers ?? null,
+      deadlineDate: validated.deadlineDate,
+      minCampers: validated.minCampers,
       isActive: validated.isActive,
       stripeCouponId,
     })
     .returning();
 
-  revalidatePath("/admin/discounts");
+  revalidatePath("/admin/[year]/discounts");
   return newDiscount;
-}
+});
 
-/**
- * Updates an existing discount with Stripe coupon sync
- */
-export async function updateDiscount(data: DiscountUpdateData) {
-  await requireAdmin();
-
+export const updateDiscount = adminAction(async (data: unknown) => {
   const validated = discountUpdateSchema.parse(data);
 
   // Get existing discount to find old coupon ID
@@ -116,60 +114,31 @@ export async function updateDiscount(data: DiscountUpdateData) {
     validated,
   );
 
-  // Update database record
   const [updatedDiscount] = await db
     .update(discounts)
     .set({
       name: validated.name,
-      description: validated.description ?? null,
+      description: validated.description,
       type: validated.type,
       amount: validated.amount,
       conditionType: validated.conditionType,
-      deadlineDate: validated.deadlineDate ?? null,
-      minCampers: validated.minCampers ?? null,
+      deadlineDate: validated.deadlineDate,
+      minCampers: validated.minCampers,
       isActive: validated.isActive,
       stripeCouponId: newStripeCouponId,
     })
     .where(eq(discounts.id, validated.id))
     .returning();
 
-  revalidatePath("/admin/discounts");
-  return updatedDiscount;
-}
-
-/**
- * Toggles a discount's active status
- */
-export async function toggleDiscountActive(id: string) {
-  await requireAdmin();
-
-  const [existingDiscount] = await db
-    .select()
-    .from(discounts)
-    .where(eq(discounts.id, id));
-
-  if (!existingDiscount) {
+  if (!updatedDiscount) {
     throw new Error("Discount not found");
   }
 
-  const [updatedDiscount] = await db
-    .update(discounts)
-    .set({
-      isActive: !existingDiscount.isActive,
-    })
-    .where(eq(discounts.id, id))
-    .returning();
-
-  revalidatePath("/admin/discounts");
+  revalidatePath("/admin/[year]/discounts");
   return updatedDiscount;
-}
+});
 
-/**
- * Deletes a discount and its Stripe coupon
- */
-export async function deleteDiscount(id: string) {
-  await requireAdmin();
-
+export const deleteDiscount = adminAction(async (id: string) => {
   const [existingDiscount] = await db
     .select()
     .from(discounts)
@@ -190,12 +159,42 @@ export async function deleteDiscount(id: string) {
     }
   }
 
-  // Delete database record
   const [deletedDiscount] = await db
     .delete(discounts)
     .where(eq(discounts.id, id))
     .returning();
 
-  revalidatePath("/admin/discounts");
+  if (!deletedDiscount) {
+    throw new Error("Discount not found");
+  }
+
+  revalidatePath("/admin/[year]/discounts");
   return deletedDiscount;
-}
+});
+
+export const toggleDiscountActive = adminAction(async (id: string) => {
+  // Get current discount
+  const [discount] = await db
+    .select()
+    .from(discounts)
+    .where(eq(discounts.id, id));
+
+  if (!discount) {
+    throw new Error("Discount not found");
+  }
+
+  // Toggle isActive
+  const [updatedDiscount] = await db
+    .update(discounts)
+    .set({ isActive: !discount.isActive })
+    .where(eq(discounts.id, id))
+    .returning();
+
+  revalidatePath("/admin/[year]/discounts");
+  return updatedDiscount;
+});
+
+export const redirectToCurrentYear = adminAction(async (): Promise<never> => {
+  const currentYear = new Date().getFullYear();
+  redirect(`/admin/${currentYear}/discounts`);
+});

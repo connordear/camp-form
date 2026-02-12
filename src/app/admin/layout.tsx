@@ -1,5 +1,5 @@
-import { AdminNav } from "@/components/admin/admin-nav";
 import { getAvailableYears } from "@/lib/services/camp-service";
+import { AdminNav } from "./components/admin-nav";
 
 export default async function AdminLayout({
   children,

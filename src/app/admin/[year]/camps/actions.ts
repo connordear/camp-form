@@ -1,7 +1,9 @@
 "use server";
+
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { redirect } from "next/navigation";
+import { adminAction } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import {
   camps,
@@ -9,14 +11,9 @@ import {
   campYears,
   registrations,
 } from "@/lib/data/schema";
+import type { CampWithYear } from "@/lib/services/camp-service";
 import {
-  type BatchUpdatePricesForm,
   batchUpdatePricesSchema,
-  type CampInsertForm,
-  type CampUpdateForm,
-  type CampYearInsertForm,
-  type CampYearUpdateForm,
-  type CreateCampWithYearAndPricesForm,
   campInsertSchema,
   campUpdateSchema,
   campYearInsertSchema,
@@ -24,11 +21,37 @@ import {
   createCampWithYearAndPricesSchema,
 } from "@/lib/types/camp-schemas";
 
-// ============ CAMP ACTIONS ============
+export const getCampsForAdmin = adminAction(
+  async (year: number): Promise<CampWithYear[]> => {
+    const allCamps = await db.query.camps.findMany({
+      with: {
+        campYears: {
+          orderBy: (t) => t.startDate,
+          where: eq(campYears.year, year),
+          with: {
+            prices: true,
+          },
+        },
+      },
+    });
 
-export async function createCamp(data: CampInsertForm) {
-  await requireAdmin();
+    const result = allCamps.map((camp) => {
+      const campYear = camp.campYears[0] ?? null;
+      return {
+        ...camp,
+        campYear: campYear
+          ? {
+              ...campYear,
+              prices: campYear.prices ?? [],
+            }
+          : null,
+      };
+    });
+    return result as CampWithYear[];
+  },
+);
 
+export const createCamp = adminAction(async (data: unknown) => {
   const validated = campInsertSchema.parse(data);
 
   const [newCamp] = await db
@@ -39,15 +62,11 @@ export async function createCamp(data: CampInsertForm) {
     })
     .returning();
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return newCamp;
-}
+});
 
-export async function createCampWithYear(
-  data: CreateCampWithYearAndPricesForm,
-) {
-  await requireAdmin();
-
+export const createCampWithYear = adminAction(async (data: unknown) => {
   const validated = createCampWithYearAndPricesSchema.parse(data);
 
   return await db.transaction(async (tx) => {
@@ -84,14 +103,12 @@ export async function createCampWithYear(
       )
       .returning();
 
-    revalidatePath("/admin/camps");
+    revalidatePath("/admin/[year]/camps");
     return { camp: newCamp, campYear: newCampYear, prices: newPrices };
   });
-}
+});
 
-export async function updateCamp(data: CampUpdateForm) {
-  await requireAdmin();
-
+export const updateCamp = adminAction(async (data: unknown) => {
   const validated = campUpdateSchema.parse(data);
 
   const [updatedCamp] = await db
@@ -107,13 +124,11 @@ export async function updateCamp(data: CampUpdateForm) {
     throw new Error("Camp not found");
   }
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return updatedCamp;
-}
+});
 
-export async function deleteCamp(campId: string) {
-  await requireAdmin();
-
+export const deleteCamp = adminAction(async (campId: string) => {
   // Check if there are any registrations for this camp
   const existingRegistrations = await db
     .select({ id: registrations.id })
@@ -140,15 +155,11 @@ export async function deleteCamp(campId: string) {
     throw new Error("Camp not found");
   }
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return deletedCamp;
-}
+});
 
-// ============ CAMP YEAR ACTIONS ============
-
-export async function createCampYear(data: CampYearInsertForm) {
-  await requireAdmin();
-
+export const createCampYear = adminAction(async (data: unknown) => {
   const validated = campYearInsertSchema.parse(data);
 
   // Check if camp exists
@@ -189,13 +200,11 @@ export async function createCampYear(data: CampYearInsertForm) {
     })
     .returning();
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return newCampYear;
-}
+});
 
-export async function updateCampYear(data: CampYearUpdateForm) {
-  await requireAdmin();
-
+export const updateCampYear = adminAction(async (data: unknown) => {
   const validated = campYearUpdateSchema.parse(data);
 
   const [updatedCampYear] = await db
@@ -217,46 +226,47 @@ export async function updateCampYear(data: CampYearUpdateForm) {
     throw new Error("Camp year not found");
   }
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return updatedCampYear;
+});
+
+interface DeleteCampYearParams {
+  campId: string;
+  year: number;
 }
 
-export async function deleteCampYear(campId: string, year: number) {
-  await requireAdmin();
+export const deleteCampYear = adminAction(
+  async ({ campId, year }: DeleteCampYearParams) => {
+    // Check if there are any registrations for this camp year
+    const existingRegistrations = await db
+      .select({ id: registrations.id })
+      .from(registrations)
+      .where(
+        and(eq(registrations.campId, campId), eq(registrations.campYear, year)),
+      )
+      .limit(1);
 
-  // Check if there are any registrations for this camp year
-  const existingRegistrations = await db
-    .select({ id: registrations.id })
-    .from(registrations)
-    .where(
-      and(eq(registrations.campId, campId), eq(registrations.campYear, year)),
-    )
-    .limit(1);
+    if (existingRegistrations.length > 0) {
+      throw new Error(
+        `Cannot delete camp year ${year}: There are existing registrations. Please delete or reassign registrations first.`,
+      );
+    }
 
-  if (existingRegistrations.length > 0) {
-    throw new Error(
-      `Cannot delete camp year ${year}: There are existing registrations. Please delete or reassign registrations first.`,
-    );
-  }
+    const [deletedCampYear] = await db
+      .delete(campYears)
+      .where(and(eq(campYears.campId, campId), eq(campYears.year, year)))
+      .returning();
 
-  const [deletedCampYear] = await db
-    .delete(campYears)
-    .where(and(eq(campYears.campId, campId), eq(campYears.year, year)))
-    .returning();
+    if (!deletedCampYear) {
+      throw new Error("Camp year not found");
+    }
 
-  if (!deletedCampYear) {
-    throw new Error("Camp year not found");
-  }
+    revalidatePath("/admin/[year]/camps");
+    return deletedCampYear;
+  },
+);
 
-  revalidatePath("/admin/camps");
-  return deletedCampYear;
-}
-
-// ============ CAMP YEAR PRICE ACTIONS ============
-
-export async function batchUpdatePrices(data: BatchUpdatePricesForm) {
-  await requireAdmin();
-
+export const batchUpdatePrices = adminAction(async (data: unknown) => {
   const validated = batchUpdatePricesSchema.parse(data);
 
   return await db.transaction(async (tx) => {
@@ -340,14 +350,12 @@ export async function batchUpdatePrices(data: BatchUpdatePricesForm) {
       }
     }
 
-    revalidatePath("/admin/camps");
+    revalidatePath("/admin/[year]/camps");
     return results;
   });
-}
+});
 
-export async function deleteCampYearPrice(priceId: string) {
-  await requireAdmin();
-
+export const deleteCampYearPrice = adminAction(async (priceId: string) => {
   // Check if there are any registrations using this price
   const existingRegistrations = await db
     .select({ id: registrations.id })
@@ -370,6 +378,11 @@ export async function deleteCampYearPrice(priceId: string) {
     throw new Error("Price not found");
   }
 
-  revalidatePath("/admin/camps");
+  revalidatePath("/admin/[year]/camps");
   return deletedPrice;
-}
+});
+
+export const redirectToCurrentYear = adminAction(async (): Promise<never> => {
+  const currentYear = new Date().getFullYear();
+  redirect(`/admin/${currentYear}/camps`);
+});

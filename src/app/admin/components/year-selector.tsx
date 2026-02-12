@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarIcon, PlusIcon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +37,9 @@ export function YearSelector({
   availableYears,
   collapsed = false,
 }: YearSelectorProps) {
-  const { currentYear, setYear } = useAdminYear();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { currentYear } = useAdminYear();
   const [isAddYearOpen, setIsAddYearOpen] = useState(false);
   const [newYear, setNewYear] = useState("");
 
@@ -50,19 +53,25 @@ export function YearSelector({
   ]);
   const sortedYears = Array.from(allYears).sort((a, b) => b - a);
 
+  const navigateToYear = (year: number) => {
+    // Replace the year in the pathname: /admin/2025/registrations -> /admin/2026/registrations
+    const newPath = pathname.replace(/^(\/admin\/)\d{4}/, `$1${year}`);
+    router.push(newPath);
+  };
+
   const handleValueChange = (value: string) => {
     if (value === "add-new") {
       setNewYear("");
       setIsAddYearOpen(true);
     } else {
-      setYear(parseInt(value, 10));
+      navigateToYear(parseInt(value, 10));
     }
   };
 
   const handleAddYear = () => {
     const parsed = parseInt(newYear, 10);
     if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2100) {
-      setYear(parsed);
+      navigateToYear(parsed);
       setIsAddYearOpen(false);
     }
   };
