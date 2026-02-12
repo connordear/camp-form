@@ -33,3 +33,20 @@ export async function requireAdmin(): Promise<Session> {
   }
   return session;
 }
+
+type ServerAction<T, R> = (data: T) => Promise<R>;
+
+export function adminAction<T, R>(
+  action: ServerAction<T, R>,
+): ServerAction<T, R> {
+  return async (data: T): Promise<R> => {
+    const session = await getSession();
+
+    // Check strict admin role
+    if (!session || session.user.role !== "admin") {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
+    return action(data);
+  };
+}

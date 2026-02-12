@@ -11,7 +11,7 @@ import {
   deleteCampYear,
   updateCamp,
   updateCampYear,
-} from "@/app/admin/camps/actions";
+} from "@/app/admin/[year]/camps/actions";
 import DateRangePicker from "@/components/forms/date-range-picker";
 import {
   AlertDialog,
@@ -171,7 +171,7 @@ export function CampCard({ camp, year }: CampCardProps) {
   const handleDeleteCampYear = async () => {
     const toastId = toast.loading(`Deleting ${year} data...`);
     try {
-      await deleteCampYear(camp.id, year);
+      await deleteCampYear({ campId: camp.id, year });
       toast.success(`${year} data deleted`, { id: toastId });
     } catch (err) {
       toast.error(

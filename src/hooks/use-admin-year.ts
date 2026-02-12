@@ -1,34 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
-
-const YEAR_PARAM = "year";
+import { useParams } from "next/navigation";
+import { parseYearParam } from "@/app/admin/[year]/utils";
 
 export function useAdminYear() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const params = useParams<{ year: string }>();
+  const currentYear = parseYearParam(params.year);
 
-  const currentYear = useMemo(() => {
-    const yearParam = searchParams.get(YEAR_PARAM);
-    if (yearParam) {
-      const parsed = parseInt(yearParam, 10);
-      if (!isNaN(parsed) && parsed >= 2000) {
-        return parsed;
-      }
-    }
-    return new Date().getFullYear();
-  }, [searchParams]);
-
-  const setYear = useCallback(
-    (year: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(YEAR_PARAM, year.toString());
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [searchParams, router, pathname],
-  );
-
-  return { currentYear, setYear };
+  return { currentYear };
 }

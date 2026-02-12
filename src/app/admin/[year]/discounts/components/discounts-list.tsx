@@ -55,7 +55,7 @@ function DiscountCard({ discount }: { discount: Discount }) {
     setIsActive(checked);
     try {
       const { toggleDiscountActive } = await import(
-        "@/app/admin/discounts/actions"
+        "@/app/admin/[year]/discounts/actions"
       );
       await toggleDiscountActive(discount.id);
     } catch {

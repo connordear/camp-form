@@ -15,6 +15,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run ./src/lib/data/seed.ts",
+    "db:seed:users": "bun run ./src/lib/data/seed-users.ts",
     "db:up": "bun run db:generate && bun run db:migrate",
     "db:nuke": "bun ./src/lib/data/reset-db.ts",
     "db:reset": "bun ./src/lib/data/reset-db.ts && bun drizzle-kit push && bun run db:seed"

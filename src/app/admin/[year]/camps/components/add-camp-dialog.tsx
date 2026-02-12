@@ -4,7 +4,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createCampWithYear } from "@/app/admin/camps/actions";
+import { createCampWithYear } from "@/app/admin/[year]/camps/actions";
 import DateRangePicker from "@/components/forms/date-range-picker";
 import { Button } from "@/components/ui/button";
 import {
