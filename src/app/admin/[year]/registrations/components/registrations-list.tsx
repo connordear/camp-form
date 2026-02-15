@@ -30,6 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { capitalize } from "@/lib/utils";
+import { RegistrationModal } from "./registration-modal";
 
 interface Camp {
   id: string;
@@ -46,6 +48,7 @@ interface RegistrationsListProps {
   currentSearch: string;
   currentStatus: string;
   currentCamp: string;
+  userRole: "admin" | "hcp" | "staff";
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -88,6 +91,7 @@ export function RegistrationsList({
   currentSearch,
   currentStatus,
   currentCamp,
+  userRole,
 }: RegistrationsListProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -98,6 +102,8 @@ export function RegistrationsList({
   const isTypingRef = useRef(false);
 
   const [localSearch, setLocalSearch] = useState(currentSearch);
+  const [selectedRegistration, setSelectedRegistration] =
+    useState<AdminRegistration | null>(null);
 
   useEffect(() => {
     if (!isTypingRef.current) {
@@ -300,10 +306,16 @@ export function RegistrationsList({
               <TableRow>
                 <TableHead>Camper</TableHead>
                 <TableHead>Camp</TableHead>
-                <TableHead>Price Tier</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Price Paid</TableHead>
-                <TableHead>Registered On</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  Price Tier
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  Price Paid
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  Registered On
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -320,7 +332,11 @@ export function RegistrationsList({
                 </TableRow>
               ) : (
                 registrations.map((reg) => (
-                  <TableRow key={reg.id}>
+                  <TableRow
+                    key={reg.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedRegistration(reg)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <UserIcon className="size-4 text-muted-foreground" />
@@ -339,14 +355,18 @@ export function RegistrationsList({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{reg.price?.name || "N/A"}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {reg.price?.name || "N/A"}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <Badge variant={getStatusBadgeVariant(reg.status)}>
-                        {reg.status}
+                        {capitalize(reg.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatPrice(reg.pricePaid)}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {formatPrice(reg.pricePaid)}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       {format(new Date(reg.createdAt), "MMM d, yyyy")}
                     </TableCell>
                   </TableRow>
@@ -398,6 +418,12 @@ export function RegistrationsList({
           </div>
         </div>
       )}
+
+      <RegistrationModal
+        registration={selectedRegistration}
+        userRole={userRole}
+        onClose={() => setSelectedRegistration(null)}
+      />
     </div>
   );
 }

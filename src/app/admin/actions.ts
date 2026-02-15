@@ -26,5 +26,5 @@ export const getAvailableYears = adminAction(async (): Promise<number[]> => {
 
 export const redirectToCurrentYear = adminAction(async (): Promise<never> => {
   const currentYear = new Date().getFullYear();
-  redirect(`/admin/${currentYear}/camps`);
+  redirect(`/admin/${currentYear}/registrations`);
 });

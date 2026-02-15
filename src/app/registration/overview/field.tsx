@@ -271,7 +271,7 @@ export const OverviewFieldGroup = withFieldGroup({
                         </div>
 
                         {/* --- ACTIONS --- */}
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex flex-col md:flex-row items-center gap-2 mt-1">
                           <RegistrationBadge status={reg.status ?? "draft"} />
                           {isDraft && (
                             <RemoveButton

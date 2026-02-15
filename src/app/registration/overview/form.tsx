@@ -118,7 +118,9 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
         </CardContent>
       </Card>
 
-      <AutoSaveIndicator status={status} lastSaved={lastSaved} />
+      <div className="hidden md:block">
+        <AutoSaveIndicator status={status} lastSaved={lastSaved} />
+      </div>
     </>
   );
 }

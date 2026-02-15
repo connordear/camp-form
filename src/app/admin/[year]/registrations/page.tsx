@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getSession } from "@/lib/auth-helpers";
 import { parseYearParam } from "../utils";
 import { getAvailableCamps, getRegistrationsForAdmin } from "./actions";
 import { RegistrationsList } from "./components/registrations-list";
@@ -62,6 +63,10 @@ export default async function RegistrationsYearPage({
   const { year: yearParam } = await params;
   const searchParamsData = await searchParams;
 
+  // Get session for user role (auth is handled by layout)
+  const session = await getSession();
+  const userRole = session?.user.role ?? "user";
+
   // Parse year from path param
   const validYear = parseYearParam(yearParam);
 
@@ -98,6 +103,7 @@ export default async function RegistrationsYearPage({
         currentSearch={search}
         currentStatus={status}
         currentCamp={camp}
+        userRole={userRole as "admin" | "hcp" | "staff"}
       />
     </Suspense>
   );

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth-helpers";
 import { getAvailableYears } from "@/lib/services/camp-service";
 import { AdminNav } from "./components/admin-nav";
 
@@ -6,6 +8,18 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/");
+  }
+
+  const userRole = session.user.role ?? "user";
+  const allowedRoles = ["admin", "hcp", "staff"];
+  if (!allowedRoles.includes(userRole)) {
+    redirect("/");
+  }
+
   const availableYears = await getAvailableYears();
 
   return (

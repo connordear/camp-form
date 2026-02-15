@@ -1,10 +1,14 @@
 "use server";
 
 import { and, desc, eq } from "drizzle-orm";
-import { adminAction } from "@/lib/auth-helpers";
+import {
+  adminAction,
+  adminPanelAction,
+  medicalAccessAction,
+} from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
-import { campYears, registrations } from "@/lib/data/schema";
-import type { AdminRegistration } from "./schema";
+import { campers, campYears, registrations } from "@/lib/data/schema";
+import type { AdminRegistration, AdminRegistrationDetail } from "./schema";
 
 export interface GetRegistrationsParams {
   year: number;
@@ -21,7 +25,8 @@ export interface GetRegistrationsResult {
   totalPages: number;
 }
 
-export const getRegistrationsForAdmin = adminAction(
+// Get registrations list (accessible to admin, hcp, staff)
+export const getRegistrationsForAdmin = adminPanelAction(
   async (params: GetRegistrationsParams): Promise<GetRegistrationsResult> => {
     const { year, search, status, camp, page = 1, pageSize = 10 } = params;
 
@@ -124,5 +129,125 @@ export const getAvailableCamps = adminAction(
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return uniqueCamps;
+  },
+);
+
+// Get full registration details (accessible to admin, hcp, staff)
+// Returns registration with full camper info, address, emergency contacts, and registration details
+export const getRegistrationDetail = adminPanelAction(
+  async (registrationId: string): Promise<AdminRegistrationDetail | null> => {
+    const registration = await db.query.registrations.findFirst({
+      where: eq(registrations.id, registrationId),
+      with: {
+        camper: {
+          with: {
+            address: true,
+          },
+        },
+        campYear: {
+          with: {
+            camp: true,
+          },
+        },
+        price: true,
+        details: true,
+      },
+    });
+
+    if (!registration) {
+      return null;
+    }
+
+    // Get emergency contacts separately
+    const camperWithContacts = await db.query.campers.findFirst({
+      where: eq(campers.id, registration.camperId),
+      with: {
+        emergencyContacts: {
+          with: {
+            emergencyContact: true,
+          },
+          orderBy: (contacts, { asc }) => [asc(contacts.priority)],
+        },
+      },
+    });
+
+    // Transform to AdminRegistrationDetail
+    const detail: AdminRegistrationDetail = {
+      ...registration,
+      camper: {
+        id: registration.camper.id,
+        firstName: registration.camper.firstName,
+        lastName: registration.camper.lastName,
+        userId: registration.camper.userId,
+        dateOfBirth: registration.camper.dateOfBirth,
+        gender: registration.camper.gender,
+        shirtSize: registration.camper.shirtSize,
+        swimmingLevel: registration.camper.swimmingLevel,
+        hasBeenToCamp: registration.camper.hasBeenToCamp,
+        arePhotosAllowed: registration.camper.arePhotosAllowed,
+        dietaryRestrictions: registration.camper.dietaryRestrictions,
+        address: registration.camper.address,
+      },
+      emergencyContacts:
+        camperWithContacts?.emergencyContacts.map((ec) => ({
+          priority: ec.priority,
+          emergencyContact: {
+            id: ec.emergencyContact.id,
+            name: ec.emergencyContact.name,
+            phone: ec.emergencyContact.phone,
+            email: ec.emergencyContact.email,
+            relationship: ec.emergencyContact.relationship,
+            relationshipOther: ec.emergencyContact.relationshipOther,
+          },
+        })) ?? [],
+      details: registration.details ?? undefined,
+    };
+
+    return detail;
+  },
+);
+
+// Get medical info for a registration (admin and hcp only)
+export const getRegistrationMedicalInfo = medicalAccessAction(
+  async (registrationId: string) => {
+    const registration = await db.query.registrations.findFirst({
+      where: eq(registrations.id, registrationId),
+      with: {
+        camper: {
+          with: {
+            medicalInfo: true,
+          },
+        },
+      },
+    });
+
+    if (!registration || !registration.camper.medicalInfo) {
+      return null;
+    }
+
+    return {
+      healthCareNumber: registration.camper.medicalInfo.healthCareNumber,
+      familyDoctor: registration.camper.medicalInfo.familyDoctor,
+      doctorPhone: registration.camper.medicalInfo.doctorPhone,
+      height: registration.camper.medicalInfo.height,
+      weight: registration.camper.medicalInfo.weight,
+      hasAllergies: registration.camper.medicalInfo.hasAllergies,
+      allergiesDetails: registration.camper.medicalInfo.allergiesDetails,
+      usesEpiPen: registration.camper.medicalInfo.usesEpiPen,
+      hasMedicationsAtCamp:
+        registration.camper.medicalInfo.hasMedicationsAtCamp,
+      medicationsAtCampDetails:
+        registration.camper.medicalInfo.medicationsAtCampDetails,
+      hasMedicationsNotAtCamp:
+        registration.camper.medicalInfo.hasMedicationsNotAtCamp,
+      medicationsNotAtCampDetails:
+        registration.camper.medicalInfo.medicationsNotAtCampDetails,
+      otcPermissions: registration.camper.medicalInfo.otcPermissions,
+      hasMedicalConditions:
+        registration.camper.medicalInfo.hasMedicalConditions,
+      medicalConditionsDetails:
+        registration.camper.medicalInfo.medicalConditionsDetails,
+      additionalInfo: registration.camper.medicalInfo.additionalInfo,
+    };
   },
 );
