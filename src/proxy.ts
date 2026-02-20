@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { ADMIN_PANEL_ROLES, ADMIN_ROLES } from "@/lib/auth-helpers";
 
 const publicRoutes = [
   "/",
@@ -12,7 +13,12 @@ const publicRoutes = [
   "/api/health",
 ];
 
-const adminRoutes = ["/admin(.*)"];
+const adminRouteRoles: Array<{ pattern: string; roles: readonly string[] }> = [
+  { pattern: "/admin/users(.*)", roles: ADMIN_ROLES },
+  { pattern: "/admin/discounts(.*)", roles: ADMIN_ROLES },
+  { pattern: "/admin/camps(.*)", roles: ADMIN_ROLES },
+  { pattern: "/admin(.*)", roles: ADMIN_PANEL_ROLES },
+];
 
 function matchesPattern(pathname: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
@@ -21,29 +27,34 @@ function matchesPattern(pathname: string, patterns: string[]): boolean {
   });
 }
 
+function getAllowedRolesForPath(pathname: string): readonly string[] | null {
+  for (const route of adminRouteRoles) {
+    const regex = new RegExp(`^${route.pattern}$`);
+    if (regex.test(pathname)) {
+      return route.roles;
+    }
+  }
+  return null;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if public route - allow through
   if (matchesPattern(pathname, publicRoutes)) {
     return NextResponse.next();
   }
 
-  // Get session from Better Auth
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  // Protected routes require auth
   if (!session) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  // Admin routes require admin role
-  if (matchesPattern(pathname, adminRoutes)) {
-    if (session.user.role !== "admin") {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+  const allowedRoles = getAllowedRolesForPath(pathname);
+  if (allowedRoles && !allowedRoles.includes(session.user.role ?? "")) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

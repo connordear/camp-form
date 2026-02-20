@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "./schema";
@@ -164,7 +165,60 @@ async function seed() {
 
   console.log("✅ Cleared existing data");
 
-  // Get all camps
+  console.log("👤 Creating test accounts...");
+
+  const testAccounts = [
+    {
+      email: "admin@test.com",
+      password: "admin123",
+      role: "admin",
+      name: "Admin User",
+    },
+    {
+      email: "hcp@test.com",
+      password: "hcp123",
+      role: "hcp",
+      name: "Healthcare Provider",
+    },
+    {
+      email: "staff@test.com",
+      password: "staff123",
+      role: "staff",
+      name: "Staff Member",
+    },
+    {
+      email: "user@test.com",
+      password: "user123",
+      role: "user",
+      name: "Regular User",
+    },
+  ];
+
+  for (const account of testAccounts) {
+    const hashedPassword = await hashPassword(account.password);
+
+    const [user] = await db
+      .insert(schema.user)
+      .values({
+        name: account.name,
+        email: account.email,
+        emailVerified: true,
+        role: account.role as "admin" | "hcp" | "staff" | "user",
+      })
+      .returning({ id: schema.user.id, email: schema.user.email });
+
+    await db.insert(schema.account).values({
+      accountId: user.id,
+      providerId: "credential",
+      userId: user.id,
+      password: hashedPassword,
+    });
+
+    console.log(`   ✅ Created ${account.role}: ${account.email}`);
+  }
+
+  console.log("✅ Test accounts created");
+
   const allCamps = await db.select().from(schema.camps);
 
   // Get 2026 camp years

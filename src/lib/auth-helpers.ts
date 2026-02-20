@@ -1,5 +1,26 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import type { JSX } from "react";
 import { auth, type Session } from "@/lib/auth";
+import {
+  ADMIN_PANEL_ROLES,
+  ADMIN_ROLES,
+  type AdminPanelRole,
+  MEDICAL_ROLES,
+  type MedicalRole,
+} from "./auth-roles";
+
+export {
+  ADMIN_PANEL_ROLES,
+  ADMIN_ROLES,
+  type AdminPanelRole,
+  type AdminRole,
+  hasAdminPanelAccess,
+  hasMedicalAccess,
+  isAdmin,
+  MEDICAL_ROLES,
+  type MedicalRole,
+} from "./auth-roles";
 
 /**
  * Get the current session. Returns null if not authenticated.
@@ -40,21 +61,15 @@ export async function requireAdmin(): Promise<Session> {
  */
 export async function requireAdminPanelAccess(): Promise<Session> {
   const session = await requireAuth();
-  const allowedRoles = ["admin", "hcp", "staff"];
-  if (!allowedRoles.includes(session.user.role ?? "")) {
+  if (!ADMIN_PANEL_ROLES.includes(session.user.role as AdminPanelRole)) {
     throw new Error("Unauthorized: Admin panel access required");
   }
   return session;
 }
 
-/**
- * Require medical info access (admin or hcp only).
- * Throws an error if not authenticated or not authorized.
- */
 export async function requireMedicalAccess(): Promise<Session> {
   const session = await requireAuth();
-  const medicalRoles = ["admin", "hcp"];
-  if (!medicalRoles.includes(session.user.role ?? "")) {
+  if (!MEDICAL_ROLES.includes(session.user.role as MedicalRole)) {
     throw new Error("Unauthorized: Medical info access required");
   }
   return session;
@@ -97,24 +112,22 @@ export function adminPanelAction<T, R>(
 ): ServerAction<T, R> {
   return async (data: T): Promise<R> => {
     const session = await getSession();
-    const allowedRoles = ["admin", "hcp", "staff"];
-    if (!session || !allowedRoles.includes(session.user.role ?? "")) {
+    if (
+      !session ||
+      !ADMIN_PANEL_ROLES.includes(session.user.role as AdminPanelRole)
+    ) {
       throw new Error("Unauthorized: Admin panel access required");
     }
     return action(data);
   };
 }
 
-/**
- * Wrapper for server actions accessible to admin and hcp (medical access).
- */
 export function medicalAccessAction<T, R>(
   action: ServerAction<T, R>,
 ): ServerAction<T, R> {
   return async (data: T): Promise<R> => {
     const session = await getSession();
-    const medicalRoles = ["admin", "hcp"];
-    if (!session || !medicalRoles.includes(session.user.role ?? "")) {
+    if (!session || !MEDICAL_ROLES.includes(session.user.role as MedicalRole)) {
       throw new Error("Unauthorized: Medical info access required");
     }
     return action(data);
@@ -135,3 +148,21 @@ export function adminOnlyAction<T, R>(
     return action(data);
   };
 }
+
+type PageComponent<P> = (props: P) => Promise<JSX.Element>;
+
+function withRoles(roles: string[]) {
+  return <P extends object>(Page: PageComponent<P>): PageComponent<P> => {
+    return async (props: P): Promise<JSX.Element> => {
+      const session = await getSession();
+      if (!session || !roles.includes(session.user.role ?? "")) {
+        redirect("/");
+      }
+      return Page(props);
+    };
+  };
+}
+
+export const adminPage = withRoles([...ADMIN_ROLES]);
+export const adminPanelPage = withRoles([...ADMIN_PANEL_ROLES]);
+export const medicalPage = withRoles([...MEDICAL_ROLES]);
