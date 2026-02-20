@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getSession } from "@/lib/auth-helpers";
+import { adminPanelPage, getSession } from "@/lib/auth-helpers";
 import { parseYearParam } from "../utils";
 import { getAvailableCamps, getRegistrationsForAdmin } from "./actions";
 import { RegistrationsList } from "./components/registrations-list";
@@ -56,28 +56,24 @@ interface RegistrationsYearPageProps {
   }>;
 }
 
-export default async function RegistrationsYearPage({
+async function RegistrationsYearPage({
   params,
   searchParams,
 }: RegistrationsYearPageProps) {
   const { year: yearParam } = await params;
   const searchParamsData = await searchParams;
 
-  // Get session for user role (auth is handled by layout)
   const session = await getSession();
   const userRole = session?.user.role ?? "user";
 
-  // Parse year from path param
   const validYear = parseYearParam(yearParam);
 
-  // Parse search params with defaults
   const search = searchParamsData.search || "";
   const status = searchParamsData.status || "all";
   const camp = searchParamsData.camp || "all";
   const page = parseInt(searchParamsData.page || "1", 10);
   const validPage = Number.isNaN(page) || page < 1 ? 1 : page;
 
-  // Fetch data using server action (includes admin check)
   const { registrations, totalCount, totalPages } =
     await getRegistrationsForAdmin({
       year: validYear,
@@ -88,7 +84,6 @@ export default async function RegistrationsYearPage({
       pageSize: 10,
     });
 
-  // Get available camps for the filter
   const availableCamps = await getAvailableCamps(validYear);
 
   return (
@@ -108,3 +103,5 @@ export default async function RegistrationsYearPage({
     </Suspense>
   );
 }
+
+export default adminPanelPage(RegistrationsYearPage);

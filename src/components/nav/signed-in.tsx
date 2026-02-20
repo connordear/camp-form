@@ -21,6 +21,7 @@ import {
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { Session } from "@/lib/auth";
 import { authClient } from "@/lib/auth-client";
+import { hasAdminPanelAccess } from "@/lib/auth-roles";
 import Logo from "../ui/logo";
 
 interface NavSignedInProps {
@@ -41,6 +42,8 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  const showAdminLink = hasAdminPanelAccess(role);
+
   const handleSignOut = async () => {
     await authClient.signOut();
     router.push("/");
@@ -49,7 +52,7 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
 
   return (
     <header className="flex justify-between items-center p-4 gap-4 h-16 w-full bg-background border-b">
-      <NavigationMenu className={role === "admin" ? clsx("pl-14 md:pl-0") : ""}>
+      <NavigationMenu className={showAdminLink ? clsx("pl-14 md:pl-0") : ""}>
         <NavigationMenuList className="flex gap-4">
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
@@ -62,7 +65,7 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
       </NavigationMenu>
       <div className="flex gap-4 items-center">
         <ThemeToggle />
-        {role === "admin" && <Link href="/admin">Admin</Link>}
+        {showAdminLink && <Link href="/admin">Admin</Link>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

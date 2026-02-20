@@ -1,6 +1,12 @@
 "use client";
 
-import { MenuIcon, TagIcon, TentIcon, UsersIcon } from "lucide-react";
+import {
+  MenuIcon,
+  TagIcon,
+  TentIcon,
+  UserCircleIcon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -23,6 +29,7 @@ import { YearSelector } from "./year-selector";
 
 interface AdminNavProps {
   availableYears: number[];
+  userRole: "admin" | "hcp" | "staff";
 }
 
 interface AdminNavLinkProps {
@@ -77,7 +84,7 @@ function AdminNavLink({
   return linkContent;
 }
 
-function AdminNavContent({ availableYears }: AdminNavProps) {
+function AdminNavContent({ availableYears, userRole }: AdminNavProps) {
   return (
     <>
       {/* Desktop Sidebar - full width */}
@@ -86,12 +93,19 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
           <AdminNavLink href="/registrations" icon={UsersIcon}>
             Registrations
           </AdminNavLink>
-          <AdminNavLink href="/camps" icon={TentIcon}>
-            Camps
-          </AdminNavLink>
-          <AdminNavLink href="/discounts" icon={TagIcon}>
-            Discounts
-          </AdminNavLink>
+          {userRole === "admin" && (
+            <>
+              <AdminNavLink href="/camps" icon={TentIcon}>
+                Camps
+              </AdminNavLink>
+              <AdminNavLink href="/discounts" icon={TagIcon}>
+                Discounts
+              </AdminNavLink>
+              <AdminNavLink href="/users" icon={UserCircleIcon}>
+                Users
+              </AdminNavLink>
+            </>
+          )}
         </nav>
 
         <div className="mt-auto pt-4 border-t">
@@ -105,12 +119,19 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
           <AdminNavLink href="/registrations" icon={UsersIcon} collapsed>
             Registrations
           </AdminNavLink>
-          <AdminNavLink href="/camps" icon={TentIcon} collapsed>
-            Camps
-          </AdminNavLink>
-          <AdminNavLink href="/discounts" icon={TagIcon} collapsed>
-            Discounts
-          </AdminNavLink>
+          {userRole === "admin" && (
+            <>
+              <AdminNavLink href="/camps" icon={TentIcon} collapsed>
+                Camps
+              </AdminNavLink>
+              <AdminNavLink href="/discounts" icon={TagIcon} collapsed>
+                Discounts
+              </AdminNavLink>
+              <AdminNavLink href="/users" icon={UserCircleIcon} collapsed>
+                Users
+              </AdminNavLink>
+            </>
+          )}
         </nav>
 
         <div className="mt-auto pt-4 border-t w-full flex justify-center">
@@ -121,7 +142,7 @@ function AdminNavContent({ availableYears }: AdminNavProps) {
   );
 }
 
-function MobileNav({ availableYears }: AdminNavProps) {
+function MobileNav({ availableYears, userRole }: AdminNavProps) {
   const [open, setOpen] = useState(false);
 
   const closeSheet = () => setOpen(false);
@@ -155,12 +176,31 @@ function MobileNav({ availableYears }: AdminNavProps) {
             >
               Registrations
             </AdminNavLink>
-            <AdminNavLink href="/camps" icon={TentIcon} onClick={closeSheet}>
-              Camps
-            </AdminNavLink>
-            <AdminNavLink href="/discounts" icon={TagIcon} onClick={closeSheet}>
-              Discounts
-            </AdminNavLink>
+            {userRole === "admin" && (
+              <>
+                <AdminNavLink
+                  href="/camps"
+                  icon={TentIcon}
+                  onClick={closeSheet}
+                >
+                  Camps
+                </AdminNavLink>
+                <AdminNavLink
+                  href="/discounts"
+                  icon={TagIcon}
+                  onClick={closeSheet}
+                >
+                  Discounts
+                </AdminNavLink>
+                <AdminNavLink
+                  href="/users"
+                  icon={UserCircleIcon}
+                  onClick={closeSheet}
+                >
+                  Users
+                </AdminNavLink>
+              </>
+            )}
           </nav>
 
           <div className="mt-auto p-4 border-t absolute bottom-0 left-0 right-0">
@@ -172,7 +212,7 @@ function MobileNav({ availableYears }: AdminNavProps) {
   );
 }
 
-export function AdminNav({ availableYears }: AdminNavProps) {
+export function AdminNav({ availableYears, userRole }: AdminNavProps) {
   return (
     <Suspense
       fallback={
@@ -181,8 +221,8 @@ export function AdminNav({ availableYears }: AdminNavProps) {
         </div>
       }
     >
-      <MobileNav availableYears={availableYears} />
-      <AdminNavContent availableYears={availableYears} />
+      <MobileNav availableYears={availableYears} userRole={userRole} />
+      <AdminNavContent availableYears={availableYears} userRole={userRole} />
     </Suspense>
   );
 }

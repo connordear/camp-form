@@ -1,11 +1,7 @@
 "use server";
 
 import { and, desc, eq } from "drizzle-orm";
-import {
-  adminAction,
-  adminPanelAction,
-  medicalAccessAction,
-} from "@/lib/auth-helpers";
+import { adminPanelAction, medicalAccessAction } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { campers, campYears, registrations } from "@/lib/data/schema";
 import type { AdminRegistration, AdminRegistrationDetail } from "./schema";
@@ -106,7 +102,7 @@ export const getRegistrationsForAdmin = adminPanelAction(
   },
 );
 
-export const getAvailableCamps = adminAction(
+export const getAvailableCamps = adminPanelAction(
   async (year: number): Promise<{ id: string; name: string }[]> => {
     const campsData = await db.query.campYears.findMany({
       where: eq(campYears.year, year),
