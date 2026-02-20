@@ -1,9 +1,5 @@
 import { redirect } from "next/navigation";
-import {
-  type AdminPanelRole,
-  getSession,
-  hasAdminPanelAccess,
-} from "@/lib/auth-helpers";
+import { type AdminPanelRole, getSession } from "@/lib/auth-helpers";
 import { getAvailableYears } from "@/lib/services/camp-service";
 import { AdminNav } from "./components/admin-nav";
 
@@ -15,10 +11,6 @@ export default async function AdminLayout({
   const session = await getSession();
 
   if (!session) {
-    redirect("/");
-  }
-
-  if (!hasAdminPanelAccess(session.user.role)) {
     redirect("/");
   }
 

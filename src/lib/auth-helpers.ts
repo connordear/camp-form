@@ -151,7 +151,7 @@ export function adminOnlyAction<T, R>(
 
 type PageComponent<P> = (props: P) => Promise<JSX.Element>;
 
-function withRoles(roles: string[]) {
+function withRoles(roles: readonly string[]) {
   return <P extends object>(Page: PageComponent<P>): PageComponent<P> => {
     return async (props: P): Promise<JSX.Element> => {
       const session = await getSession();
@@ -163,6 +163,6 @@ function withRoles(roles: string[]) {
   };
 }
 
-export const adminPage = withRoles([...ADMIN_ROLES]);
-export const adminPanelPage = withRoles([...ADMIN_PANEL_ROLES]);
-export const medicalPage = withRoles([...MEDICAL_ROLES]);
+export const adminPage = withRoles(ADMIN_ROLES);
+export const adminPanelPage = withRoles(ADMIN_PANEL_ROLES);
+export const medicalPage = withRoles(MEDICAL_ROLES);
