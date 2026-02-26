@@ -25,12 +25,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
 import { Field, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -50,7 +44,7 @@ interface CampCardProps {
 }
 
 const createEmptyPrice = (): PriceEntry => ({
-  id: createId(), // Temporary ID for React key - server will generate real ID for new prices
+  id: createId(),
   name: "",
   price: 0,
   isDayPrice: false,
@@ -60,7 +54,6 @@ export function CampCard({ camp, year }: CampCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const hasCampYear = camp.campYear !== null;
 
-  // Initialize prices from camp data
   const initialPrices: PriceEntry[] = camp.campYear?.prices?.map((p) => ({
     id: p.id,
     name: p.name,
@@ -68,7 +61,6 @@ export function CampCard({ camp, year }: CampCardProps) {
     isDayPrice: p.isDayPrice,
   })) ?? [createEmptyPrice()];
 
-  // Camp details form (name, description)
   const campForm = useAppForm({
     defaultValues: {
       id: camp.id,
@@ -93,7 +85,6 @@ export function CampCard({ camp, year }: CampCardProps) {
     },
   });
 
-  // Camp year form (dates, capacity)
   const campYearForm = useAppForm({
     defaultValues: {
       campId: camp.id,
@@ -128,7 +119,6 @@ export function CampCard({ camp, year }: CampCardProps) {
     },
   });
 
-  // Prices form - separate form for batch price updates
   const pricesForm = useAppForm({
     defaultValues: {
       campId: camp.id,
@@ -181,7 +171,6 @@ export function CampCard({ camp, year }: CampCardProps) {
     }
   };
 
-  // Price formatting helpers
   const formatPriceForDisplay = (cents: number): string => {
     return (cents / 100).toFixed(2);
   };
@@ -193,7 +182,7 @@ export function CampCard({ camp, year }: CampCardProps) {
   };
 
   return (
-    <Card className="w-full">
+    <div className="space-y-6">
       <campForm.AppForm>
         <form
           onSubmit={(e) => {
@@ -201,204 +190,194 @@ export function CampCard({ camp, year }: CampCardProps) {
             e.stopPropagation();
           }}
         >
-          <CardHeader>
-            <div className="flex justify-between items-start gap-4">
-              <div className="flex-1 min-w-0">
-                <campForm.AppField name="name">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel className="sr-only">Camp Name</FieldLabel>
-                      <field.WithErrors>
-                        <field.TextInput
-                          className="text-xl font-semibold bg-transparent border-transparent hover:border-input focus:border-input transition-colors"
-                          placeholder="Camp name"
-                        />
-                      </field.WithErrors>
-                    </Field>
-                  )}
-                </campForm.AppField>
-              </div>
-            </div>
-            <campForm.AppField name="description">
-              {(field) => (
-                <Field>
-                  <FieldLabel className="sr-only">Description</FieldLabel>
-                  <field.TextArea
-                    className="resize-none bg-transparent border-transparent hover:border-input focus:border-input transition-colors text-muted-foreground"
-                    placeholder="Camp description (optional)"
-                    rows={2}
-                  />
-                </Field>
-              )}
-            </campForm.AppField>
-          </CardHeader>
-          <CardFooter className="border-b pb-4 mt-2 flex justify-between items-center">
-            <div className="flex gap-2 items-center">
-              <campForm.SubmitButton
-                name="Save Camp"
-                onClick={() => campForm.handleSubmit()}
-              >
-                <SaveIcon className="size-4 sm:mr-2" />
-                <span className="hidden sm:inline">Save Camp Details</span>
-              </campForm.SubmitButton>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    disabled={isDeleting}
-                  >
-                    <Trash2Icon className="size-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Camp</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete &quot;{camp.name}&quot;?
-                      This will also delete all year configurations. This action
-                      cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteCamp}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <campForm.StatusBadge schema={campUpdateSchema} />
-          </CardFooter>
-        </form>
-      </campForm.AppForm>
-
-      {/* Camp Year Section */}
-      <campYearForm.AppForm>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          <CardContent>
-            <h4 className="text-sm font-medium text-muted-foreground mb-4">
-              {year} Configuration
-            </h4>
-
-            <FieldSet>
-              <campYearForm.AppField name="capacity">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <campForm.AppField name="name">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Capacity</FieldLabel>
+                    <FieldLabel>Camp Name</FieldLabel>
                     <field.WithErrors>
-                      <field.TextInput
-                        type="number"
-                        min="0"
-                        placeholder="Unlimited"
-                        value={field.state.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          field.handleChange(
-                            val === "" ? null : parseInt(val, 10),
-                          );
-                        }}
-                      />
+                      <field.TextInput placeholder="Camp name" />
                     </field.WithErrors>
                   </Field>
                 )}
-              </campYearForm.AppField>
-
-              <Field>
-                <FieldLabel>Camp Dates</FieldLabel>
-                <DateRangePicker
-                  form={campYearForm}
-                  startDateField="startDate"
-                  endDateField="endDate"
-                />
-              </Field>
-            </FieldSet>
-          </CardContent>
-          <CardFooter className="border-b pb-4 mt-2 flex justify-between items-center">
-            <div className="flex gap-2 items-center">
-              <campYearForm.SubmitButton
-                name={hasCampYear ? "Save Year" : "Add Year"}
-                onClick={() => campYearForm.handleSubmit()}
-              >
-                {hasCampYear ? (
-                  <>
-                    <SaveIcon className="size-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      Save Year Configuration
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="size-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      Add {year} Configuration
-                    </span>
-                  </>
-                )}
-              </campYearForm.SubmitButton>
-              {hasCampYear && (
+              </campForm.AppField>
+              <div className="flex items-end gap-2">
+                <campForm.SubmitButton
+                  name="Save Camp"
+                  onClick={() => campForm.handleSubmit()}
+                >
+                  <SaveIcon className="size-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Save Details</span>
+                </campForm.SubmitButton>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:text-destructive"
+                      disabled={isDeleting}
                     >
                       <Trash2Icon className="size-4" />
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Remove {year} Configuration
-                      </AlertDialogTitle>
+                      <AlertDialogTitle>Delete Camp</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to remove the {year} configuration
-                        for &quot;{camp.name}&quot;? This action cannot be
-                        undone.
+                        Are you sure you want to delete &quot;{camp.name}&quot;?
+                        This will also delete all year configurations. This
+                        action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={handleDeleteCampYear}
+                        onClick={handleDeleteCamp}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Remove
+                        Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              )}
+              </div>
             </div>
-            <campYearForm.StatusBadge
-              schema={hasCampYear ? campYearUpdateSchema : campYearInsertSchema}
-            />
-          </CardFooter>
+            <campForm.AppField name="description">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Description</FieldLabel>
+                  <field.TextArea
+                    placeholder="Camp description (optional)"
+                    rows={2}
+                  />
+                </Field>
+              )}
+            </campForm.AppField>
+            <div className="flex justify-end">
+              <campForm.StatusBadge schema={campUpdateSchema} />
+            </div>
+          </div>
         </form>
-      </campYearForm.AppForm>
+      </campForm.AppForm>
 
-      {/* Prices Section - Only show if camp year exists */}
-      {hasCampYear && (
-        <pricesForm.AppForm>
+      <div className="border-t pt-6">
+        <h4 className="text-sm font-medium text-muted-foreground mb-4">
+          {year} Configuration
+        </h4>
+        <campYearForm.AppForm>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              pricesForm.handleSubmit();
             }}
           >
-            <CardContent>
+            <FieldSet>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <campYearForm.AppField name="capacity">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Capacity</FieldLabel>
+                      <field.WithErrors>
+                        <field.TextInput
+                          type="number"
+                          min="0"
+                          placeholder="Unlimited"
+                          value={field.state.value ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            field.handleChange(
+                              val === "" ? null : parseInt(val, 10),
+                            );
+                          }}
+                        />
+                      </field.WithErrors>
+                    </Field>
+                  )}
+                </campYearForm.AppField>
+                <Field>
+                  <FieldLabel>Camp Dates</FieldLabel>
+                  <DateRangePicker
+                    form={campYearForm}
+                    startDateField="startDate"
+                    endDateField="endDate"
+                  />
+                </Field>
+              </div>
+            </FieldSet>
+            <div className="flex justify-between items-center mt-4">
+              <div className="flex gap-2 items-center">
+                <campYearForm.SubmitButton
+                  name={hasCampYear ? "Save Year" : "Add Year"}
+                  onClick={() => campYearForm.handleSubmit()}
+                >
+                  {hasCampYear ? (
+                    <>
+                      <SaveIcon className="size-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Save Year</span>
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon className="size-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Add {year}</span>
+                    </>
+                  )}
+                </campYearForm.SubmitButton>
+                {hasCampYear && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Remove {year} Configuration
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to remove the {year}{" "}
+                          configuration for &quot;{camp.name}&quot;? This action
+                          cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteCampYear}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Remove
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+              <campYearForm.StatusBadge
+                schema={
+                  hasCampYear ? campYearUpdateSchema : campYearInsertSchema
+                }
+              />
+            </div>
+          </form>
+        </campYearForm.AppForm>
+      </div>
+
+      {hasCampYear && (
+        <div className="border-t pt-6">
+          <pricesForm.AppForm>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pricesForm.handleSubmit();
+              }}
+            >
               <pricesForm.Field name="prices" mode="array">
                 {(pricesField) => (
                   <>
@@ -526,10 +505,10 @@ export function CampCard({ camp, year }: CampCardProps) {
                 </pricesForm.SubmitButton>
                 <pricesForm.StatusBadge schema={batchUpdatePricesSchema} />
               </div>
-            </CardContent>
-          </form>
-        </pricesForm.AppForm>
+            </form>
+          </pricesForm.AppForm>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }

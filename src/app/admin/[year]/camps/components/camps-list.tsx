@@ -1,16 +1,13 @@
 "use client";
 
-import { TentIcon } from "lucide-react";
+import { CalendarIcon, TentIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampCard } from "./camp-card";
@@ -21,14 +18,7 @@ interface CampsListProps {
 }
 
 export function CampsList({ camps, year }: CampsListProps) {
-  const campsWithYear = camps.filter((camp) => camp.campYear !== null);
-  const campsWithoutYear = camps.filter((camp) => camp.campYear === null);
-
-  // Auto-select first camp (prioritize configured camps)
-  const defaultCampId = campsWithYear[0]?.id ?? campsWithoutYear[0]?.id ?? "";
-  const [selectedCampId, setSelectedCampId] = useState<string>(defaultCampId);
-
-  // Find the selected camp
+  const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   const selectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
@@ -53,48 +43,63 @@ export function CampsList({ camps, year }: CampsListProps) {
           <AddCampDialog year={year} />
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Camp selector dropdown */}
-          <div className="space-y-2">
-            <label
-              htmlFor="camp-selector"
-              className="text-sm font-medium text-muted-foreground"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {camps.map((camp) => (
+            <button
+              key={camp.id}
+              onClick={() => setSelectedCampId(camp.id)}
+              className="text-left p-4 rounded-lg border bg-card hover:bg-accent hover:border-accent-foreground/20 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
-              Select Camp
-            </label>
-            <Select value={selectedCampId} onValueChange={setSelectedCampId}>
-              <SelectTrigger id="camp-selector" className="w-full max-w-md">
-                <SelectValue placeholder="Select a camp..." />
-              </SelectTrigger>
-              <SelectContent>
-                {campsWithYear.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Configured for {year}</SelectLabel>
-                    {campsWithYear.map((camp) => (
-                      <SelectItem key={camp.id} value={camp.id}>
-                        {camp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold truncate">{camp.name}</h3>
+                {camp.campYear ? (
+                  <span className="shrink-0 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-0.5 rounded-full">
+                    Configured
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                    Not configured
+                  </span>
                 )}
-                {campsWithoutYear.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Not configured for {year}</SelectLabel>
-                    {campsWithoutYear.map((camp) => (
-                      <SelectItem key={camp.id} value={camp.id}>
-                        {camp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+              </div>
+              {camp.description && (
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {camp.description}
+                </p>
+              )}
+              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                {camp.campYear?.capacity && (
+                  <span className="flex items-center gap-1">
+                    <UsersIcon className="size-3" />
+                    {camp.campYear.capacity}
+                  </span>
                 )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Selected camp card */}
-          {selectedCamp && <CampCard camp={selectedCamp} year={year} />}
+                {camp.campYear?.startDate && camp.campYear?.endDate && (
+                  <span className="flex items-center gap-1">
+                    <CalendarIcon className="size-3" />
+                    {new Date(camp.campYear.startDate).toLocaleDateString()} -{" "}
+                    {new Date(camp.campYear.endDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            </button>
+          ))}
         </div>
       )}
+
+      <Dialog
+        open={!!selectedCampId}
+        onOpenChange={(open) => !open && setSelectedCampId(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle>{selectedCamp?.name ?? "Camp"}</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto px-6 pb-6">
+            {selectedCamp && <CampCard camp={selectedCamp} year={year} />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
