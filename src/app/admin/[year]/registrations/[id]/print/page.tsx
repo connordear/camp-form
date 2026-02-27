@@ -94,27 +94,8 @@ export default async function PrintRegistrationPage({
 
   return (
     <>
-      <style jsx global>{`
-        @media print {
-          body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-container {
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: 100% !important;
-          }
-          .print-break {
-            page-break-before: always;
-          }
-        }
-      `}</style>
-      <div className="print-container min-h-screen bg-white p-8 max-w-4xl mx-auto">
-        <div className="no-print mb-6 flex justify-between items-center">
+      <div className="min-h-screen bg-white p-8 max-w-4xl mx-auto print:p-0 print:m-0 print:max-w-none">
+        <div className="mb-6 flex justify-between items-center print:hidden">
           <h1 className="text-2xl font-bold">Registration Print View</h1>
           <button
             type="button"
