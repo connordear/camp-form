@@ -178,7 +178,7 @@ export function UsersList({
       </div>
 
       <Card className="p-0">
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -212,13 +212,15 @@ export function UsersList({
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => setSelectedUser(user)}
                   >
-                    <TableCell>
-                      <span className="font-medium">{user.name}</span>
+                    <TableCell className="max-w-32">
+                      <span className="font-medium truncate block">
+                        {user.name}
+                      </span>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <MailIcon className="size-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">
+                    <TableCell className="max-w-40">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MailIcon className="size-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground truncate">
                           {user.email}
                         </span>
                       </div>
