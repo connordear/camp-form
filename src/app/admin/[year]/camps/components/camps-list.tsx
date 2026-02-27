@@ -1,13 +1,22 @@
 "use client";
 
-import { CalendarIcon, TentIcon, UsersIcon } from "lucide-react";
+import { TentIcon } from "lucide-react";
 import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampCard } from "./camp-card";
@@ -33,59 +42,80 @@ export function CampsList({ camps, year }: CampsListProps) {
         <AddCampDialog year={year} />
       </div>
 
-      {camps.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <TentIcon className="size-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No camps yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Get started by creating your first camp.
-          </p>
-          <AddCampDialog year={year} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {camps.map((camp) => (
-            <button
-              key={camp.id}
-              onClick={() => setSelectedCampId(camp.id)}
-              className="text-left p-4 rounded-lg border bg-card hover:bg-accent hover:border-accent-foreground/20 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold truncate">{camp.name}</h3>
-                {camp.campYear ? (
-                  <span className="shrink-0 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-0.5 rounded-full">
-                    Configured
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                    Not configured
-                  </span>
-                )}
-              </div>
-              {camp.description && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {camp.description}
-                </p>
+      <Card className="p-0">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Description
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden sm:table-cell">Capacity</TableHead>
+                <TableHead className="hidden lg:table-cell">Dates</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {camps.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-32 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <TentIcon className="size-8 text-muted-foreground mb-2" />
+                      <p>
+                        No camps yet. Create your first camp to get started.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                camps.map((camp) => (
+                  <TableRow
+                    key={camp.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedCampId(camp.id)}
+                  >
+                    <TableCell>
+                      <span className="font-medium">{camp.name}</span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="text-muted-foreground line-clamp-1">
+                        {camp.description || "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {camp.campYear ? (
+                        <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-0.5 rounded-full">
+                          Configured
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                          Not configured
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <span className="text-muted-foreground">
+                        {camp.campYear?.capacity ?? "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <span className="text-muted-foreground">
+                        {camp.campYear?.startDate && camp.campYear?.endDate
+                          ? `${new Date(camp.campYear.startDate).toLocaleDateString()} - ${new Date(camp.campYear.endDate).toLocaleDateString()}`
+                          : "-"}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                {camp.campYear?.capacity && (
-                  <span className="flex items-center gap-1">
-                    <UsersIcon className="size-3" />
-                    {camp.campYear.capacity}
-                  </span>
-                )}
-                {camp.campYear?.startDate && camp.campYear?.endDate && (
-                  <span className="flex items-center gap-1">
-                    <CalendarIcon className="size-3" />
-                    {new Date(camp.campYear.startDate).toLocaleDateString()} -{" "}
-                    {new Date(camp.campYear.endDate).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Dialog
         open={!!selectedCampId}
