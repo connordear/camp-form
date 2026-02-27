@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Printer,
   Stethoscope,
   User,
 } from "lucide-react";
@@ -116,11 +117,24 @@ export function RegistrationModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">
-            {detail
-              ? `${detail.camper.firstName} ${detail.camper.lastName}`
-              : "Loading..."}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl">
+              {detail
+                ? `${detail.camper.firstName} ${detail.camper.lastName}`
+                : "Loading..."}
+            </DialogTitle>
+            {detail && (
+              <a
+                href={`/admin/${detail.campYear.year}/registrations/${detail.id}/print`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border bg-background hover:bg-muted transition-colors"
+              >
+                <Printer className="size-4" />
+                Print
+              </a>
+            )}
+          </div>
         </DialogHeader>
 
         {isLoading ? (
