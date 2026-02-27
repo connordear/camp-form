@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
-import { CampCard } from "./camp-card";
+import { CampForm } from "./camp-form";
 
 interface CampsListProps {
   camps: CampWithYear[];
@@ -126,7 +126,7 @@ export function CampsList({ camps, year }: CampsListProps) {
             <DialogTitle>{selectedCamp?.name ?? "Camp"}</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto px-6 pb-6">
-            {selectedCamp && <CampCard camp={selectedCamp} year={year} />}
+            {selectedCamp && <CampForm camp={selectedCamp} year={year} />}
           </div>
         </DialogContent>
       </Dialog>
