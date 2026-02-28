@@ -44,7 +44,7 @@ import {
   type PriceEntry,
 } from "@/lib/types/camp-schemas";
 
-interface CampCardProps {
+interface CampFormProps {
   camp: CampWithYear;
   year: number;
 }
@@ -56,7 +56,7 @@ const createEmptyPrice = (): PriceEntry => ({
   isDayPrice: false,
 });
 
-export function CampCard({ camp, year }: CampCardProps) {
+export function CampForm({ camp, year }: CampFormProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const hasCampYear = camp.campYear !== null;
 
