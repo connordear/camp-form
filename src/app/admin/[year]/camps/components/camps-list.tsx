@@ -43,8 +43,8 @@ export function CampsList({ camps, year }: CampsListProps) {
       </div>
 
       <Card className="p-0">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="overflow-x-auto">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -81,8 +81,8 @@ export function CampsList({ camps, year }: CampsListProps) {
                     <TableCell>
                       <span className="font-medium">{camp.name}</span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span className="text-muted-foreground line-clamp-1">
+                    <TableCell className="hidden md:table-cell max-w-xs">
+                      <span className="text-muted-foreground line-clamp-1 block truncate">
                         {camp.description || "-"}
                       </span>
                     </TableCell>
