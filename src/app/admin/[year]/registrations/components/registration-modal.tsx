@@ -124,15 +124,28 @@ export function RegistrationModal({
                 : "Loading..."}
             </DialogTitle>
             {detail && (
-              <a
-                href={`/admin/${detail.campYear.year}/registrations/${detail.id}/print`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border bg-background hover:bg-muted transition-colors"
-              >
-                <Printer className="size-4" />
-                Print
-              </a>
+              <div className="flex items-center gap-2">
+                {(userRole === "admin" || userRole === "hcp") && (
+                  <a
+                    href={`/admin/${detail.campYear.year}/registrations/${detail.id}/healthcare-print`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border bg-background hover:bg-muted transition-colors"
+                  >
+                    <Stethoscope className="size-4" />
+                    Healthcare
+                  </a>
+                )}
+                <a
+                  href={`/admin/${detail.campYear.year}/registrations/${detail.id}/print`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border bg-background hover:bg-muted transition-colors"
+                >
+                  <Printer className="size-4" />
+                  Print
+                </a>
+              </div>
             )}
           </div>
         </DialogHeader>
