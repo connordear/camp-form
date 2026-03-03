@@ -178,12 +178,12 @@ export function UsersList({
       </div>
 
       <Card className="p-0">
-        <CardContent className="p-0 overflow-x-auto">
-          <Table className="min-w-[600px]">
+        <CardContent className="p-0">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead className="w-auto">Name</TableHead>
+                <TableHead className="w-full min-w-0">Email</TableHead>
                 <TableHead className="hidden sm:table-cell">
                   Registrations
                 </TableHead>
@@ -215,8 +215,8 @@ export function UsersList({
                     <TableCell>
                       <span className="font-medium">{user.name}</span>
                     </TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="flex items-center gap-2 truncate">
+                    <TableCell className="min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <MailIcon className="size-4 text-muted-foreground shrink-0" />
                         <span className="text-muted-foreground truncate">
                           {user.email}
