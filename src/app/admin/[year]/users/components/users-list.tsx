@@ -182,8 +182,8 @@ export function UsersList({
           <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-auto">Name</TableHead>
-                <TableHead className="w-full min-w-0">Email</TableHead>
+                <TableHead className="w-2/5">Name</TableHead>
+                <TableHead className="w-3/5 min-w-0">Email</TableHead>
                 <TableHead className="hidden sm:table-cell">
                   Registrations
                 </TableHead>
