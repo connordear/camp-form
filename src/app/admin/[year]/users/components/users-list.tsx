@@ -212,12 +212,14 @@ export function UsersList({
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => setSelectedUser(user)}
                   >
-                    <TableCell>
-                      <span className="font-medium">{user.name}</span>
+                    <TableCell className="max-w-[120px] sm:max-w-none">
+                      <span className="block truncate font-medium">
+                        {user.name}
+                      </span>
                     </TableCell>
                     <TableCell className="min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
-                        <MailIcon className="size-4 text-muted-foreground shrink-0" />
+                        <MailIcon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="text-muted-foreground truncate">
                           {user.email}
                         </span>
