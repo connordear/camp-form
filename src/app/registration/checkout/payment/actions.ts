@@ -96,6 +96,8 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     billing_address_collection: "required",
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
+    // Enable manual promo code entry in Stripe checkout
+    allow_promotion_codes: true,
     branding_settings: {
       display_name: siteConfig.name, // TODO: Update to pull this from config somehow
       font_family: "roboto",
