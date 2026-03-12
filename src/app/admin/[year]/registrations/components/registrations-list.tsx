@@ -170,10 +170,6 @@ export function RegistrationsList({
   // Calculate summary stats from ALL registrations (not filtered)
   // Note: These should come from the server in a real implementation
   // For now, we'll calculate from the passed registrations
-  const totalRevenue = registrations
-    .filter((r) => r.status === "registered")
-    .reduce((sum, r) => sum + (r.pricePaid || 0), 0);
-
   const registeredCount = registrations.filter(
     (r) => r.status === "registered",
   ).length;
@@ -197,7 +193,7 @@ export function RegistrationsList({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -226,18 +222,6 @@ export function RegistrationsList({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{draftCount}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatPrice(totalRevenue)}
-            </div>
           </CardContent>
         </Card>
       </div>

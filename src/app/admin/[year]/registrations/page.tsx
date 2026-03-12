@@ -16,8 +16,7 @@ function RegistrationsListSkeleton() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="p-6 bg-muted rounded-lg animate-pulse h-28" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="p-6 bg-muted rounded-lg animate-pulse h-28" />
         <div className="p-6 bg-muted rounded-lg animate-pulse h-28" />
         <div className="p-6 bg-muted rounded-lg animate-pulse h-28" />
