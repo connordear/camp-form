@@ -19,6 +19,11 @@ export interface GetRegistrationsResult {
   registrations: AdminRegistration[];
   totalCount: number;
   totalPages: number;
+  statusCounts: {
+    registered: number;
+    draft: number;
+    refunded: number;
+  };
 }
 
 // Get registrations list (accessible to admin, hcp, staff)
@@ -88,6 +93,12 @@ export const getRegistrationsForAdmin = adminPanelAction(
     const totalCount = allRegistrations.length;
     const totalPages = Math.ceil(totalCount / pageSize);
 
+    const statusCounts = {
+      registered: allRegistrations.filter((r) => r.status === "registered").length,
+      draft: allRegistrations.filter((r) => r.status === "draft").length,
+      refunded: allRegistrations.filter((r) => r.status === "refunded").length,
+    };
+
     // Apply pagination
     const paginatedRegistrations = allRegistrations.slice(
       (page - 1) * pageSize,
@@ -98,6 +109,7 @@ export const getRegistrationsForAdmin = adminPanelAction(
       registrations: paginatedRegistrations as AdminRegistration[],
       totalCount,
       totalPages,
+      statusCounts,
     };
   },
 );
