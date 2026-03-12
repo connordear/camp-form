@@ -1,9 +1,15 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import { adminPanelAction, medicalAccessAction } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
-import { campers, campYears, registrations } from "@/lib/data/schema";
+import {
+  campers,
+  camps,
+  campYearPrices,
+  campYears,
+  registrations,
+} from "@/lib/data/schema";
 import type { AdminRegistration, AdminRegistrationDetail } from "./schema";
 
 export interface GetRegistrationsParams {
@@ -15,10 +21,17 @@ export interface GetRegistrationsParams {
   pageSize?: number;
 }
 
+export interface StatusCounts {
+  registered: number;
+  draft: number;
+  refunded: number;
+}
+
 export interface GetRegistrationsResult {
   registrations: AdminRegistration[];
   totalCount: number;
   totalPages: number;
+  statusCounts: StatusCounts;
 }
 
 // Get registrations list (accessible to admin, hcp, staff)
@@ -26,7 +39,7 @@ export const getRegistrationsForAdmin = adminPanelAction(
   async (params: GetRegistrationsParams): Promise<GetRegistrationsResult> => {
     const { year, search, status, camp, page = 1, pageSize = 10 } = params;
 
-    // Build where conditions
+    // Build base where conditions
     const conditions = [eq(registrations.campYear, year)];
 
     if (status && status !== "all") {
@@ -39,65 +52,139 @@ export const getRegistrationsForAdmin = adminPanelAction(
       conditions.push(eq(registrations.campId, camp));
     }
 
-    // Get all registrations matching year/status/camp (server-side filtering)
-    let allRegistrations = await db.query.registrations.findMany({
-      where: and(...conditions),
-      orderBy: desc(registrations.createdAt),
-      with: {
-        camper: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            userId: true,
-          },
-        },
-        campYear: {
-          with: {
-            camp: {
-              columns: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        price: {
-          columns: {
-            id: true,
-            name: true,
-            price: true,
-          },
-        },
-      },
-    });
-
-    // Client-side filtering for search text (camper name or camp name)
+    // Add search condition if provided
     if (search && search.trim()) {
-      const searchLower = search.trim().toLowerCase();
-      allRegistrations = allRegistrations.filter((reg) => {
-        const camperName =
-          `${reg.camper.firstName} ${reg.camper.lastName}`.toLowerCase();
-        const campName = reg.campYear.camp.name.toLowerCase();
-        return (
-          camperName.includes(searchLower) || campName.includes(searchLower)
-        );
-      });
+      const searchTerm = `%${search.trim()}%`;
+      conditions.push(
+        or(
+          ilike(campers.firstName, searchTerm),
+          ilike(campers.lastName, searchTerm),
+          ilike(camps.name, searchTerm),
+        )!,
+      );
     }
 
-    const totalCount = allRegistrations.length;
+    const whereClause = and(...conditions);
+
+    // Query 1: Get total count and status counts in one query
+    const countResult = await db
+      .select({
+        status: registrations.status,
+        count: count(),
+      })
+      .from(registrations)
+      .innerJoin(campers, eq(registrations.camperId, campers.id))
+      .innerJoin(
+        campYears,
+        and(
+          eq(registrations.campId, campYears.campId),
+          eq(registrations.campYear, campYears.year),
+        ),
+      )
+      .innerJoin(camps, eq(campYears.campId, camps.id))
+      .where(whereClause)
+      .groupBy(registrations.status);
+
+    const statusCounts: StatusCounts = { registered: 0, draft: 0, refunded: 0 };
+    let totalCount = 0;
+    for (const row of countResult) {
+      totalCount += row.count;
+      if (row.status === "registered") statusCounts.registered = row.count;
+      else if (row.status === "draft") statusCounts.draft = row.count;
+      else if (row.status === "refunded") statusCounts.refunded = row.count;
+    }
+
     const totalPages = Math.ceil(totalCount / pageSize);
 
-    // Apply pagination
-    const paginatedRegistrations = allRegistrations.slice(
-      (page - 1) * pageSize,
-      page * pageSize,
-    );
+    // Query 2: Get paginated registrations with flat select
+    const flatResults = await db
+      .select({
+        id: registrations.id,
+        campId: registrations.campId,
+        campYear: registrations.campYear,
+        priceId: registrations.priceId,
+        camperId: registrations.camperId,
+        numDays: registrations.numDays,
+        pricePaid: registrations.pricePaid,
+        status: registrations.status,
+        stripePaymentIntentId: registrations.stripePaymentIntentId,
+        stripeSessionId: registrations.stripeSessionId,
+        createdAt: registrations.createdAt,
+        updatedAt: registrations.updatedAt,
+        camperId_col: campers.id,
+        camperFirstName: campers.firstName,
+        camperLastName: campers.lastName,
+        camperUserId: campers.userId,
+        campYearYear: campYears.year,
+        campYearCampId: campYears.campId,
+        campId_col: camps.id,
+        campName: camps.name,
+        priceId_col: campYearPrices.id,
+        priceName: campYearPrices.name,
+        pricePrice: campYearPrices.price,
+      })
+      .from(registrations)
+      .innerJoin(campers, eq(registrations.camperId, campers.id))
+      .innerJoin(
+        campYears,
+        and(
+          eq(registrations.campId, campYears.campId),
+          eq(registrations.campYear, campYears.year),
+        ),
+      )
+      .innerJoin(camps, eq(campYears.campId, camps.id))
+      .innerJoin(
+        campYearPrices,
+        and(
+          eq(registrations.priceId, campYearPrices.id),
+          eq(registrations.campId, campYearPrices.campId),
+          eq(registrations.campYear, campYearPrices.year),
+        ),
+      )
+      .where(whereClause)
+      .orderBy(desc(registrations.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+
+    // Transform flat results to nested structure
+    const paginatedData = flatResults.map((row) => ({
+      id: row.id,
+      campId: row.campId,
+      priceId: row.priceId,
+      camperId: row.camperId,
+      numDays: row.numDays,
+      pricePaid: row.pricePaid,
+      status: row.status,
+      stripePaymentIntentId: row.stripePaymentIntentId,
+      stripeSessionId: row.stripeSessionId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      camper: {
+        id: row.camperId_col,
+        firstName: row.camperFirstName,
+        lastName: row.camperLastName,
+        userId: row.camperUserId,
+      },
+      campYear: {
+        year: row.campYearYear,
+        campId: row.campYearCampId,
+        camp: {
+          id: row.campId_col,
+          name: row.campName,
+        },
+      },
+      price: {
+        id: row.priceId_col,
+        name: row.priceName,
+        price: row.pricePrice,
+      },
+    }));
 
     return {
-      registrations: paginatedRegistrations as AdminRegistration[],
+      registrations: paginatedData as AdminRegistration[],
       totalCount,
       totalPages,
+      statusCounts,
     };
   },
 );
