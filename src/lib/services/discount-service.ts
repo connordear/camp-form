@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -48,6 +48,29 @@ export async function getDiscountById(id: string): Promise<Discount | null> {
     .select()
     .from(discounts)
     .where(eq(discounts.id, id));
+  return discount ?? null;
+}
+
+export async function validateBursaryCode(
+  code: string,
+): Promise<Discount | null> {
+  if (!code?.trim()) return null;
+
+  const normalizedCode = code.trim().toUpperCase();
+
+  const [discount] = await db
+    .select()
+    .from(discounts)
+    .where(
+      and(
+        eq(discounts.isActive, true),
+        or(
+          eq(discounts.code, normalizedCode),
+          eq(discounts.stripeCouponId, normalizedCode),
+        ),
+      ),
+    );
+
   return discount ?? null;
 }
 

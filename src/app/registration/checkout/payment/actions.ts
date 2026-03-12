@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth-helpers";
 import {
   evaluateDiscounts,
   type RegistrationForDiscount,
+  validateBursaryCode,
 } from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
@@ -21,8 +22,12 @@ const THEMES = {
  * Fetches a Stripe client secret for checkout.
  * @param registrationIds - Optional array of registration IDs to filter.
  *                          If not provided, uses all draft registrations.
+ * @param bursaryCodes - Optional array of bursary codes to apply manually.
  */
-export async function fetchClientSecret(registrationIds?: string[]) {
+export async function fetchClientSecret(
+  registrationIds?: string[],
+  bursaryCodes?: string[],
+) {
   const session = await requireAuth();
   const userId = session.user.id;
 
@@ -77,16 +82,33 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     return null;
   }
 
-  // Evaluate applicable discounts
-  const discountResult = await evaluateDiscounts(registrationsForDiscount);
+  const subtotal = registrationsForDiscount.reduce(
+    (sum, r) => sum + r.price * r.quantity,
+    0,
+  );
 
-  // Build discounts array for Stripe (use coupon IDs)
+  const discountCouponIds = new Set<string>();
+
+  const discountResult = await evaluateDiscounts(registrationsForDiscount);
+  for (const ad of discountResult.applicableDiscounts) {
+    if (ad.discount.stripeCouponId) {
+      discountCouponIds.add(ad.discount.stripeCouponId);
+    }
+  }
+
+  if (bursaryCodes?.length) {
+    for (const code of bursaryCodes) {
+      const discount = await validateBursaryCode(code);
+      if (discount?.stripeCouponId) {
+        discountCouponIds.add(discount.stripeCouponId);
+      }
+    }
+  }
+
   const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
-    discountResult.applicableDiscounts
-      .filter((ad) => ad.discount.stripeCouponId)
-      .map((ad) => ({
-        coupon: ad.discount.stripeCouponId!,
-      }));
+    Array.from(discountCouponIds).map((couponId) => ({
+      coupon: couponId,
+    }));
 
   const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",

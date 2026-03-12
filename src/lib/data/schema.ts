@@ -252,31 +252,32 @@ export const DISCOUNT_TYPES = ["percentage", "fixed"] as const;
 
 export type DiscountType = (typeof DISCOUNT_TYPES)[number];
 
-export const discounts = pgTable("discounts", {
-  id: id(),
-  name: text().notNull(), // e.g., "Early Bird 2026", "Sibling Discount"
-  description: text(), // Optional description for admin reference
+export const discounts = pgTable(
+  "discounts",
+  {
+    id: id(),
+    name: text().notNull(),
+    description: text(),
 
-  // Discount value
-  type: text({ enum: DISCOUNT_TYPES }).notNull(), // "percentage" or "fixed"
-  amount: integer().notNull(), // 10 for 10%, or 2500 for $25.00 off (in cents)
+    type: text({ enum: DISCOUNT_TYPES }).notNull(),
+    amount: integer().notNull(),
 
-  // Stripe integration
-  stripeCouponId: text("stripe_coupon_id"), // Synced Stripe coupon ID
+    stripeCouponId: text("stripe_coupon_id"),
+    code: text("code"),
 
-  // Condition configuration
-  conditionType: text("condition_type", {
-    enum: DISCOUNT_CONDITION_TYPES,
-  }).notNull(),
-  deadlineDate: date("deadline_date"), // For deadline-based discounts
-  minCampers: integer("min_campers"), // For sibling-based discounts (e.g., 2)
+    conditionType: text("condition_type", {
+      enum: DISCOUNT_CONDITION_TYPES,
+    }).notNull(),
+    deadlineDate: date("deadline_date"),
+    minCampers: integer("min_campers"),
 
-  // Status
-  isActive: boolean("is_active").default(true).notNull(),
-  autoApply: boolean("auto_apply").default(true).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    autoApply: boolean("auto_apply").default(true).notNull(),
 
-  ...timestamps,
-});
+    ...timestamps,
+  },
+  (t) => [unique().on(t.code)],
+);
 
 export const medicalInfo = pgTable("medical_info", {
   camperId: text("camper_id")

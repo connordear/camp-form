@@ -3,18 +3,24 @@ import { fetchClientSecret } from "./actions";
 import CheckoutForm from "./checkout-form";
 
 type PaymentPageProps = {
-  searchParams: Promise<{ ids?: string }>;
+  searchParams: Promise<{ ids?: string; codes?: string }>;
 };
 
 export default async function PaymentPage({ searchParams }: PaymentPageProps) {
-  const { ids } = await searchParams;
+  const { ids, codes } = await searchParams;
 
-  // Parse registration IDs from query params
   const registrationIds = ids
     ? ids.split(",").filter((id) => id.trim())
     : undefined;
 
-  const clientSecret = await fetchClientSecret(registrationIds);
+  const bursaryCodes = codes
+    ? codes.split(",").filter((code) => code.trim())
+    : undefined;
+
+  const clientSecret = await fetchClientSecret(
+    registrationIds,
+    bursaryCodes,
+  );
 
   if (!clientSecret) {
     return (

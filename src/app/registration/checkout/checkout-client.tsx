@@ -1,13 +1,21 @@
 "use client";
 
-import { TagIcon } from "lucide-react";
+import { TagIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { DiscountEvaluationResult } from "@/lib/services/discount-service";
-import { type CheckoutCamper, evaluateCheckoutDiscounts } from "./actions";
+import { Input } from "@/components/ui/input";
+import type {
+  Discount,
+  DiscountEvaluationResult,
+} from "@/lib/services/discount-service";
+import {
+  type CheckoutCamper,
+  evaluateCheckoutDiscounts,
+  validateCheckoutBursaryCode,
+} from "./actions";
 import { CamperCard } from "./camper-card";
 
 type CheckoutClientProps = {
@@ -27,6 +35,13 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [isPending, startTransition] = useTransition();
   const [discountResult, setDiscountResult] =
     useState<DiscountEvaluationResult | null>(null);
+
+  const [bursaryCodeInput, setBursaryCodeInput] = useState("");
+  const [appliedCodes, setAppliedCodes] = useState<
+    Array<{ code: string; discount: Discount }>
+  >([]);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -69,10 +84,11 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
           price: r.price,
           numDays: r.numDays,
         })),
+        appliedCodes.map((c) => c.code),
       );
       setDiscountResult(result);
     });
-  }, [selectedRegistrations]);
+  }, [selectedRegistrations, appliedCodes]);
 
   const totalPrice = discountResult?.total ?? subtotal;
   const totalSavings = discountResult?.totalSavings ?? 0;
@@ -97,10 +113,48 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     setSelectedIds(new Set());
   };
 
+  const handleApplyCode = async () => {
+    const code = bursaryCodeInput.trim();
+    if (!code) return;
+
+    if (appliedCodes.some((c) => c.code.toUpperCase() === code.toUpperCase())) {
+      setCodeError("Code already applied");
+      return;
+    }
+
+    setIsValidating(true);
+    setCodeError(null);
+
+    try {
+      const result = await validateCheckoutBursaryCode(code);
+      if (result.valid && result.discount) {
+        setAppliedCodes((prev) => [
+          ...prev,
+          { code: code.toUpperCase(), discount: result.discount! },
+        ]);
+        setBursaryCodeInput("");
+      } else {
+        setCodeError(result.error ?? "Invalid code");
+      }
+    } catch {
+      setCodeError("Failed to validate code");
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleRemoveCode = (code: string) => {
+    setAppliedCodes((prev) => prev.filter((c) => c.code !== code));
+  };
+
   const handleCheckout = () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds).join(",");
-    router.push(`/registration/checkout/payment?ids=${ids}`);
+    const params = new URLSearchParams({ ids });
+    if (appliedCodes.length > 0) {
+      params.set("codes", appliedCodes.map((c) => c.code).join(","));
+    }
+    router.push(`/registration/checkout/payment?${params.toString()}`);
   };
 
   const hasCampers = campers.length > 0;
@@ -169,6 +223,60 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       {hasReadyRegistrations && (
         <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
+            {/* Bursary Code Input */}
+            <div className="mb-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter bursary code"
+                  value={bursaryCodeInput}
+                  onChange={(e) => {
+                    setBursaryCodeInput(e.target.value);
+                    setCodeError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleApplyCode();
+                    }
+                  }}
+                  disabled={isValidating}
+                  className="h-8 text-sm"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleApplyCode}
+                  disabled={isValidating || !bursaryCodeInput.trim()}
+                  className="shrink-0"
+                >
+                  {isValidating ? "..." : "Apply"}
+                </Button>
+              </div>
+              {codeError && (
+                <p className="text-xs text-destructive mt-1">{codeError}</p>
+              )}
+              {appliedCodes.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {appliedCodes.map((c) => (
+                    <Badge
+                      key={c.code}
+                      variant="secondary"
+                      className="text-xs gap-1"
+                    >
+                      <TagIcon className="size-3" />
+                      {c.discount.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCode(c.code)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <XIcon className="size-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Discount badges */}
             {discountResult &&
               discountResult.applicableDiscounts.length > 0 && (

@@ -8,9 +8,12 @@ import {
   type IncompleteStep,
 } from "@/lib/registration-completeness";
 import {
+  type ApplicableDiscount,
+  type Discount,
   type DiscountEvaluationResult,
   evaluateDiscounts,
   type RegistrationForDiscount,
+  validateBursaryCode,
 } from "@/lib/services/discount-service";
 import { getRegistrationsForCheckoutPage } from "@/lib/services/registration-service";
 
@@ -152,12 +155,10 @@ export async function evaluateCheckoutDiscounts(
     price: number;
     numDays: number | null;
   }>,
+  bursaryCodes?: string[],
 ): Promise<DiscountEvaluationResult> {
   await requireAuth();
 
-  // Convert to format expected by discount service
-  // Note: r.price is already the total (unitPrice * numDays for day prices),
-  // so we always use quantity: 1 to avoid double-counting
   const registrationsForDiscount: RegistrationForDiscount[] = registrations.map(
     (r) => ({
       camperId: r.camperId,
@@ -166,5 +167,71 @@ export async function evaluateCheckoutDiscounts(
     }),
   );
 
-  return evaluateDiscounts(registrationsForDiscount);
+  const autoApplyResult = await evaluateDiscounts(registrationsForDiscount);
+
+  if (!bursaryCodes?.length) {
+    return autoApplyResult;
+  }
+
+  const subtotal = registrationsForDiscount.reduce(
+    (sum, r) => sum + r.price * r.quantity,
+    0,
+  );
+
+  const manualDiscounts: ApplicableDiscount[] = [];
+  const seenDiscountIds = new Set(
+    autoApplyResult.applicableDiscounts.map((ad) => ad.discount.id),
+  );
+
+  for (const code of bursaryCodes) {
+    const discount = await validateBursaryCode(code);
+    if (
+      discount &&
+      !seenDiscountIds.has(discount.id) &&
+      discount.stripeCouponId
+    ) {
+      let savings = 0;
+      if (discount.type === "percentage") {
+        savings = Math.round(subtotal * (discount.amount / 100));
+      } else {
+        savings = Math.min(discount.amount, subtotal);
+      }
+      manualDiscounts.push({ discount, savings });
+      seenDiscountIds.add(discount.id);
+    }
+  }
+
+  const allDiscounts = [
+    ...autoApplyResult.applicableDiscounts,
+    ...manualDiscounts,
+  ];
+  const totalSavings = allDiscounts.reduce((sum, ad) => sum + ad.savings, 0);
+  const total = Math.max(0, subtotal - totalSavings);
+
+  return {
+    applicableDiscounts: allDiscounts,
+    totalSavings,
+    subtotal,
+    total,
+  };
+}
+
+export async function validateCheckoutBursaryCode(code: string): Promise<{
+  valid: boolean;
+  discount?: Discount;
+  error?: string;
+}> {
+  await requireAuth();
+
+  if (!code?.trim()) {
+    return { valid: false, error: "Please enter a code" };
+  }
+
+  const discount = await validateBursaryCode(code);
+
+  if (!discount) {
+    return { valid: false, error: "Invalid bursary code" };
+  }
+
+  return { valid: true, discount };
 }
