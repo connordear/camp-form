@@ -74,7 +74,7 @@ async function RegistrationsYearPage({
   const page = parseInt(searchParamsData.page || "1", 10);
   const validPage = Number.isNaN(page) || page < 1 ? 1 : page;
 
-  const { registrations, totalCount, totalPages } =
+  const { registrations, totalCount, totalPages, statusCounts } =
     await getRegistrationsForAdmin({
       year: validYear,
       search,
@@ -99,6 +99,7 @@ async function RegistrationsYearPage({
         currentStatus={status}
         currentCamp={camp}
         userRole={userRole as "admin" | "hcp" | "staff"}
+        statusCounts={statusCounts}
       />
     </Suspense>
   );

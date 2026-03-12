@@ -75,7 +75,7 @@ export default function AddressForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80%] flex flex-col overflow-hidden">
+      <DialogContent className="max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>
             {isNew ? "Add New Address" : "Edit Address"}

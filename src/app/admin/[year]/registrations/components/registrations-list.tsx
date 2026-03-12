@@ -49,6 +49,11 @@ interface RegistrationsListProps {
   currentStatus: string;
   currentCamp: string;
   userRole: "admin" | "hcp" | "staff";
+  statusCounts: {
+    registered: number;
+    draft: number;
+    refunded: number;
+  };
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -92,6 +97,7 @@ export function RegistrationsList({
   currentStatus,
   currentCamp,
   userRole,
+  statusCounts,
 }: RegistrationsListProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -174,14 +180,6 @@ export function RegistrationsList({
     .filter((r) => r.status === "registered")
     .reduce((sum, r) => sum + (r.pricePaid || 0), 0);
 
-  const registeredCount = registrations.filter(
-    (r) => r.status === "registered",
-  ).length;
-  const draftCount = registrations.filter((r) => r.status === "draft").length;
-  const refundedCount = registrations.filter(
-    (r) => r.status === "refunded",
-  ).length;
-
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 
   return (
@@ -215,7 +213,7 @@ export function RegistrationsList({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{registeredCount}</div>
+            <div className="text-2xl font-bold">{statusCounts.registered}</div>
           </CardContent>
         </Card>
         <Card>
@@ -225,7 +223,7 @@ export function RegistrationsList({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{draftCount}</div>
+            <div className="text-2xl font-bold">{statusCounts.draft}</div>
           </CardContent>
         </Card>
         <Card>
