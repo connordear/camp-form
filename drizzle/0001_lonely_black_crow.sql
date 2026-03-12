@@ -1,0 +1,1 @@
+ALTER TABLE "discounts" ADD COLUMN "auto_apply" boolean DEFAULT true NOT NULL;
