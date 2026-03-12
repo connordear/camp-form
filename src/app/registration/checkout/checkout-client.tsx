@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type {
   Discount,
   DiscountEvaluationResult,
@@ -36,6 +38,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [discountResult, setDiscountResult] =
     useState<DiscountEvaluationResult | null>(null);
 
+  const [applyAutoDiscounts, setApplyAutoDiscounts] = useState(true);
   const [bursaryCodeInput, setBursaryCodeInput] = useState("");
   const [appliedCodes, setAppliedCodes] = useState<
     Array<{ code: string; discount: Discount }>
@@ -85,10 +88,11 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
           numDays: r.numDays,
         })),
         appliedCodes.map((c) => c.code),
+        { skipAutoApply: !applyAutoDiscounts },
       );
       setDiscountResult(result);
     });
-  }, [selectedRegistrations, appliedCodes]);
+  }, [selectedRegistrations, appliedCodes, applyAutoDiscounts]);
 
   const totalPrice = discountResult?.total ?? subtotal;
   const totalSavings = discountResult?.totalSavings ?? 0;
@@ -223,6 +227,18 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       {hasReadyRegistrations && (
         <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
+            {/* Auto-discounts toggle */}
+            <div className="mb-3 flex items-center gap-2">
+              <Switch
+                id="auto-discounts"
+                checked={applyAutoDiscounts}
+                onCheckedChange={setApplyAutoDiscounts}
+              />
+              <Label htmlFor="auto-discounts" className="text-sm cursor-pointer">
+                Apply auto discounts
+              </Label>
+            </div>
+
             {/* Bursary Code Input */}
             <div className="mb-3">
               <div className="flex gap-2">

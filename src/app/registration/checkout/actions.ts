@@ -156,6 +156,7 @@ export async function evaluateCheckoutDiscounts(
     numDays: number | null;
   }>,
   bursaryCodes?: string[],
+  options?: { skipAutoApply?: boolean },
 ): Promise<DiscountEvaluationResult> {
   await requireAuth();
 
@@ -167,16 +168,19 @@ export async function evaluateCheckoutDiscounts(
     }),
   );
 
-  const autoApplyResult = await evaluateDiscounts(registrationsForDiscount);
-
-  if (!bursaryCodes?.length) {
-    return autoApplyResult;
-  }
-
   const subtotal = registrationsForDiscount.reduce(
     (sum, r) => sum + r.price * r.quantity,
     0,
   );
+
+  const autoApplyResult =
+    options?.skipAutoApply === true
+      ? { applicableDiscounts: [] as ApplicableDiscount[], totalSavings: 0, subtotal, total: subtotal }
+      : await evaluateDiscounts(registrationsForDiscount);
+
+  if (!bursaryCodes?.length) {
+    return autoApplyResult;
+  }
 
   const manualDiscounts: ApplicableDiscount[] = [];
   const seenDiscountIds = new Set(
