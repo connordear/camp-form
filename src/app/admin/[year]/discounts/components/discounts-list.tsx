@@ -137,6 +137,11 @@ function DiscountCard({ discount }: { discount: Discount }) {
               Inactive
             </Badge>
           )}
+          {isActive && !discount.autoApply && (
+            <Badge variant="outline" className="text-sm">
+              Manual
+            </Badge>
+          )}
         </div>
         {discount.stripeCouponId && (
           <p className="text-xs text-muted-foreground mt-3">

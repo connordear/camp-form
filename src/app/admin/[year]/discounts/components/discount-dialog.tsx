@@ -73,6 +73,7 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
       deadlineDate: discount?.deadlineDate ?? (null as string | null),
       minCampers: discount?.minCampers ?? (2 as number | null),
       isActive: discount?.isActive ?? true,
+      autoApply: discount?.autoApply ?? true,
     },
     validators: {
       onSubmit: discountFormSchema,
@@ -348,6 +349,27 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
                           {isEditMode
                             ? "Enable this discount"
                             : "Enable this discount immediately"}
+                        </p>
+                      </div>
+                      <div>
+                        <Switch
+                          checked={field.state.value}
+                          onCheckedChange={(checked) =>
+                            field.handleChange(checked)
+                          }
+                        />
+                      </div>
+                    </Field>
+                  )}
+                </form.AppField>
+
+                <form.AppField name="autoApply">
+                  {(field) => (
+                    <Field className="flex items-center justify-between rounded-lg border p-4">
+                      <div>
+                        <FieldLabel className="mb-0">Auto-Apply</FieldLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Automatically apply at checkout
                         </p>
                       </div>
                       <div>

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -27,7 +27,10 @@ export interface DiscountEvaluationResult {
  * Fetches all active discounts from the database
  */
 export async function getActiveDiscounts(): Promise<Discount[]> {
-  return db.select().from(discounts).where(eq(discounts.isActive, true));
+  return db
+    .select()
+    .from(discounts)
+    .where(and(eq(discounts.isActive, true), eq(discounts.autoApply, true)));
 }
 
 /**

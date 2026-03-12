@@ -273,6 +273,7 @@ export const discounts = pgTable("discounts", {
 
   // Status
   isActive: boolean("is_active").default(true).notNull(),
+  autoApply: boolean("auto_apply").default(true).notNull(),
 
   ...timestamps,
 });

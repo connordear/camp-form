@@ -87,6 +87,7 @@ export const createDiscount = adminAction(async (data: unknown) => {
       deadlineDate: validated.deadlineDate,
       minCampers: validated.minCampers,
       isActive: validated.isActive,
+      autoApply: validated.autoApply,
       stripeCouponId,
     })
     .returning();
@@ -125,6 +126,7 @@ export const updateDiscount = adminAction(async (data: unknown) => {
       deadlineDate: validated.deadlineDate,
       minCampers: validated.minCampers,
       isActive: validated.isActive,
+      autoApply: validated.autoApply,
       stripeCouponId: newStripeCouponId,
     })
     .where(eq(discounts.id, validated.id))
