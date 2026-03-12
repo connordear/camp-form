@@ -49,6 +49,11 @@ interface RegistrationsListProps {
   currentStatus: string;
   currentCamp: string;
   userRole: "admin" | "hcp" | "staff";
+  statusCounts: {
+    registered: number;
+    draft: number;
+    refunded: number;
+  };
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -92,6 +97,7 @@ export function RegistrationsList({
   currentStatus,
   currentCamp,
   userRole,
+  statusCounts,
 }: RegistrationsListProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -167,21 +173,6 @@ export function RegistrationsList({
     [router, pathname, createQueryString],
   );
 
-  // Calculate summary stats from ALL registrations (not filtered)
-  // Note: These should come from the server in a real implementation
-  // For now, we'll calculate from the passed registrations
-  const totalRevenue = registrations
-    .filter((r) => r.status === "registered")
-    .reduce((sum, r) => sum + (r.pricePaid || 0), 0);
-
-  const registeredCount = registrations.filter(
-    (r) => r.status === "registered",
-  ).length;
-  const draftCount = registrations.filter((r) => r.status === "draft").length;
-  const refundedCount = registrations.filter(
-    (r) => r.status === "refunded",
-  ).length;
-
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 
   return (
@@ -197,7 +188,7 @@ export function RegistrationsList({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -215,7 +206,7 @@ export function RegistrationsList({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{registeredCount}</div>
+            <div className="text-2xl font-bold">{statusCounts.registered}</div>
           </CardContent>
         </Card>
         <Card>
@@ -225,19 +216,7 @@ export function RegistrationsList({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{draftCount}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatPrice(totalRevenue)}
-            </div>
+            <div className="text-2xl font-bold">{statusCounts.draft}</div>
           </CardContent>
         </Card>
       </div>
