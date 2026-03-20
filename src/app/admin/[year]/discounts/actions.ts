@@ -81,6 +81,7 @@ export const createDiscount = adminAction(async (data: unknown) => {
     .values({
       name: validated.name,
       description: validated.description,
+      code: validated.code,
       type: validated.type,
       amount: validated.amount,
       conditionType: validated.conditionType,
@@ -120,6 +121,7 @@ export const updateDiscount = adminAction(async (data: unknown) => {
     .set({
       name: validated.name,
       description: validated.description,
+      code: validated.code,
       type: validated.type,
       amount: validated.amount,
       conditionType: validated.conditionType,

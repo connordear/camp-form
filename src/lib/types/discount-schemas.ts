@@ -2,10 +2,22 @@ import { z } from "zod";
 import { DISCOUNT_CONDITION_TYPES, DISCOUNT_TYPES } from "@/lib/data/schema";
 
 // Base discount schema for form validation
+const codeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(
+    /^[A-Z0-9_-]*$/,
+    "Code can only contain letters, numbers, hyphens, and underscores",
+  )
+  .nullable()
+  .transform((val) => val || null);
+
 export const discountFormSchema = z
   .object({
     name: z.string().min(1, "Discount name is required"),
     description: z.string().nullable(),
+    code: codeSchema,
     type: z.enum(DISCOUNT_TYPES),
     amount: z.number().min(1, "Amount must be greater than 0"),
     conditionType: z.enum(DISCOUNT_CONDITION_TYPES),
@@ -16,7 +28,6 @@ export const discountFormSchema = z
   })
   .refine(
     (data) => {
-      // Deadline-based discounts require a deadline date
       if (data.conditionType === "deadline" && !data.deadlineDate) {
         return false;
       }
@@ -29,7 +40,6 @@ export const discountFormSchema = z
   )
   .refine(
     (data) => {
-      // Sibling-based discounts require minCampers
       if (data.conditionType === "sibling" && !data.minCampers) {
         return false;
       }
@@ -38,6 +48,18 @@ export const discountFormSchema = z
     {
       message: "Minimum campers is required for sibling-based discounts",
       path: ["minCampers"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.autoApply && !data.code) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Code is required when auto-apply is disabled",
+      path: ["code"],
     },
   );
 
@@ -50,6 +72,7 @@ export const discountUpdateSchema = z
     id: z.string().min(1, "Discount ID is required"),
     name: z.string().min(1, "Discount name is required"),
     description: z.string().nullable(),
+    code: codeSchema,
     type: z.enum(DISCOUNT_TYPES),
     amount: z.number().min(1, "Amount must be greater than 0"),
     conditionType: z.enum(DISCOUNT_CONDITION_TYPES),
@@ -80,6 +103,18 @@ export const discountUpdateSchema = z
     {
       message: "Minimum campers is required for sibling-based discounts",
       path: ["minCampers"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.autoApply && !data.code) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Code is required when auto-apply is disabled",
+      path: ["code"],
     },
   );
 

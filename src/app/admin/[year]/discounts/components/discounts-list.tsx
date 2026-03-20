@@ -112,6 +112,9 @@ function DiscountCard({ discount }: { discount: Discount }) {
           <Badge variant="secondary" className="text-sm">
             {formatAmount(discount)} {DISCOUNT_TYPE_LABELS[discount.type]}
           </Badge>
+          <Badge variant="outline" className="text-sm font-mono">
+            {discount.code ? discount.code : "Auto only"}
+          </Badge>
           <Badge
             variant={isDeadlinePassed ? "destructive" : "outline"}
             className="text-sm"

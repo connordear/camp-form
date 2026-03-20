@@ -66,6 +66,7 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
     defaultValues: {
       name: discount?.name ?? "",
       description: discount?.description ?? (null as string | null),
+      code: discount?.code ?? (null as string | null),
       type: (discount?.type ?? "percentage") as (typeof DISCOUNT_TYPES)[number],
       amount: discount?.amount ?? 10,
       conditionType: (discount?.conditionType ??
@@ -149,6 +150,9 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
     (state) => state.values.conditionType,
   );
   const discountType = useStore(form.store, (state) => state.values.type);
+  const autoApply = useStore(form.store, (state) => state.values.autoApply);
+  const code = useStore(form.store, (state) => state.values.code);
+  const showCodeWarning = !autoApply && !code;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -198,6 +202,31 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
                           field.handleChange(e.target.value || null)
                         }
                       />
+                    </Field>
+                  )}
+                </form.AppField>
+
+                <form.AppField name="code">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Bursary Code</FieldLabel>
+                      <field.WithErrors>
+                        <Input
+                          placeholder="e.g. EARLYBIRD2026"
+                          value={field.state.value ?? ""}
+                          onChange={(e) =>
+                            field.handleChange(e.target.value || null)
+                          }
+                          onBlur={(e) => {
+                            const value = e.target.value.trim().toUpperCase();
+                            field.handleChange(value || null);
+                          }}
+                        />
+                      </field.WithErrors>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Optional code users can enter at checkout. Leave blank
+                        for auto-apply only.
+                      </p>
                     </Field>
                   )}
                 </form.AppField>
@@ -383,6 +412,12 @@ export function DiscountDialog({ discount, trigger }: DiscountDialogProps) {
                     </Field>
                   )}
                 </form.AppField>
+
+                {showCodeWarning && (
+                  <p className="text-sm text-destructive -mt-2">
+                    A bursary code is required when auto-apply is disabled.
+                  </p>
+                )}
               </FieldSet>
             </div>
 
