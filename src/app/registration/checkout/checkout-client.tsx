@@ -39,6 +39,9 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     useState<DiscountEvaluationResult | null>(null);
 
   const [applyAutoDiscounts, setApplyAutoDiscounts] = useState(true);
+  const [dismissedAutoDiscountId, setDismissedAutoDiscountId] = useState<
+    string | null
+  >(null);
   const [bursaryCodeInput, setBursaryCodeInput] = useState("");
   const [appliedCodes, setAppliedCodes] = useState<
     Array<{ code: string; discount: Discount }>
@@ -88,11 +91,19 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
           numDays: r.numDays,
         })),
         appliedCodes.map((c) => c.code),
-        { skipAutoApply: !applyAutoDiscounts },
+        {
+          skipAutoApply: !applyAutoDiscounts,
+          skipAutoDiscountId: dismissedAutoDiscountId ?? undefined,
+        },
       );
       setDiscountResult(result);
     });
-  }, [selectedRegistrations, appliedCodes, applyAutoDiscounts]);
+  }, [
+    selectedRegistrations,
+    appliedCodes,
+    applyAutoDiscounts,
+    dismissedAutoDiscountId,
+  ]);
 
   const totalPrice = discountResult?.total ?? subtotal;
   const totalSavings = discountResult?.totalSavings ?? 0;
@@ -234,7 +245,10 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
                 checked={applyAutoDiscounts}
                 onCheckedChange={setApplyAutoDiscounts}
               />
-              <Label htmlFor="auto-discounts" className="text-sm cursor-pointer">
+              <Label
+                htmlFor="auto-discounts"
+                className="text-sm cursor-pointer"
+              >
                 Apply auto discounts
               </Label>
             </div>
@@ -295,14 +309,37 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
 
             {/* Discount badges */}
             {discountResult &&
-              discountResult.applicableDiscounts.length > 0 && (
+              discountResult.applicableDiscounts.filter(
+                (ad) =>
+                  !appliedCodes.some((c) => c.discount.id === ad.discount.id),
+              ).length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {discountResult.applicableDiscounts.map((ad) => (
-                    <Badge key={ad.discount.id} variant="default">
-                      <TagIcon className="size-3 mr-1" />
-                      {ad.discount.name}: -{formatPrice(ad.savings)}
-                    </Badge>
-                  ))}
+                  {discountResult.applicableDiscounts
+                    .filter(
+                      (ad) =>
+                        !appliedCodes.some(
+                          (c) => c.discount.id === ad.discount.id,
+                        ),
+                    )
+                    .map((ad) => (
+                      <Badge
+                        key={ad.discount.id}
+                        variant="default"
+                        className="gap-1"
+                      >
+                        <TagIcon className="size-3" />
+                        {ad.discount.name}: -{formatPrice(ad.savings)}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDismissedAutoDiscountId(ad.discount.id)
+                          }
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <XIcon className="size-3" />
+                        </button>
+                      </Badge>
+                    ))}
                 </div>
               )}
 
