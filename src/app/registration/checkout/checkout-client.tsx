@@ -6,18 +6,8 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import type {
-  Discount,
-  DiscountEvaluationResult,
-} from "@/lib/services/discount-service";
-import {
-  type CheckoutCamper,
-  evaluateCheckoutDiscounts,
-  validateCheckoutBursaryCode,
-} from "./actions";
+import type { DiscountEvaluationResult } from "@/lib/services/discount-service";
+import { type CheckoutCamper, evaluateCheckoutDiscounts } from "./actions";
 import { CamperCard } from "./camper-card";
 
 type CheckoutClientProps = {
@@ -38,16 +28,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [discountResult, setDiscountResult] =
     useState<DiscountEvaluationResult | null>(null);
 
-  const [applyAutoDiscounts, setApplyAutoDiscounts] = useState(true);
-  const [dismissedAutoDiscountId, setDismissedAutoDiscountId] = useState<
-    string | null
-  >(null);
-  const [bursaryCodeInput, setBursaryCodeInput] = useState("");
-  const [appliedCodes, setAppliedCodes] = useState<
-    Array<{ code: string; discount: Discount }>
-  >([]);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -90,20 +71,14 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
           price: r.price,
           numDays: r.numDays,
         })),
-        appliedCodes.map((c) => c.code),
+        undefined,
         {
-          skipAutoApply: !applyAutoDiscounts,
-          skipAutoDiscountId: dismissedAutoDiscountId ?? undefined,
+          skipAutoDiscountIds: Array.from(dismissedIds),
         },
       );
       setDiscountResult(result);
     });
-  }, [
-    selectedRegistrations,
-    appliedCodes,
-    applyAutoDiscounts,
-    dismissedAutoDiscountId,
-  ]);
+  }, [selectedRegistrations, dismissedIds]);
 
   const totalPrice = discountResult?.total ?? subtotal;
   const totalSavings = discountResult?.totalSavings ?? 0;
@@ -128,46 +103,16 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     setSelectedIds(new Set());
   };
 
-  const handleApplyCode = async () => {
-    const code = bursaryCodeInput.trim();
-    if (!code) return;
-
-    if (appliedCodes.some((c) => c.code.toUpperCase() === code.toUpperCase())) {
-      setCodeError("Code already applied");
-      return;
-    }
-
-    setIsValidating(true);
-    setCodeError(null);
-
-    try {
-      const result = await validateCheckoutBursaryCode(code);
-      if (result.valid && result.discount) {
-        setAppliedCodes((prev) => [
-          ...prev,
-          { code: code.toUpperCase(), discount: result.discount! },
-        ]);
-        setBursaryCodeInput("");
-      } else {
-        setCodeError(result.error ?? "Invalid code");
-      }
-    } catch {
-      setCodeError("Failed to validate code");
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  const handleRemoveCode = (code: string) => {
-    setAppliedCodes((prev) => prev.filter((c) => c.code !== code));
+  const handleDismissDiscount = (discountId: string) => {
+    setDismissedIds((prev) => new Set(prev).add(discountId));
   };
 
   const handleCheckout = () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds).join(",");
     const params = new URLSearchParams({ ids });
-    if (appliedCodes.length > 0) {
-      params.set("codes", appliedCodes.map((c) => c.code).join(","));
+    if (dismissedIds.size > 0) {
+      params.set("dismissed", Array.from(dismissedIds).join(","));
     }
     router.push(`/registration/checkout/payment?${params.toString()}`);
   };
@@ -238,108 +183,27 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       {hasReadyRegistrations && (
         <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
-            {/* Auto-discounts toggle */}
-            <div className="mb-3 flex items-center gap-2">
-              <Switch
-                id="auto-discounts"
-                checked={applyAutoDiscounts}
-                onCheckedChange={setApplyAutoDiscounts}
-              />
-              <Label
-                htmlFor="auto-discounts"
-                className="text-sm cursor-pointer"
-              >
-                Apply auto discounts
-              </Label>
-            </div>
-
-            {/* Bursary Code Input */}
-            <div className="mb-3">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter bursary code"
-                  value={bursaryCodeInput}
-                  onChange={(e) => {
-                    setBursaryCodeInput(e.target.value);
-                    setCodeError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleApplyCode();
-                    }
-                  }}
-                  disabled={isValidating}
-                  className="h-8 text-sm"
-                />
-                <Button
-                  size="sm"
-                  onClick={handleApplyCode}
-                  disabled={isValidating || !bursaryCodeInput.trim()}
-                  className="shrink-0"
-                >
-                  {isValidating ? "..." : "Apply"}
-                </Button>
-              </div>
-              {codeError && (
-                <p className="text-xs text-destructive mt-1">{codeError}</p>
-              )}
-              {appliedCodes.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {appliedCodes.map((c) => (
+            {/* Discount badges */}
+            {discountResult &&
+              discountResult.applicableDiscounts.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {discountResult.applicableDiscounts.map((ad) => (
                     <Badge
-                      key={c.code}
-                      variant="secondary"
-                      className="text-xs gap-1"
+                      key={ad.discount.id}
+                      variant="default"
+                      className="gap-1"
                     >
                       <TagIcon className="size-3" />
-                      {c.discount.name}
+                      {ad.discount.name}: -{formatPrice(ad.savings)}
                       <button
                         type="button"
-                        onClick={() => handleRemoveCode(c.code)}
+                        onClick={() => handleDismissDiscount(ad.discount.id)}
                         className="ml-1 hover:text-destructive"
                       >
                         <XIcon className="size-3" />
                       </button>
                     </Badge>
                   ))}
-                </div>
-              )}
-            </div>
-
-            {/* Discount badges */}
-            {discountResult &&
-              discountResult.applicableDiscounts.filter(
-                (ad) =>
-                  !appliedCodes.some((c) => c.discount.id === ad.discount.id),
-              ).length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {discountResult.applicableDiscounts
-                    .filter(
-                      (ad) =>
-                        !appliedCodes.some(
-                          (c) => c.discount.id === ad.discount.id,
-                        ),
-                    )
-                    .map((ad) => (
-                      <Badge
-                        key={ad.discount.id}
-                        variant="default"
-                        className="gap-1"
-                      >
-                        <TagIcon className="size-3" />
-                        {ad.discount.name}: -{formatPrice(ad.savings)}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDismissedAutoDiscountId(ad.discount.id)
-                          }
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <XIcon className="size-3" />
-                        </button>
-                      </Badge>
-                    ))}
                 </div>
               )}
 

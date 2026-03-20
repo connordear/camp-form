@@ -5,7 +5,6 @@ import { requireAuth } from "@/lib/auth-helpers";
 import {
   evaluateDiscounts,
   type RegistrationForDiscount,
-  validateBursaryCode,
 } from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
@@ -22,11 +21,11 @@ const THEMES = {
  * Fetches a Stripe client secret for checkout.
  * @param registrationIds - Optional array of registration IDs to filter.
  *                          If not provided, uses all draft registrations.
- * @param bursaryCodes - Optional array of bursary codes to apply manually.
+ * @param dismissedIds - Optional array of discount IDs to exclude from auto-apply.
  */
 export async function fetchClientSecret(
   registrationIds?: string[],
-  bursaryCodes?: string[],
+  dismissedIds?: string[],
 ) {
   const session = await requireAuth();
   const userId = session.user.id;
@@ -88,20 +87,12 @@ export async function fetchClientSecret(
   );
 
   const discountCouponIds = new Set<string>();
+  const dismissedSet = new Set(dismissedIds ?? []);
 
   const discountResult = await evaluateDiscounts(registrationsForDiscount);
   for (const ad of discountResult.applicableDiscounts) {
-    if (ad.discount.stripeCouponId) {
+    if (ad.discount.stripeCouponId && !dismissedSet.has(ad.discount.id)) {
       discountCouponIds.add(ad.discount.stripeCouponId);
-    }
-  }
-
-  if (bursaryCodes?.length) {
-    for (const code of bursaryCodes) {
-      const discount = await validateBursaryCode(code);
-      if (discount?.stripeCouponId) {
-        discountCouponIds.add(discount.stripeCouponId);
-      }
     }
   }
 
