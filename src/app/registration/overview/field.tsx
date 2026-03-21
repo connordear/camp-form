@@ -160,9 +160,12 @@ export const OverviewFieldGroup = withFieldGroup({
                         ) - 1
                       : 0;
 
+                    // Use a stable key to avoid hydration mismatches
+                    const stableKey = reg.id || `reg-${j}`;
+
                     return (
                       <div
-                        key={reg.id || j}
+                        key={stableKey}
                         className="flex gap-2 items-start justify-between min-w-0 mb-2 p-2 border rounded-md"
                       >
                         <div className="flex gap-2 flex-1 flex-wrap min-w-0">
@@ -259,9 +262,9 @@ export const OverviewFieldGroup = withFieldGroup({
                                     isNumber
                                     options={Array.from({
                                       length: maxDays,
-                                    }).map((_, i) => ({
-                                      value: `${i + 1}`,
-                                      name: `${i + 1} Day${i === 0 ? "" : "s"}`,
+                                    }).map((_, dayIndex) => ({
+                                      value: `${dayIndex + 1}`,
+                                      name: `${dayIndex + 1} Day${dayIndex === 0 ? "" : "s"}`,
                                     }))}
                                   />
                                 </div>
