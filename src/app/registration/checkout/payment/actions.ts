@@ -109,8 +109,8 @@ export async function fetchClientSecret(
     billing_address_collection: "required",
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
-    // Allow users to enter promo codes when no auto-applied discounts exist
-    ...(stripeDiscounts.length === 0 && { allow_promotion_codes: true }),
+    // Allow users to enter promo codes only when no auto-applied discounts exist
+    ...(!hasAutoApplyDiscounts && { allow_promotion_codes: true }),
     branding_settings: {
       display_name: siteConfig.name,
       font_family: "roboto",
