@@ -168,5 +168,5 @@ export async function evaluateCheckoutDiscounts(
     }),
   );
 
-  return evaluateDiscounts(registrationsForDiscount, dismissedIds);
+  return evaluateDiscounts(registrationsForDiscount, dismissedIds, true);
 }

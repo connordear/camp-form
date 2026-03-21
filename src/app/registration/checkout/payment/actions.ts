@@ -81,10 +81,11 @@ export async function fetchClientSecret(
     return null;
   }
 
-  // Evaluate applicable discounts (excluding dismissed ones)
+  // Evaluate applicable discounts (excluding dismissed ones, auto-apply only)
   const discountResult = await evaluateDiscounts(
     registrationsForDiscount,
     dismissedDiscountIds,
+    true, // autoApplyOnly
   );
 
   // Build discounts array for Stripe (use coupon IDs)
