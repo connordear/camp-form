@@ -21,8 +21,12 @@ const THEMES = {
  * Fetches a Stripe client secret for checkout.
  * @param registrationIds - Optional array of registration IDs to filter.
  *                          If not provided, uses all draft registrations.
+ * @param dismissedDiscountIds - Array of discount IDs to exclude from auto-apply.
  */
-export async function fetchClientSecret(registrationIds?: string[]) {
+export async function fetchClientSecret(
+  registrationIds?: string[],
+  dismissedDiscountIds: string[] = [],
+) {
   const session = await requireAuth();
   const userId = session.user.id;
 
@@ -77,8 +81,11 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     return null;
   }
 
-  // Evaluate applicable discounts
-  const discountResult = await evaluateDiscounts(registrationsForDiscount);
+  // Evaluate applicable discounts (excluding dismissed ones)
+  const discountResult = await evaluateDiscounts(
+    registrationsForDiscount,
+    dismissedDiscountIds,
+  );
 
   // Build discounts array for Stripe (use coupon IDs)
   const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
@@ -88,6 +95,11 @@ export async function fetchClientSecret(registrationIds?: string[]) {
         coupon: ad.discount.stripeCouponId!,
       }));
 
+  // Check if there are any auto-apply discounts that weren't dismissed
+  const hasAutoApplyDiscounts = discountResult.applicableDiscounts.some(
+    (ad) => ad.discount.autoApply,
+  );
+
   const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     line_items: lineItems,
@@ -96,8 +108,10 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     billing_address_collection: "required",
     // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
+    // Allow users to enter promo codes when no auto-applied discounts exist
+    ...(stripeDiscounts.length === 0 && { allow_promotion_codes: true }),
     branding_settings: {
-      display_name: siteConfig.name, // TODO: Update to pull this from config somehow
+      display_name: siteConfig.name,
       font_family: "roboto",
       border_style: "rounded",
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { TagIcon } from "lucide-react";
+import { TagIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [isPending, startTransition] = useTransition();
   const [discountResult, setDiscountResult] =
     useState<DiscountEvaluationResult | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -69,10 +70,11 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
           price: r.price,
           numDays: r.numDays,
         })),
+        Array.from(dismissedIds),
       );
       setDiscountResult(result);
     });
-  }, [selectedRegistrations]);
+  }, [selectedRegistrations, dismissedIds]);
 
   const totalPrice = discountResult?.total ?? subtotal;
   const totalSavings = discountResult?.totalSavings ?? 0;
@@ -97,10 +99,19 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     setSelectedIds(new Set());
   };
 
+  const handleDismissDiscount = (discountId: string) => {
+    setDismissedIds((prev) => new Set(prev).add(discountId));
+  };
+
   const handleCheckout = () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds).join(",");
-    router.push(`/registration/checkout/payment?ids=${ids}`);
+    const dismissed = Array.from(dismissedIds).join(",");
+    const params = new URLSearchParams({ ids });
+    if (dismissed) {
+      params.set("dismissed", dismissed);
+    }
+    router.push(`/registration/checkout/payment?${params.toString()}`);
   };
 
   const hasCampers = campers.length > 0;
@@ -174,9 +185,23 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
               discountResult.applicableDiscounts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {discountResult.applicableDiscounts.map((ad) => (
-                    <Badge key={ad.discount.id} variant="default">
+                    <Badge
+                      key={ad.discount.id}
+                      variant="default"
+                      className="pr-1"
+                    >
                       <TagIcon className="size-3 mr-1" />
                       {ad.discount.name}: -{formatPrice(ad.savings)}
+                      {ad.discount.autoApply && (
+                        <button
+                          type="button"
+                          onClick={() => handleDismissDiscount(ad.discount.id)}
+                          className="ml-1 hover:bg-primary-foreground/20 rounded-full p-0.5"
+                          aria-label={`Dismiss ${ad.discount.name}`}
+                        >
+                          <XIcon className="size-3" />
+                        </button>
+                      )}
                     </Badge>
                   ))}
                 </div>

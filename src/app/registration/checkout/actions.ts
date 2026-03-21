@@ -144,6 +144,7 @@ export async function getCheckoutData(
 /**
  * Evaluates which discounts apply to a set of selected registrations.
  * This is called dynamically as the user selects/deselects registrations.
+ * @param dismissedIds - Array of discount IDs the user has dismissed
  */
 export async function evaluateCheckoutDiscounts(
   registrations: Array<{
@@ -152,6 +153,7 @@ export async function evaluateCheckoutDiscounts(
     price: number;
     numDays: number | null;
   }>,
+  dismissedIds: string[] = [],
 ): Promise<DiscountEvaluationResult> {
   await requireAuth();
 
@@ -166,5 +168,5 @@ export async function evaluateCheckoutDiscounts(
     }),
   );
 
-  return evaluateDiscounts(registrationsForDiscount);
+  return evaluateDiscounts(registrationsForDiscount, dismissedIds);
 }

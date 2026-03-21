@@ -14,7 +14,9 @@ interface MinimalFormApi {
     isValid: boolean;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  validate: (cause: "change" | "blur" | "submit" | "mount") => Promise<any> | any;
+  validate: (
+    cause: "change" | "blur" | "submit" | "mount",
+  ) => Promise<any> | any;
 }
 
 type UseFormRegistryOptions = {

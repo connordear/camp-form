@@ -63,7 +63,9 @@ export function FormRegistryProvider({ children }: { children: ReactNode }) {
   const saveAllForms = useCallback(async (): Promise<SaveResult> => {
     const forms = Array.from(formsRef.current.entries());
     let errorCount = 0;
-    let firstInvalidCardRef: React.RefObject<CollapsibleFormCardRef | null> | undefined;
+    let firstInvalidCardRef:
+      | React.RefObject<CollapsibleFormCardRef | null>
+      | undefined;
 
     for (const [_id, form] of forms) {
       // Validate the form
@@ -146,7 +148,9 @@ export function FormRegistryProvider({ children }: { children: ReactNode }) {
   }, [hasDirtyForms]);
 
   return (
-    <FormRegistryContext.Provider value={{ register, unregister, saveAllForms }}>
+    <FormRegistryContext.Provider
+      value={{ register, unregister, saveAllForms }}
+    >
       {children}
     </FormRegistryContext.Provider>
   );

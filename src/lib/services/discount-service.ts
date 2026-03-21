@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -31,6 +31,16 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
 }
 
 /**
+ * Fetches all active, auto-apply discounts from the database
+ */
+export async function getAutoApplyDiscounts(): Promise<Discount[]> {
+  return db
+    .select()
+    .from(discounts)
+    .where(and(eq(discounts.isActive, true), eq(discounts.autoApply, true)));
+}
+
+/**
  * Fetches all discounts (active and inactive) for admin management
  */
 export async function getAllDiscounts(): Promise<Discount[]> {
@@ -53,10 +63,12 @@ export async function getDiscountById(id: string): Promise<Discount | null> {
  * and calculates the savings for each.
  *
  * @param registrations - The registrations being checked out
+ * @param dismissedIds - Optional array of discount IDs to exclude
  * @returns Object containing applicable discounts, savings, and totals
  */
 export async function evaluateDiscounts(
   registrations: RegistrationForDiscount[],
+  dismissedIds: string[] = [],
 ): Promise<DiscountEvaluationResult> {
   const activeDiscounts = await getActiveDiscounts();
 
@@ -76,6 +88,11 @@ export async function evaluateDiscounts(
   const applicableDiscounts: ApplicableDiscount[] = [];
 
   for (const discount of activeDiscounts) {
+    // Skip dismissed discounts
+    if (dismissedIds.includes(discount.id)) {
+      continue;
+    }
+
     let isApplicable = false;
 
     switch (discount.conditionType) {
