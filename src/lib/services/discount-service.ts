@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -56,6 +56,11 @@ export async function getDiscountById(id: string): Promise<Discount | null> {
     .from(discounts)
     .where(eq(discounts.id, id));
   return discount ?? null;
+}
+
+export async function getDiscountsByIds(ids: string[]): Promise<Discount[]> {
+  if (ids.length === 0) return [];
+  return db.select().from(discounts).where(inArray(discounts.id, ids));
 }
 
 /**

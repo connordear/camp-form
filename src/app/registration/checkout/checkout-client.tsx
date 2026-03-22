@@ -106,10 +106,13 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const handleCheckout = () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds).join(",");
-    const dismissed = Array.from(dismissedIds).join(",");
+    const appliedDiscountIds =
+      discountResult?.applicableDiscounts
+        .map((ad) => ad.discount.id)
+        .join(",") ?? "";
     const params = new URLSearchParams({ ids });
-    if (dismissed) {
-      params.set("dismissed", dismissed);
+    if (appliedDiscountIds) {
+      params.set("applied", appliedDiscountIds);
     }
     router.push(`/registration/checkout/payment?${params.toString()}`);
   };

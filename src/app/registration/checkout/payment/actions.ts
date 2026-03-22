@@ -2,10 +2,7 @@
 import type Stripe from "stripe";
 import { siteConfig } from "@/config/site";
 import { requireAuth } from "@/lib/auth-helpers";
-import {
-  evaluateDiscounts,
-  type RegistrationForDiscount,
-} from "@/lib/services/discount-service";
+import { getDiscountsByIds } from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
 import { getBaseUrl } from "@/lib/utils";
@@ -17,15 +14,9 @@ const THEMES = {
   },
 };
 
-/**
- * Fetches a Stripe client secret for checkout.
- * @param registrationIds - Optional array of registration IDs to filter.
- *                          If not provided, uses all draft registrations.
- * @param dismissedDiscountIds - Array of discount IDs to exclude from auto-apply.
- */
 export async function fetchClientSecret(
   registrationIds?: string[],
-  dismissedDiscountIds: string[] = [],
+  appliedDiscountIds: string[] = [],
 ) {
   const session = await requireAuth();
   const userId = session.user.id;
@@ -34,7 +25,6 @@ export async function fetchClientSecret(
     throw new Error("Please specify the registrations you wish to pay for");
   }
 
-  // Fetch registrations - either specific IDs or all draft registrations
   const user = await getRegistrationsByIds(userId, registrationIds);
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
@@ -42,9 +32,6 @@ export async function fetchClientSecret(
   if (!user) {
     throw new Error("No user.");
   }
-
-  // Build registrations for discount evaluation
-  const registrationsForDiscount: RegistrationForDiscount[] = [];
 
   user.campers.forEach((camper: (typeof user.campers)[number]) => {
     camper.registrations.forEach(
@@ -66,13 +53,6 @@ export async function fetchClientSecret(
           quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
           tax_rates: [process.env.TAX_RATE!],
         });
-
-        // Track for discount evaluation
-        registrationsForDiscount.push({
-          camperId: camper.id,
-          price: reg.price.price,
-          quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
-        });
       },
     );
   });
@@ -81,25 +61,15 @@ export async function fetchClientSecret(
     return null;
   }
 
-  // Evaluate applicable discounts (excluding dismissed ones, auto-apply only)
-  const discountResult = await evaluateDiscounts(
-    registrationsForDiscount,
-    dismissedDiscountIds,
-    true, // autoApplyOnly
-  );
-
-  // Build discounts array for Stripe (use coupon IDs)
+  const discounts = await getDiscountsByIds(appliedDiscountIds);
   const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
-    discountResult.applicableDiscounts
-      .filter((ad) => ad.discount.stripeCouponId)
-      .map((ad) => ({
-        coupon: ad.discount.stripeCouponId!,
+    discounts
+      .filter((d) => d.stripeCouponId)
+      .map((d) => ({
+        coupon: d.stripeCouponId!,
       }));
 
-  // Check if there are any auto-apply discounts that weren't dismissed
-  const hasAutoApplyDiscounts = discountResult.applicableDiscounts.some(
-    (ad) => ad.discount.autoApply,
-  );
+  const hasAutoApplyDiscounts = discounts.some((d) => d.autoApply);
 
   const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
@@ -107,9 +77,7 @@ export async function fetchClientSecret(
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     billing_address_collection: "required",
-    // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
-    // Allow users to enter promo codes only when no auto-applied discounts exist
     ...(!hasAutoApplyDiscounts && { allow_promotion_codes: true }),
     branding_settings: {
       display_name: siteConfig.name,
