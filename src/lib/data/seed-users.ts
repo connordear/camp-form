@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { hashPassword } from "better-auth/crypto";
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "./schema";
 
@@ -221,38 +221,76 @@ async function seed() {
 
   const allCamps = await db.select().from(schema.camps);
 
-  // Get 2026 camp years
-  const campYears2026 = await db
+  const campYears = await db
     .select()
     .from(schema.campYears)
-    .where(eq(schema.campYears.year, 2026));
+    .where(inArray(schema.campYears.year, [2024, 2025, 2026]));
 
-  // Get all prices
   const allPrices = await db.select().from(schema.campYearPrices);
 
-  // Build camp data structure
-  const camps2026 = allCamps
-    .map((camp) => {
-      const yearData = campYears2026.find((y) => y.campId === camp.id);
-      if (!yearData) return null;
+  const campDataByYear = {
+    2024: allCamps
+      .map((camp) => {
+        const yearData = campYears.find(
+          (y) => y.campId === camp.id && y.year === 2024,
+        );
+        if (!yearData) return null;
 
-      const prices = allPrices.filter(
-        (p) => p.campId === camp.id && p.year === 2026,
-      );
+        const prices = allPrices.filter(
+          (p) => p.campId === camp.id && p.year === 2024,
+        );
 
-      return {
-        id: camp.id,
-        name: camp.name,
-        description: camp.description,
-        yearData: {
-          ...yearData,
-          prices,
-        },
-      };
-    })
-    .filter((camp): camp is NonNullable<typeof camp> => camp !== null);
+        return {
+          id: camp.id,
+          name: camp.name,
+          description: camp.description,
+          yearData: { ...yearData, prices },
+        };
+      })
+      .filter((camp): camp is NonNullable<typeof camp> => camp !== null),
+    2025: allCamps
+      .map((camp) => {
+        const yearData = campYears.find(
+          (y) => y.campId === camp.id && y.year === 2025,
+        );
+        if (!yearData) return null;
 
-  console.log(`🏕 Found ${camps2026.length} camps for 2026`);
+        const prices = allPrices.filter(
+          (p) => p.campId === camp.id && p.year === 2025,
+        );
+
+        return {
+          id: camp.id,
+          name: camp.name,
+          description: camp.description,
+          yearData: { ...yearData, prices },
+        };
+      })
+      .filter((camp): camp is NonNullable<typeof camp> => camp !== null),
+    2026: allCamps
+      .map((camp) => {
+        const yearData = campYears.find(
+          (y) => y.campId === camp.id && y.year === 2026,
+        );
+        if (!yearData) return null;
+
+        const prices = allPrices.filter(
+          (p) => p.campId === camp.id && p.year === 2026,
+        );
+
+        return {
+          id: camp.id,
+          name: camp.name,
+          description: camp.description,
+          yearData: { ...yearData, prices },
+        };
+      })
+      .filter((camp): camp is NonNullable<typeof camp> => camp !== null),
+  };
+
+  console.log(
+    `🏕 Found ${campDataByYear[2024].length} camps for 2024, ${campDataByYear[2025].length} for 2025, ${campDataByYear[2026].length} for 2026`,
+  );
 
   // Create seed users (parents) - about 30-50 unique users
   const numUsers = randomInt(35, 45);
@@ -329,214 +367,227 @@ async function seed() {
     `✅ Created ${createdUsers.length} users, ${createdAddresses.length} addresses, ${createdEmergencyContacts.length} emergency contacts`,
   );
 
-  // Now create registrations for each camp
+  // Now create registrations for each camp across all years
   let totalRegistrations = 0;
   let totalCampers = 0;
+  const allYears = [2024, 2025, 2026] as const;
 
-  for (const camp of camps2026) {
-    const prices = camp.yearData!.prices;
-    if (prices.length === 0) {
-      console.log(`⚠️ Skipping ${camp.name} - no prices found`);
-      continue;
-    }
+  for (const year of allYears) {
+    const campsForYear = campDataByYear[year];
+    console.log(`\n📅 Processing ${year} season...`);
 
-    const numRegistrations = randomInt(10, 20);
-    console.log(
-      `\n🏕 Creating ${numRegistrations} registrations for ${camp.name}...`,
-    );
+    for (const camp of campsForYear) {
+      const prices = camp.yearData!.prices;
+      if (prices.length === 0) {
+        console.log(`⚠️ Skipping ${camp.name} ${year} - no prices found`);
+        continue;
+      }
 
-    // Determine age range based on camp type
-    let minAge: number, maxAge: number;
-    switch (camp.name) {
-      case "LIT Camp":
-        minAge = 13;
-        maxAge = 17;
-        break;
-      case "Kids Camp":
-      case "4 Night Kids Camp":
-      case "2-Night Mini Camp":
-        minAge = 7;
-        maxAge = 12;
-        break;
-      case "Youth Camp":
-        minAge = 12;
-        maxAge = 16;
-        break;
-      case "Family Camp":
-        minAge = 1;
-        maxAge = 65;
-        break;
-      case "MADD Camp":
-        minAge = 8;
-        maxAge = 15;
-        break;
-      default:
-        minAge = 7;
-        maxAge = 16;
-    }
-
-    for (let i = 0; i < numRegistrations; i++) {
-      // Pick a random user
-      const user = randomItem(createdUsers);
-      const address = createdAddresses.find((a) => a.userId === user.id)!;
-      const userEmergencyContacts = createdEmergencyContacts.filter(
-        (ec) => ec.userId === user.id,
+      const numRegistrations = randomInt(8, 15);
+      console.log(
+        `   🏕 Creating ${numRegistrations} registrations for ${camp.name} ${year}...`,
       );
 
-      // Determine number of campers (1-2, with occasional 3 for family camp)
-      let numCampers = randomInt(1, 2);
-      if (camp.name === "Family Camp" && Math.random() > 0.8) {
-        numCampers = 3;
+      // Determine age range based on camp type
+      let minAge: number, maxAge: number;
+      switch (camp.name) {
+        case "LIT Camp":
+          minAge = 13;
+          maxAge = 17;
+          break;
+        case "Kids Camp":
+        case "4 Night Kids Camp":
+        case "2-Night Mini Camp":
+          minAge = 7;
+          maxAge = 12;
+          break;
+        case "Youth Camp":
+          minAge = 12;
+          maxAge = 16;
+          break;
+        case "Family Camp":
+          minAge = 1;
+          maxAge = 65;
+          break;
+        case "MADD Camp":
+          minAge = 8;
+          maxAge = 15;
+          break;
+        default:
+          minAge = 7;
+          maxAge = 16;
       }
 
-      // Determine registration status (40% draft, 45% registered, 15% refunded)
-      const rand = Math.random();
-      let status: "draft" | "registered" | "refunded";
-      if (rand < 0.4) {
-        status = "draft";
-      } else if (rand < 0.85) {
-        status = "registered";
-      } else {
-        status = "refunded";
-      }
-
-      // Select price
-      const price = randomItem(prices);
-      const startDate = new Date(camp.yearData!.startDate);
-      const endDate = new Date(camp.yearData!.endDate);
-      const numDays = price.isDayPrice
-        ? randomInt(
-            1,
-            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-          )
-        : null;
-      const basePrice = numDays ? price.price * numDays : price.price;
-      const pricePaid =
-        status === "draft" ? 0 : status === "refunded" ? 0 : basePrice;
-
-      // Create campers
-      const camperIds: string[] = [];
-      for (let j = 0; j < numCampers; j++) {
-        const { firstName, lastName } = generateName();
-        const dateOfBirth = faker.date.birthdate({
-          min: minAge,
-          max: maxAge,
-          mode: "age",
-        });
-
-        const [camper] = await db
-          .insert(schema.campers)
-          .values({
-            userId: user.id,
-            addressId: address.id,
-            firstName,
-            lastName,
-            dateOfBirth: dateOfBirth.toISOString().split("T")[0],
-            swimmingLevel: randomItem(SWIMMING_LEVELS),
-            gender: randomItem(GENDERS),
-            hasBeenToCamp: Math.random() > 0.6,
-            shirtSize: randomItem(SHIRT_SIZES),
-            arePhotosAllowed: Math.random() > 0.1,
-            dietaryRestrictions:
-              Math.random() > 0.7 ? faker.lorem.sentence() : null,
-          })
-          .returning({ id: schema.campers.id });
-
-        camperIds.push(camper.id);
-        totalCampers++;
-
-        // Create medical info for camper
-        const hasAllergies = Math.random() > 0.8;
-        const hasMedicationsAtCamp = Math.random() > 0.85;
-        const hasMedicationsNotAtCamp = Math.random() > 0.9;
-        const hasMedicalConditions = Math.random() > 0.85;
-
-        await db.insert(schema.medicalInfo).values({
-          camperId: camper.id,
-          healthCareNumber: faker.string.numeric(9),
-          familyDoctor: `${generateName().firstName} ${generateName().lastName}`,
-          doctorPhone: faker.phone.number({ style: "international" }),
-          height: `${randomInt(100, 180)} cm`,
-          weight: `${randomInt(25, 80)} kg`,
-          hasAllergies,
-          allergiesDetails: hasAllergies ? faker.lorem.sentence() : null,
-          usesEpiPen: hasAllergies && Math.random() > 0.5,
-          hasMedicationsAtCamp,
-          medicationsAtCampDetails: hasMedicationsAtCamp
-            ? faker.lorem.sentence()
-            : null,
-          hasMedicationsNotAtCamp,
-          medicationsNotAtCampDetails: hasMedicationsNotAtCamp
-            ? faker.lorem.sentence()
-            : null,
-          otcPermissions: faker.helpers.arrayElements(OTC_MEDS, {
-            min: 0,
-            max: 5,
-          }),
-          hasMedicalConditions,
-          medicalConditionsDetails: hasMedicalConditions
-            ? faker.lorem.sentence()
-            : null,
-          additionalInfo: Math.random() > 0.8 ? faker.lorem.sentence() : null,
-        });
-
-        // Link emergency contacts to camper
-        const numLinks = Math.min(
-          userEmergencyContacts.length,
-          randomInt(1, 2),
+      for (let i = 0; i < numRegistrations; i++) {
+        const user = randomItem(createdUsers);
+        const address = createdAddresses.find((a) => a.userId === user.id)!;
+        const userEmergencyContacts = createdEmergencyContacts.filter(
+          (ec) => ec.userId === user.id,
         );
-        const shuffled = [...userEmergencyContacts].sort(
-          () => 0.5 - Math.random(),
-        );
-        for (let k = 0; k < numLinks; k++) {
-          await db.insert(schema.camperEmergencyContacts).values({
-            camperId: camper.id,
-            emergencyContactId: shuffled[k].id,
-            priority: k + 1,
+
+        let numCampers = randomInt(1, 2);
+        if (camp.name === "Family Camp" && Math.random() > 0.8) {
+          numCampers = 3;
+        }
+
+        // For past years (2024, 2025), mostly completed registrations
+        // For current year (2026), mix of draft/registered/refunded
+        let status: "draft" | "registered" | "refunded";
+        if (year === 2024 || year === 2025) {
+          const rand = Math.random();
+          if (rand < 0.85) {
+            status = "registered";
+          } else {
+            status = "refunded";
+          }
+        } else {
+          const rand = Math.random();
+          if (rand < 0.4) {
+            status = "draft";
+          } else if (rand < 0.85) {
+            status = "registered";
+          } else {
+            status = "refunded";
+          }
+        }
+
+        const price = randomItem(prices);
+        const startDate = new Date(camp.yearData!.startDate);
+        const endDate = new Date(camp.yearData!.endDate);
+        const numDays = price.isDayPrice
+          ? randomInt(
+              1,
+              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+            )
+          : null;
+        const basePrice = numDays ? price.price * numDays : price.price;
+        const pricePaid =
+          status === "draft" ? 0 : status === "refunded" ? 0 : basePrice;
+
+        const camperIds: string[] = [];
+        for (let j = 0; j < numCampers; j++) {
+          const { firstName, lastName } = generateName();
+          const dateOfBirth = faker.date.birthdate({
+            min: minAge,
+            max: maxAge,
+            mode: "age",
           });
+
+          const [camper] = await db
+            .insert(schema.campers)
+            .values({
+              userId: user.id,
+              addressId: address.id,
+              firstName,
+              lastName,
+              dateOfBirth: dateOfBirth.toISOString().split("T")[0],
+              swimmingLevel: randomItem(SWIMMING_LEVELS),
+              gender: randomItem(GENDERS),
+              hasBeenToCamp: Math.random() > 0.6,
+              shirtSize: randomItem(SHIRT_SIZES),
+              arePhotosAllowed: Math.random() > 0.1,
+              dietaryRestrictions:
+                Math.random() > 0.7 ? faker.lorem.sentence() : null,
+            })
+            .returning({ id: schema.campers.id });
+
+          camperIds.push(camper.id);
+          totalCampers++;
+
+          const hasAllergies = Math.random() > 0.8;
+          const hasMedicationsAtCamp = Math.random() > 0.85;
+          const hasMedicationsNotAtCamp = Math.random() > 0.9;
+          const hasMedicalConditions = Math.random() > 0.85;
+
+          await db.insert(schema.medicalInfo).values({
+            camperId: camper.id,
+            healthCareNumber: faker.string.numeric(9),
+            familyDoctor: `${generateName().firstName} ${generateName().lastName}`,
+            doctorPhone: faker.phone.number({ style: "international" }),
+            height: `${randomInt(100, 180)} cm`,
+            weight: `${randomInt(25, 80)} kg`,
+            hasAllergies,
+            allergiesDetails: hasAllergies ? faker.lorem.sentence() : null,
+            usesEpiPen: hasAllergies && Math.random() > 0.5,
+            hasMedicationsAtCamp,
+            medicationsAtCampDetails: hasMedicationsAtCamp
+              ? faker.lorem.sentence()
+              : null,
+            hasMedicationsNotAtCamp,
+            medicationsNotAtCampDetails: hasMedicationsNotAtCamp
+              ? faker.lorem.sentence()
+              : null,
+            otcPermissions: faker.helpers.arrayElements(OTC_MEDS, {
+              min: 0,
+              max: 5,
+            }),
+            hasMedicalConditions,
+            medicalConditionsDetails: hasMedicalConditions
+              ? faker.lorem.sentence()
+              : null,
+            additionalInfo: Math.random() > 0.8 ? faker.lorem.sentence() : null,
+          });
+
+          const numLinks = Math.min(
+            userEmergencyContacts.length,
+            randomInt(1, 2),
+          );
+          const shuffled = [...userEmergencyContacts].sort(
+            () => 0.5 - Math.random(),
+          );
+          for (let k = 0; k < numLinks; k++) {
+            await db.insert(schema.camperEmergencyContacts).values({
+              camperId: camper.id,
+              emergencyContactId: shuffled[k].id,
+              priority: k + 1,
+            });
+          }
+        }
+
+        for (const camperId of camperIds) {
+          const [registration] = await db
+            .insert(schema.registrations)
+            .values({
+              campId: camp.id,
+              campYear: year,
+              priceId: price.id,
+              camperId,
+              numDays,
+              pricePaid,
+              status,
+              stripePaymentIntentId:
+                status !== "draft"
+                  ? `pi_${faker.string.alphanumeric(24)}`
+                  : null,
+              stripeSessionId:
+                status !== "draft"
+                  ? `cs_${faker.string.alphanumeric(48)}`
+                  : null,
+            })
+            .returning({ id: schema.registrations.id });
+
+          await db.insert(schema.registrationDetails).values({
+            registrationId: registration.id,
+            cabinRequest:
+              Math.random() > 0.7
+                ? `Cabin ${randomItem(["A", "B", "C", "D"])}`
+                : null,
+            parentSignature:
+              status !== "draft"
+                ? `${generateName().firstName} ${generateName().lastName}`
+                : null,
+            additionalInfo:
+              Math.random() > 0.8 ? faker.lorem.paragraph() : null,
+          });
+
+          totalRegistrations++;
         }
       }
 
-      // Create registration for each camper
-      for (const camperId of camperIds) {
-        const [registration] = await db
-          .insert(schema.registrations)
-          .values({
-            campId: camp.id,
-            campYear: 2026,
-            priceId: price.id,
-            camperId,
-            numDays,
-            pricePaid,
-            status,
-            stripePaymentIntentId:
-              status !== "draft" ? `pi_${faker.string.alphanumeric(24)}` : null,
-            stripeSessionId:
-              status !== "draft" ? `cs_${faker.string.alphanumeric(48)}` : null,
-          })
-          .returning({ id: schema.registrations.id });
-
-        // Create registration details
-        await db.insert(schema.registrationDetails).values({
-          registrationId: registration.id,
-          cabinRequest:
-            Math.random() > 0.7
-              ? `Cabin ${randomItem(["A", "B", "C", "D"])}`
-              : null,
-          parentSignature:
-            status !== "draft"
-              ? `${generateName().firstName} ${generateName().lastName}`
-              : null,
-          additionalInfo: Math.random() > 0.8 ? faker.lorem.paragraph() : null,
-        });
-
-        totalRegistrations++;
-      }
+      console.log(
+        `      ✅ Created ${numRegistrations} registrations for ${camp.name} ${year}`,
+      );
     }
-
-    console.log(
-      `   ✅ Created ${numRegistrations} registrations for ${camp.name}`,
-    );
   }
 
   console.log("\n✨ Seeding Complete!");
@@ -544,7 +595,7 @@ async function seed() {
   console.log(`   - ${createdUsers.length} users created`);
   console.log(`   - ${totalCampers} campers created`);
   console.log(`   - ${totalRegistrations} registrations created`);
-  console.log(`   - Across ${camps2026.length} camps`);
+  console.log(`   - Across ${allYears.length} years (2024-2026)`);
 
   process.exit(0);
 }
