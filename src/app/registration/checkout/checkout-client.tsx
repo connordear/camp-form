@@ -2,7 +2,7 @@
 
 import { TagIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [autoAppliedDiscounts, setAutoAppliedDiscounts] = useState<
     ApplicableDiscount[]
   >([]);
+  const initializedRef = useRef(false);
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -79,8 +80,14 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       );
       setDiscountResult(result);
 
-      // Filter autoAppliedDiscounts to only keep ones still applicable
+      // On first evaluation, initialize with all applicable discounts.
+      // On subsequent evaluations, only keep ones still applicable
+      // (but don't re-add discounts the user has dismissed).
       setAutoAppliedDiscounts((prev) => {
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          return result.applicableDiscounts;
+        }
         const applicableIds = new Set(
           result.applicableDiscounts.map((ad) => ad.discount.id),
         );
@@ -88,17 +95,6 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
       });
     });
   }, [selectedRegistrations]);
-
-  // Initialize autoAppliedDiscounts when we first get results
-  useEffect(() => {
-    if (
-      discountResult &&
-      autoAppliedDiscounts.length === 0 &&
-      discountResult.applicableDiscounts.length > 0
-    ) {
-      setAutoAppliedDiscounts(discountResult.applicableDiscounts);
-    }
-  }, [discountResult, autoAppliedDiscounts.length]);
 
   // Display only discounts that are both applicable and not dismissed
   const displayedDiscounts = useMemo(() => {
