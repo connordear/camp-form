@@ -68,13 +68,11 @@ export async function getDiscountsByIds(ids: string[]): Promise<Discount[]> {
  * and calculates the savings for each.
  *
  * @param registrations - The registrations being checked out
- * @param dismissedIds - Optional array of discount IDs to exclude
  * @param autoApplyOnly - If true, only evaluate auto-apply discounts (defaults to false)
  * @returns Object containing applicable discounts, savings, and totals
  */
 export async function evaluateDiscounts(
   registrations: RegistrationForDiscount[],
-  dismissedIds: string[] = [],
   autoApplyOnly: boolean = false,
 ): Promise<DiscountEvaluationResult> {
   const discountsToEvaluate = autoApplyOnly
@@ -97,11 +95,6 @@ export async function evaluateDiscounts(
   const applicableDiscounts: ApplicableDiscount[] = [];
 
   for (const discount of discountsToEvaluate) {
-    // Skip dismissed discounts
-    if (dismissedIds.includes(discount.id)) {
-      continue;
-    }
-
     let isApplicable = false;
 
     switch (discount.conditionType) {
