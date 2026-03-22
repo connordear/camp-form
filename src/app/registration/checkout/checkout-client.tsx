@@ -1,12 +1,15 @@
 "use client";
 
-import { TagIcon } from "lucide-react";
+import { TagIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { DiscountEvaluationResult } from "@/lib/services/discount-service";
+import type {
+  ApplicableDiscount,
+  DiscountEvaluationResult,
+} from "@/lib/services/discount-service";
 import { type CheckoutCamper, evaluateCheckoutDiscounts } from "./actions";
 import { CamperCard } from "./camper-card";
 
@@ -27,6 +30,10 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   const [isPending, startTransition] = useTransition();
   const [discountResult, setDiscountResult] =
     useState<DiscountEvaluationResult | null>(null);
+  const [autoAppliedDiscounts, setAutoAppliedDiscounts] = useState<
+    ApplicableDiscount[]
+  >([]);
+  const initializedRef = useRef(false);
 
   // Flatten all registrations for easier processing
   const allRegistrations = useMemo(
@@ -58,6 +65,7 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
   useEffect(() => {
     if (selectedRegistrations.length === 0) {
       setDiscountResult(null);
+      setAutoAppliedDiscounts([]);
       return;
     }
 
@@ -71,11 +79,39 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
         })),
       );
       setDiscountResult(result);
+
+      // On first evaluation, initialize with all applicable discounts.
+      // On subsequent evaluations, only keep ones still applicable
+      // (but don't re-add discounts the user has dismissed).
+      setAutoAppliedDiscounts((prev) => {
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          return result.applicableDiscounts;
+        }
+        const applicableIds = new Set(
+          result.applicableDiscounts.map((ad) => ad.discount.id),
+        );
+        return prev.filter((ad) => applicableIds.has(ad.discount.id));
+      });
     });
   }, [selectedRegistrations]);
 
-  const totalPrice = discountResult?.total ?? subtotal;
-  const totalSavings = discountResult?.totalSavings ?? 0;
+  // Display only discounts that are both applicable and not dismissed
+  const displayedDiscounts = useMemo(() => {
+    if (!discountResult) return [];
+    const autoAppliedIds = new Set(
+      autoAppliedDiscounts.map((ad) => ad.discount.id),
+    );
+    return discountResult.applicableDiscounts.filter((ad) =>
+      autoAppliedIds.has(ad.discount.id),
+    );
+  }, [discountResult, autoAppliedDiscounts]);
+
+  const totalSavings = displayedDiscounts.reduce(
+    (sum, ad) => sum + ad.savings,
+    0,
+  );
+  const totalPrice = subtotal - totalSavings;
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -97,10 +133,23 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
     setSelectedIds(new Set());
   };
 
+  const handleDismissDiscount = (discountId: string) => {
+    setAutoAppliedDiscounts((prev) =>
+      prev.filter((ad) => ad.discount.id !== discountId),
+    );
+  };
+
   const handleCheckout = () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds).join(",");
-    router.push(`/registration/checkout/payment?ids=${ids}`);
+    const appliedDiscountIds = autoAppliedDiscounts
+      .map((ad) => ad.discount.id)
+      .join(",");
+    const params = new URLSearchParams({ ids });
+    if (appliedDiscountIds) {
+      params.set("applied", appliedDiscountIds);
+    }
+    router.push(`/registration/checkout/payment?${params.toString()}`);
   };
 
   const hasCampers = campers.length > 0;
@@ -170,17 +219,30 @@ export function CheckoutClient({ campers, year }: CheckoutClientProps) {
         <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:w-80 border-2 z-50">
           <CardContent className="py-4">
             {/* Discount badges */}
-            {discountResult &&
-              discountResult.applicableDiscounts.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {discountResult.applicableDiscounts.map((ad) => (
-                    <Badge key={ad.discount.id} variant="default">
-                      <TagIcon className="size-3 mr-1" />
-                      {ad.discount.name}: -{formatPrice(ad.savings)}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+            {displayedDiscounts.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {displayedDiscounts.map((ad) => (
+                  <Badge
+                    key={ad.discount.id}
+                    variant="default"
+                    className="pr-1"
+                  >
+                    <TagIcon className="size-3 mr-1" />
+                    {ad.discount.name}: -{formatPrice(ad.savings)}
+                    {ad.discount.autoApply && (
+                      <button
+                        type="button"
+                        onClick={() => handleDismissDiscount(ad.discount.id)}
+                        className="ml-1 hover:bg-primary-foreground/20 rounded-full p-0.5"
+                        aria-label={`Dismiss ${ad.discount.name}`}
+                      >
+                        <XIcon className="size-3" />
+                      </button>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               <div>

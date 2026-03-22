@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -31,6 +31,16 @@ export async function getActiveDiscounts(): Promise<Discount[]> {
 }
 
 /**
+ * Fetches all active, auto-apply discounts from the database
+ */
+export async function getAutoApplyDiscounts(): Promise<Discount[]> {
+  return db
+    .select()
+    .from(discounts)
+    .where(and(eq(discounts.isActive, true), eq(discounts.autoApply, true)));
+}
+
+/**
  * Fetches all discounts (active and inactive) for admin management
  */
 export async function getAllDiscounts(): Promise<Discount[]> {
@@ -48,17 +58,26 @@ export async function getDiscountById(id: string): Promise<Discount | null> {
   return discount ?? null;
 }
 
+export async function getDiscountsByIds(ids: string[]): Promise<Discount[]> {
+  if (ids.length === 0) return [];
+  return db.select().from(discounts).where(inArray(discounts.id, ids));
+}
+
 /**
  * Evaluates which discounts apply to a set of registrations
  * and calculates the savings for each.
  *
  * @param registrations - The registrations being checked out
+ * @param autoApplyOnly - If true, only evaluate auto-apply discounts (defaults to false)
  * @returns Object containing applicable discounts, savings, and totals
  */
 export async function evaluateDiscounts(
   registrations: RegistrationForDiscount[],
+  autoApplyOnly: boolean = false,
 ): Promise<DiscountEvaluationResult> {
-  const activeDiscounts = await getActiveDiscounts();
+  const discountsToEvaluate = autoApplyOnly
+    ? await getAutoApplyDiscounts()
+    : await getActiveDiscounts();
 
   // Calculate subtotal
   const subtotal = registrations.reduce(
@@ -75,7 +94,7 @@ export async function evaluateDiscounts(
 
   const applicableDiscounts: ApplicableDiscount[] = [];
 
-  for (const discount of activeDiscounts) {
+  for (const discount of discountsToEvaluate) {
     let isApplicable = false;
 
     switch (discount.conditionType) {

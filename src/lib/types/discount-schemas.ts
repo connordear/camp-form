@@ -12,6 +12,7 @@ export const discountFormSchema = z
     deadlineDate: z.string().nullable(),
     minCampers: z.number().min(2).nullable(),
     isActive: z.boolean(),
+    autoApply: z.boolean(),
   })
   .refine(
     (data) => {
@@ -55,6 +56,7 @@ export const discountUpdateSchema = z
     deadlineDate: z.string().nullable(),
     minCampers: z.number().min(2).nullable(),
     isActive: z.boolean(),
+    autoApply: z.boolean(),
   })
   .refine(
     (data) => {

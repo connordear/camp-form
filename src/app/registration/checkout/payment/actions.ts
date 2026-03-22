@@ -2,10 +2,7 @@
 import type Stripe from "stripe";
 import { siteConfig } from "@/config/site";
 import { requireAuth } from "@/lib/auth-helpers";
-import {
-  evaluateDiscounts,
-  type RegistrationForDiscount,
-} from "@/lib/services/discount-service";
+import { getDiscountsByIds } from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
 import { getBaseUrl } from "@/lib/utils";
@@ -17,12 +14,10 @@ const THEMES = {
   },
 };
 
-/**
- * Fetches a Stripe client secret for checkout.
- * @param registrationIds - Optional array of registration IDs to filter.
- *                          If not provided, uses all draft registrations.
- */
-export async function fetchClientSecret(registrationIds?: string[]) {
+export async function fetchClientSecret(
+  registrationIds?: string[],
+  appliedDiscountIds: string[] = [],
+) {
   const session = await requireAuth();
   const userId = session.user.id;
 
@@ -30,7 +25,6 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     throw new Error("Please specify the registrations you wish to pay for");
   }
 
-  // Fetch registrations - either specific IDs or all draft registrations
   const user = await getRegistrationsByIds(userId, registrationIds);
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
@@ -38,9 +32,6 @@ export async function fetchClientSecret(registrationIds?: string[]) {
   if (!user) {
     throw new Error("No user.");
   }
-
-  // Build registrations for discount evaluation
-  const registrationsForDiscount: RegistrationForDiscount[] = [];
 
   user.campers.forEach((camper: (typeof user.campers)[number]) => {
     camper.registrations.forEach(
@@ -62,13 +53,6 @@ export async function fetchClientSecret(registrationIds?: string[]) {
           quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
           tax_rates: [process.env.TAX_RATE!],
         });
-
-        // Track for discount evaluation
-        registrationsForDiscount.push({
-          camperId: camper.id,
-          price: reg.price.price,
-          quantity: reg.numDays && reg.price.isDayPrice ? reg.numDays : 1,
-        });
       },
     );
   });
@@ -77,15 +61,12 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     return null;
   }
 
-  // Evaluate applicable discounts
-  const discountResult = await evaluateDiscounts(registrationsForDiscount);
-
-  // Build discounts array for Stripe (use coupon IDs)
+  const discounts = await getDiscountsByIds(appliedDiscountIds);
   const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
-    discountResult.applicableDiscounts
-      .filter((ad) => ad.discount.stripeCouponId)
-      .map((ad) => ({
-        coupon: ad.discount.stripeCouponId!,
+    discounts
+      .filter((d) => d.stripeCouponId)
+      .map((d) => ({
+        coupon: d.stripeCouponId!,
       }));
 
   const stripeSession = await stripe.checkout.sessions.create({
@@ -94,10 +75,10 @@ export async function fetchClientSecret(registrationIds?: string[]) {
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     billing_address_collection: "required",
-    // Apply discounts if any are applicable
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
+    ...(!discounts?.length && { allow_promotion_codes: true }),
     branding_settings: {
-      display_name: siteConfig.name, // TODO: Update to pull this from config somehow
+      display_name: siteConfig.name,
       font_family: "roboto",
       border_style: "rounded",
     },
