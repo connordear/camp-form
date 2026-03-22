@@ -69,8 +69,6 @@ export async function fetchClientSecret(
         coupon: d.stripeCouponId!,
       }));
 
-  const hasAutoApplyDiscounts = discounts.some((d) => d.autoApply);
-
   const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     line_items: lineItems,
@@ -78,7 +76,7 @@ export async function fetchClientSecret(
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     billing_address_collection: "required",
     ...(stripeDiscounts.length > 0 && { discounts: stripeDiscounts }),
-    ...(!hasAutoApplyDiscounts && { allow_promotion_codes: true }),
+    ...(!discounts?.length && { allow_promotion_codes: true }),
     branding_settings: {
       display_name: siteConfig.name,
       font_family: "roboto",
