@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/data/db";
-import { registrations } from "@/lib/data/schema";
+import { refunds, registrations } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {
@@ -67,6 +67,71 @@ export async function POST(req: Request) {
           .where(eq(registrations.id, registrationId));
       }
     });
+  }
+
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntentId = charge.payment_intent as string;
+
+    if (!paymentIntentId) {
+      console.error("No payment intent ID on charge.refunded event");
+      return new Response(null, { status: 200 });
+    }
+
+    const isFullyRefunded = charge.amount_refunded >= charge.amount;
+    if (!isFullyRefunded) {
+      return new Response(null, { status: 200 });
+    }
+
+    const activeRegistrations = await db
+      .select()
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.stripePaymentIntentId, paymentIntentId),
+          eq(registrations.status, "registered"),
+        ),
+      );
+
+    if (activeRegistrations.length === 0) {
+      return new Response(null, { status: 200 });
+    }
+
+    await db.transaction(async (tx) => {
+      const chargeRefunds = charge.refunds;
+
+      for (const reg of activeRegistrations) {
+        await tx
+          .update(registrations)
+          .set({
+            status: "refunded",
+            updatedAt: new Date(),
+          })
+          .where(eq(registrations.id, reg.id));
+
+        if (chargeRefunds?.data) {
+          for (const refund of chargeRefunds.data) {
+            const existingRefund = await tx
+              .select()
+              .from(refunds)
+              .where(eq(refunds.stripeRefundId, refund.id))
+              .limit(1);
+
+            if (existingRefund.length > 0) continue;
+
+            await tx.insert(refunds).values({
+              registrationId: reg.id,
+              amount: refund.amount,
+              reason: refund.reason ?? null,
+              stripeRefundId: refund.id,
+              stripePaymentIntentId: paymentIntentId,
+            });
+          }
+        }
+      }
+    });
+
+    revalidatePath("/admin");
   }
 
   revalidatePath("/registration");
