@@ -13,7 +13,20 @@ import {
   User,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,14 +34,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { capitalize } from "@/lib/utils";
-import { getRegistrationDetail, getRegistrationMedicalInfo } from "../actions";
+import {
+  getRegistrationDetail,
+  getRegistrationMedicalInfo,
+  refundRegistration,
+} from "../actions";
 import type { AdminRegistration, AdminRegistrationDetail } from "../schema";
 
 interface RegistrationModalProps {
   registration: AdminRegistration | null;
   userRole: "admin" | "hcp" | "staff";
   onClose: () => void;
+  onRefresh: () => void;
 }
 
 function getStatusBadgeVariant(
@@ -63,10 +82,15 @@ export function RegistrationModal({
   registration,
   userRole,
   onClose,
+  onRefresh,
 }: RegistrationModalProps) {
   const [detail, setDetail] = useState<AdminRegistrationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [isRefunding, setIsRefunding] = useState(false);
 
   const loadRegistrationDetail = useCallback(
     async (registrationId: string) => {
@@ -109,6 +133,28 @@ export function RegistrationModal({
       setError(null);
     }
   }, [registration, loadRegistrationDetail]);
+
+  const handleRefund = useCallback(async () => {
+    if (!registration || !refundReason.trim()) return;
+    setIsRefunding(true);
+    try {
+      await refundRegistration({
+        registrationId: registration.id,
+        reason: refundReason,
+      });
+      toast.success("Refund processed successfully");
+      setShowRefundDialog(false);
+      setRefundReason("");
+      loadRegistrationDetail(registration.id);
+      onRefresh();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to process refund",
+      );
+    } finally {
+      setIsRefunding(false);
+    }
+  }, [registration, refundReason, loadRegistrationDetail, onRefresh]);
 
   const isOpen = registration !== null;
 
@@ -486,6 +532,87 @@ export function RegistrationModal({
                   <div>
                     <span className="text-muted-foreground">Days</span>
                     <p className="font-medium">{detail.numDays || "N/A"}</p>
+                  </div>
+                </div>
+                <Separator className="mt-6" />
+              </div>
+            )}
+
+            {/* Refund - Admin only, registered status only */}
+            {userRole === "admin" && detail.status === "registered" && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Refund
+                </h3>
+                <AlertDialog
+                  open={showRefundDialog}
+                  onOpenChange={setShowRefundDialog}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">Process Refund</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Process Refund</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will refund the payment for{" "}
+                        {detail.camper.firstName} {detail.camper.lastName} and
+                        mark the registration as refunded.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Reason for refund
+                      </label>
+                      <Textarea
+                        placeholder="Enter reason for refund..."
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                      />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isRefunding}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={isRefunding || !refundReason.trim()}
+                        onClick={handleRefund}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isRefunding ? "Processing..." : "Confirm Refund"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Separator className="mt-6" />
+              </div>
+            )}
+
+            {detail.status === "refunded" && detail.refundedAt && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Refund Details
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">
+                      Amount Refunded
+                    </span>
+                    <p className="font-medium">
+                      {formatPrice(detail.refundAmount)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Refunded On</span>
+                    <p className="font-medium">
+                      {formatDate(detail.refundedAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reason</span>
+                    <p className="font-medium">
+                      {detail.refundReason || "N/A"}
+                    </p>
                   </div>
                 </div>
                 <Separator className="mt-6" />

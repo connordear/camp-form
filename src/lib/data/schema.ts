@@ -146,6 +146,10 @@ export const registrations = pgTable(
       .default("draft"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
     stripeSessionId: text("stripe_session_id"),
+    refundedAt: timestamp("refunded_at"),
+    refundAmount: integer("refund_amount"),
+    refundReason: text("refund_reason"),
+    stripeRefundId: text("stripe_refund_id"),
     ...timestamps,
   },
   (t) => [

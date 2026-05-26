@@ -402,6 +402,7 @@ export function RegistrationsList({
         registration={selectedRegistration}
         userRole={userRole}
         onClose={() => setSelectedRegistration(null)}
+        onRefresh={() => router.refresh()}
       />
     </div>
   );

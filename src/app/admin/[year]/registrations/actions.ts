@@ -1,7 +1,12 @@
 "use server";
 
-import { and, count, desc, eq, ilike, or } from "drizzle-orm";
-import { adminPanelAction, medicalAccessAction } from "@/lib/auth-helpers";
+import { and, count, desc, eq, ilike, ne, or } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import {
+  adminOnlyAction,
+  adminPanelAction,
+  medicalAccessAction,
+} from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import {
   campers,
@@ -10,6 +15,7 @@ import {
   campYears,
   registrations,
 } from "@/lib/data/schema";
+import { stripe } from "@/lib/stripe";
 import type { AdminRegistration, AdminRegistrationDetail } from "./schema";
 
 export interface GetRegistrationsParams {
@@ -332,5 +338,70 @@ export const getRegistrationMedicalInfo = medicalAccessAction(
         registration.camper.medicalInfo.medicalConditionsDetails,
       additionalInfo: registration.camper.medicalInfo.additionalInfo,
     };
+  },
+);
+
+export const refundRegistration = adminOnlyAction(
+  async (params: { registrationId: string; reason: string }) => {
+    const { registrationId, reason } = params;
+
+    const registration = await db.query.registrations.findFirst({
+      where: eq(registrations.id, registrationId),
+    });
+
+    if (!registration) {
+      throw new Error("Registration not found");
+    }
+
+    if (registration.status !== "registered") {
+      throw new Error("Registration is not in registered status");
+    }
+
+    if (!registration.stripePaymentIntentId) {
+      throw new Error("Registration has no payment intent ID");
+    }
+
+    const piId = registration.stripePaymentIntentId;
+
+    const siblingRegistrations = await db
+      .select()
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.stripePaymentIntentId, piId),
+          ne(registrations.status, "refunded"),
+        ),
+      );
+
+    const hasOtherActive = siblingRegistrations.some(
+      (r) => r.id !== registrationId,
+    );
+
+    const refund = await stripe.refunds.create(
+      hasOtherActive
+        ? {
+            payment_intent: piId,
+            amount: registration.pricePaid ?? undefined,
+          }
+        : {
+            payment_intent: piId,
+          },
+    );
+
+    await db
+      .update(registrations)
+      .set({
+        status: "refunded",
+        refundedAt: new Date(),
+        refundAmount: refund.amount,
+        refundReason: reason,
+        stripeRefundId: refund.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(registrations.id, registrationId));
+
+    revalidatePath("/admin");
+
+    return { success: true, refundId: refund.id };
   },
 );
