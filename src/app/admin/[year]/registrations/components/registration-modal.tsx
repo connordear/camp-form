@@ -588,6 +588,37 @@ export function RegistrationModal({
               </div>
             )}
 
+            {detail.status === "refunded" && detail.refundedAt && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Refund Details
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">
+                      Amount Refunded
+                    </span>
+                    <p className="font-medium">
+                      {formatPrice(detail.refundAmount)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Refunded On</span>
+                    <p className="font-medium">
+                      {formatDate(detail.refundedAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reason</span>
+                    <p className="font-medium">
+                      {detail.refundReason || "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <Separator className="mt-6" />
+              </div>
+            )}
+
             {/* Registration Details */}
             {detail.details && (
               <div>
