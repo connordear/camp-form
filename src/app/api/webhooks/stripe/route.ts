@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/data/db";
-import { refunds, registrations } from "@/lib/data/schema";
+import { registrations } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {
@@ -99,35 +99,22 @@ export async function POST(req: Request) {
 
     await db.transaction(async (tx) => {
       const chargeRefunds = charge.refunds;
+      const firstRefund = chargeRefunds?.data?.[0];
 
       for (const reg of activeRegistrations) {
+        if (reg.stripeRefundId) continue;
+
         await tx
           .update(registrations)
           .set({
             status: "refunded",
+            refundedAt: new Date(),
+            refundAmount: firstRefund?.amount ?? null,
+            refundReason: firstRefund?.reason ?? null,
+            stripeRefundId: firstRefund?.id ?? null,
             updatedAt: new Date(),
           })
           .where(eq(registrations.id, reg.id));
-
-        if (chargeRefunds?.data) {
-          for (const refund of chargeRefunds.data) {
-            const existingRefund = await tx
-              .select()
-              .from(refunds)
-              .where(eq(refunds.stripeRefundId, refund.id))
-              .limit(1);
-
-            if (existingRefund.length > 0) continue;
-
-            await tx.insert(refunds).values({
-              registrationId: reg.id,
-              amount: refund.amount,
-              reason: refund.reason ?? null,
-              stripeRefundId: refund.id,
-              stripePaymentIntentId: paymentIntentId,
-            });
-          }
-        }
       }
     });
 

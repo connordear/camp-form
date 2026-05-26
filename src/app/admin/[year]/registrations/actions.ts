@@ -13,7 +13,6 @@ import {
   camps,
   campYearPrices,
   campYears,
-  refunds,
   registrations,
 } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
@@ -389,18 +388,14 @@ export const refundRegistration = adminOnlyAction(
           },
     );
 
-    await db.insert(refunds).values({
-      registrationId,
-      amount: refund.amount,
-      reason,
-      stripeRefundId: refund.id,
-      stripePaymentIntentId: piId,
-    });
-
     await db
       .update(registrations)
       .set({
         status: "refunded",
+        refundedAt: new Date(),
+        refundAmount: refund.amount,
+        refundReason: reason,
+        stripeRefundId: refund.id,
         updatedAt: new Date(),
       })
       .where(eq(registrations.id, registrationId));

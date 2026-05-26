@@ -146,6 +146,10 @@ export const registrations = pgTable(
       .default("draft"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
     stripeSessionId: text("stripe_session_id"),
+    refundedAt: timestamp("refunded_at"),
+    refundAmount: integer("refund_amount"),
+    refundReason: text("refund_reason"),
+    stripeRefundId: text("stripe_refund_id"),
     ...timestamps,
   },
   (t) => [
@@ -397,44 +401,21 @@ export const camperEmergencyContactsRelations = relations(
   }),
 );
 
-export const registrationsRelations = relations(
-  registrations,
-  ({ one, many }) => ({
-    camper: one(campers, {
-      fields: [registrations.camperId],
-      references: [campers.id],
-    }),
-    campYear: one(campYears, {
-      fields: [registrations.campId, registrations.campYear],
-      references: [campYears.campId, campYears.year],
-    }),
-    price: one(campYearPrices, {
-      fields: [registrations.priceId],
-      references: [campYearPrices.id],
-    }),
-    details: one(registrationDetails, {
-      fields: [registrations.id],
-      references: [registrationDetails.registrationId],
-    }),
-    refunds: many(refunds),
+export const registrationsRelations = relations(registrations, ({ one }) => ({
+  camper: one(campers, {
+    fields: [registrations.camperId],
+    references: [campers.id],
   }),
-);
-
-export const refunds = pgTable("refunds", {
-  id: id(),
-  registrationId: text("registration_id")
-    .references(() => registrations.id, { onDelete: "cascade" })
-    .notNull(),
-  amount: integer().notNull(),
-  reason: text(),
-  stripeRefundId: text("stripe_refund_id"),
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const refundsRelations = relations(refunds, ({ one }) => ({
-  registration: one(registrations, {
-    fields: [refunds.registrationId],
-    references: [registrations.id],
+  campYear: one(campYears, {
+    fields: [registrations.campId, registrations.campYear],
+    references: [campYears.campId, campYears.year],
+  }),
+  price: one(campYearPrices, {
+    fields: [registrations.priceId],
+    references: [campYearPrices.id],
+  }),
+  details: one(registrationDetails, {
+    fields: [registrations.id],
+    references: [registrationDetails.registrationId],
   }),
 }));

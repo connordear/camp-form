@@ -1,5 +1,5 @@
 {
-  "id": "42ec2089-28de-4631-8e1a-43614c030373",
+  "id": "8f0e7adb-8504-4ba6-a710-bcd523489f94",
   "prevId": "fe2508aa-0bbe-439a-bd68-75200d15598f",
   "version": "7",
   "dialect": "postgresql",
@@ -968,76 +968,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.refunds": {
-      "name": "refunds",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "registration_id": {
-          "name": "registration_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_refund_id": {
-          "name": "stripe_refund_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_payment_intent_id": {
-          "name": "stripe_payment_intent_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "refunds_registration_id_registrations_id_fk": {
-          "name": "refunds_registration_id_registrations_id_fk",
-          "tableFrom": "refunds",
-          "tableTo": "registrations",
-          "columnsFrom": [
-            "registration_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.registration_details": {
       "name": "registration_details",
       "schema": "",
@@ -1150,6 +1080,30 @@
         },
         "stripe_session_id": {
           "name": "stripe_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refunded_at": {
+          "name": "refunded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refund_amount": {
+          "name": "refund_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refund_reason": {
+          "name": "refund_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_refund_id": {
+          "name": "stripe_refund_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
