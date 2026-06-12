@@ -21,8 +21,13 @@ import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampForm } from "./camp-form";
 
+type CampWithCounts = CampWithYear & {
+  registeredCount: number;
+  draftCount: number;
+};
+
 interface CampsListProps {
-  camps: CampWithYear[];
+  camps: CampWithCounts[];
   year: number;
 }
 
@@ -43,8 +48,8 @@ export function CampsList({ camps, year }: CampsListProps) {
       </div>
 
       <Card className="p-0">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="overflow-x-auto">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -53,6 +58,10 @@ export function CampsList({ camps, year }: CampsListProps) {
                 </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Capacity</TableHead>
+                <TableHead className="hidden md:table-cell">Draft</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Registered
+                </TableHead>
                 <TableHead className="hidden lg:table-cell">Dates</TableHead>
               </TableRow>
             </TableHeader>
@@ -60,7 +69,7 @@ export function CampsList({ camps, year }: CampsListProps) {
               {camps.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={7}
                     className="h-32 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center">
@@ -81,8 +90,8 @@ export function CampsList({ camps, year }: CampsListProps) {
                     <TableCell>
                       <span className="font-medium">{camp.name}</span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span className="text-muted-foreground line-clamp-1">
+                    <TableCell className="hidden md:table-cell max-w-xs">
+                      <span className="text-muted-foreground line-clamp-1 block truncate">
                         {camp.description || "-"}
                       </span>
                     </TableCell>
@@ -100,6 +109,16 @@ export function CampsList({ camps, year }: CampsListProps) {
                     <TableCell className="hidden sm:table-cell">
                       <span className="text-muted-foreground">
                         {camp.campYear?.capacity ?? "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="text-muted-foreground">
+                        {camp.draftCount}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="text-muted-foreground">
+                        {camp.registeredCount}
                       </span>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">

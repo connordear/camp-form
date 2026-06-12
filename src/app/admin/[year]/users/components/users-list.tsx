@@ -178,12 +178,12 @@ export function UsersList({
       </div>
 
       <Card className="p-0">
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
+        <CardContent className="p-0">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="max-w-[120px] sm:max-w-none">Name</TableHead>
-                <TableHead className="max-w-[140px] sm:max-w-none">Email</TableHead>
+                <TableHead className="w-2/5">Name</TableHead>
+                <TableHead className="w-3/5 min-w-0">Email</TableHead>
                 <TableHead className="hidden sm:table-cell">
                   Registrations
                 </TableHead>
@@ -212,14 +212,14 @@ export function UsersList({
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => setSelectedUser(user)}
                   >
-                    <TableCell className="max-w-32">
-                      <span className="font-medium truncate block">
+                    <TableCell className="max-w-[120px] sm:max-w-none">
+                      <span className="block truncate font-medium">
                         {user.name}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-40">
+                    <TableCell className="min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
-                        <MailIcon className="size-4 text-muted-foreground shrink-0" />
+                        <MailIcon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="text-muted-foreground truncate">
                           {user.email}
                         </span>
