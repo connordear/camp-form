@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminAction } from "@/lib/auth-helpers";
@@ -21,8 +21,13 @@ import {
   createCampWithYearAndPricesSchema,
 } from "@/lib/types/camp-schemas";
 
+export type CampWithYearAndCounts = CampWithYear & {
+  registeredCount: number;
+  draftCount: number;
+};
+
 export const getCampsForAdmin = adminAction(
-  async (year: number): Promise<CampWithYear[]> => {
+  async (year: number): Promise<CampWithYearAndCounts[]> => {
     const allCamps = await db.query.camps.findMany({
       with: {
         campYears: {
@@ -35,8 +40,35 @@ export const getCampsForAdmin = adminAction(
       },
     });
 
+    const regCounts = await db
+      .select({
+        campId: registrations.campId,
+        status: registrations.status,
+        count: count(),
+      })
+      .from(registrations)
+      .where(eq(registrations.campYear, year))
+      .groupBy(registrations.campId, registrations.status);
+
+    const countsByCampId = new Map<
+      string,
+      { registered: number; draft: number }
+    >();
+    for (const row of regCounts) {
+      if (!countsByCampId.has(row.campId)) {
+        countsByCampId.set(row.campId, { registered: 0, draft: 0 });
+      }
+      const entry = countsByCampId.get(row.campId)!;
+      if (row.status === "registered") {
+        entry.registered = row.count;
+      } else if (row.status === "draft") {
+        entry.draft = row.count;
+      }
+    }
+
     const result = allCamps.map((camp) => {
       const campYear = camp.campYears[0] ?? null;
+      const counts = countsByCampId.get(camp.id) ?? { registered: 0, draft: 0 };
       return {
         ...camp,
         campYear: campYear
@@ -45,9 +77,11 @@ export const getCampsForAdmin = adminAction(
               prices: campYear.prices ?? [],
             }
           : null,
+        registeredCount: counts.registered,
+        draftCount: counts.draft,
       };
     });
-    return result as CampWithYear[];
+    return result;
   },
 );
 
