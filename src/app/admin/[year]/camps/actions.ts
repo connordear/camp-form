@@ -416,6 +416,117 @@ export const deleteCampYearPrice = adminAction(async (priceId: string) => {
   return deletedPrice;
 });
 
+interface CampRegistrationsPrintData {
+  id: string;
+  status: string;
+  createdAt: Date;
+  price: { name: string } | null;
+  details: {
+    cabinRequest: string | null;
+    parentSignature: string | null;
+    additionalInfo: string | null;
+  } | null;
+  camper: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender: string | null;
+    shirtSize: string | null;
+    swimmingLevel: string | null;
+    hasBeenToCamp: boolean | null;
+    arePhotosAllowed: boolean;
+    dietaryRestrictions: string | null;
+    address: {
+      addressLine1: string;
+      addressLine2: string | null;
+      city: string;
+      stateProv: string;
+      country: string;
+      postalZip: string;
+    } | null;
+    medicalInfo: {
+      healthCareNumber: string;
+      familyDoctor: string;
+      doctorPhone: string;
+      height: string | null;
+      weight: string | null;
+      hasAllergies: boolean;
+      allergiesDetails: string | null;
+      usesEpiPen: boolean;
+      hasMedicationsAtCamp: boolean;
+      medicationsAtCampDetails: string | null;
+      hasMedicationsNotAtCamp: boolean;
+      medicationsNotAtCampDetails: string | null;
+      otcPermissions: string[];
+      hasMedicalConditions: boolean;
+      medicalConditionsDetails: string | null;
+      additionalInfo: string | null;
+    } | null;
+    emergencyContacts: Array<{
+      priority: number;
+      emergencyContact: {
+        id: string;
+        name: string;
+        phone: string;
+        email: string | null;
+        relationship: string;
+        relationshipOther: string | null;
+      };
+    }>;
+  };
+}
+
+export const getCampRegistrationsForPrint = adminAction(
+  async ({
+    campId,
+    year,
+  }: {
+    campId: string;
+    year: number;
+  }): Promise<{
+    campName: string;
+    year: number;
+    registrations: CampRegistrationsPrintData[];
+  }> => {
+    const camp = await db.query.camps.findFirst({
+      where: eq(camps.id, campId),
+    });
+
+    if (!camp) {
+      throw new Error("Camp not found");
+    }
+
+    const regs = await db.query.registrations.findMany({
+      where: and(
+        eq(registrations.campId, campId),
+        eq(registrations.campYear, year),
+      ),
+      with: {
+        camper: {
+          with: {
+            address: true,
+            medicalInfo: true,
+            emergencyContacts: {
+              with: {
+                emergencyContact: true,
+              },
+              orderBy: (contacts, { asc }) => [asc(contacts.priority)],
+            },
+          },
+        },
+        price: true,
+        details: true,
+      },
+    });
+
+    return {
+      campName: camp.name,
+      year,
+      registrations: regs as unknown as CampRegistrationsPrintData[],
+    };
+  },
+);
+
 export const redirectToCurrentYear = adminAction(async (): Promise<never> => {
   const currentYear = new Date().getFullYear();
   redirect(`/admin/${currentYear}/camps`);
