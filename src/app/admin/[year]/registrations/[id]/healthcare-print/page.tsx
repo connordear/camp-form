@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { getSession, hasMedicalAccess } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { registrations } from "@/lib/data/schema";
+import { PrintButton } from "./print-button";
 
 interface HealthcarePrintPageProps {
   params: Promise<{ year: string; id: string }>;
@@ -82,13 +83,7 @@ export default async function HealthcarePrintPage({
       <div className="print-container min-h-screen bg-white p-8 max-w-4xl mx-auto">
         <div className="no-print mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Healthcare Form</h1>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-          >
-            Print
-          </button>
+          <PrintButton />
         </div>
 
         <div className="space-y-6">
