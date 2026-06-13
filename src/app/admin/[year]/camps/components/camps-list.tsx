@@ -1,6 +1,6 @@
 "use client";
 
-import { TentIcon } from "lucide-react";
+import { Printer, TentIcon } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -63,6 +63,7 @@ export function CampsList({ camps, year }: CampsListProps) {
                   Registered
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Dates</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -127,6 +128,20 @@ export function CampsList({ camps, year }: CampsListProps) {
                           ? `${new Date(camp.campYear.startDate).toLocaleDateString()} - ${new Date(camp.campYear.endDate).toLocaleDateString()}`
                           : "-"}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {camp.registeredCount > 0 && (
+                        <a
+                          href={`/admin/${year}/camps/${camp.id}/registrations-print`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border bg-background hover:bg-muted transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Printer className="size-3" />
+                          Print
+                        </a>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
