@@ -1,14 +1,6 @@
 import { format } from "date-fns";
 import { and, eq } from "drizzle-orm";
-import {
-  AlertCircle,
-  Heart,
-  Pill,
-  Scale,
-  Shield,
-  Syringe,
-  User,
-} from "lucide-react";
+import { AlertCircle, Heart, Pill, Syringe } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { getSession, hasMedicalAccess } from "@/lib/auth-helpers";
@@ -71,7 +63,7 @@ export default async function HealthcarePrintPage({
 
   return (
     <>
-      <style jsx global>{`
+      <style>{`
         @media print {
           body {
             print-color-adjust: exact;
@@ -190,7 +182,8 @@ export default async function HealthcarePrintPage({
                   {medicalInfo.hasAllergies ? (
                     <div>
                       <p className="font-medium">
-                        Yes - {medicalInfo.allergiesDetails || "Details not provided"}
+                        Yes -{" "}
+                        {medicalInfo.allergiesDetails || "Details not provided"}
                       </p>
                       {medicalInfo.usesEpiPen && (
                         <p className="text-sm text-red-600 mt-2 font-medium">
@@ -304,8 +297,8 @@ export default async function HealthcarePrintPage({
 
           <div className="mt-4 text-center text-xs text-muted-foreground">
             <p>
-              This document contains confidential medical information.
-              Handle in accordance with privacy regulations.
+              This document contains confidential medical information. Handle in
+              accordance with privacy regulations.
             </p>
           </div>
         </div>

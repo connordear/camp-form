@@ -94,7 +94,7 @@ export default async function PrintRegistrationPage({
 
   return (
     <>
-      <style jsx global>{`
+      <style>{`
         @media print {
           body {
             print-color-adjust: exact;
