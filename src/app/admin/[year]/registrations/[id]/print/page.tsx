@@ -16,6 +16,7 @@ import { getSession, hasMedicalAccess } from "@/lib/auth-helpers";
 import { db } from "@/lib/data/db";
 import { registrations } from "@/lib/data/schema";
 import { capitalize } from "@/lib/utils";
+import { PrintButton } from "./print-button";
 
 interface PrintPageProps {
   params: Promise<{ year: string; id: string }>;
@@ -97,13 +98,7 @@ export default async function PrintRegistrationPage({
       <div className="min-h-screen bg-white p-8 max-w-4xl mx-auto print:p-0 print:m-0 print:max-w-none">
         <div className="mb-6 flex justify-between items-center print:hidden">
           <h1 className="text-2xl font-bold">Registration Print View</h1>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-          >
-            Print
-          </button>
+          <PrintButton />
         </div>
 
         <div className="space-y-6">
