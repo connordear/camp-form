@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { eq } from "drizzle-orm";
 import {
   AlertCircle,
   Calendar,
@@ -9,20 +10,27 @@ import {
   User,
 } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { AutoPrint } from "@/components/auto-print";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getSession, hasMedicalAccess } from "@/lib/auth-helpers";
-import { camps } from "@/lib/data/schema";
 import { db } from "@/lib/data/db";
-import { eq } from "drizzle-orm";
+import { camps } from "@/lib/data/schema";
 import { capitalize } from "@/lib/utils";
 import { getCampRegistrationsForPrint } from "../../actions";
 import { PrintButton } from "./print-button";
 
 const printStyles = `
   @media print {
-    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    html, body, * {
+      color: black !important;
+      background: white !important;
+      background-color: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     .no-print { display: none !important; }
+    .print\\:hidden { display: none !important; }
     .registration-entry { page-break-inside: avoid; break-inside: avoid; }
   }
 `;
@@ -81,6 +89,7 @@ export default async function CampRegistrationsPrintPage({
   return (
     <>
       <style>{printStyles}</style>
+      <AutoPrint />
       <div className="print-container min-h-screen bg-white p-8 max-w-5xl mx-auto print:p-0 print:m-0 print:max-w-none">
         <div className="no-print mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold">
@@ -155,17 +164,13 @@ export default async function CampRegistrationsPrintPage({
                         </p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">
-                          Previous Camper
-                        </p>
+                        <p className="text-muted-foreground">Previous Camper</p>
                         <p className="font-medium">
                           {camper.hasBeenToCamp ? "Yes" : "No"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">
-                          Photos Allowed
-                        </p>
+                        <p className="text-muted-foreground">Photos Allowed</p>
                         <p className="font-medium">
                           {camper.arePhotosAllowed ? "Yes" : "No"}
                         </p>
@@ -248,7 +253,7 @@ export default async function CampRegistrationsPrintPage({
                                   {contact.emergencyContact.relationship ===
                                   "other"
                                     ? contact.emergencyContact
-                                          .relationshipOther || "Other"
+                                        .relationshipOther || "Other"
                                     : capitalize(
                                         contact.emergencyContact.relationship,
                                       )}
@@ -332,9 +337,7 @@ export default async function CampRegistrationsPrintPage({
                         {(medicalInfo.hasMedicationsAtCamp ||
                           medicalInfo.hasMedicationsNotAtCamp) && (
                           <div className="mt-2 text-sm">
-                            <p className="font-semibold text-xs">
-                              Medications
-                            </p>
+                            <p className="font-semibold text-xs">Medications</p>
                             {medicalInfo.hasMedicationsAtCamp &&
                               medicalInfo.medicationsAtCampDetails && (
                                 <p>
@@ -384,9 +387,7 @@ export default async function CampRegistrationsPrintPage({
                               <p className="font-semibold text-yellow-800 mb-0.5">
                                 Medical Conditions
                               </p>
-                              <p>
-                                {medicalInfo.medicalConditionsDetails}
-                              </p>
+                              <p>{medicalInfo.medicalConditionsDetails}</p>
                             </div>
                           )}
 
