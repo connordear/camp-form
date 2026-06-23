@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "bun run db:migrate && next start",
+    "start": "npx drizzle-kit migrate && next start",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
