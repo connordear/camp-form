@@ -1,7 +1,8 @@
 "use client";
 
-import { Printer, TentIcon } from "lucide-react";
+import { EyeIcon, Printer, TentIcon } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -20,6 +21,7 @@ import {
 import type { CampWithYear } from "@/lib/services/camp-service";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampForm } from "./camp-form";
+import { CampRegistrationsDialog } from "./camp-registrations-dialog";
 
 type CampWithCounts = CampWithYear & {
   registeredCount: number;
@@ -34,6 +36,10 @@ interface CampsListProps {
 export function CampsList({ camps, year }: CampsListProps) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   const selectedCamp = camps.find((c) => c.id === selectedCampId);
+  const [registrationsCampId, setRegistrationsCampId] = useState<string | null>(
+    null,
+  );
+  const registrationsCamp = camps.find((c) => c.id === registrationsCampId);
 
   return (
     <div className="space-y-6">
@@ -63,14 +69,14 @@ export function CampsList({ camps, year }: CampsListProps) {
                   Registered
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Dates</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {camps.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="h-32 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center">
@@ -129,19 +135,32 @@ export function CampsList({ camps, year }: CampsListProps) {
                           : "-"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {camp.registeredCount > 0 && (
-                        <a
-                          href={`/admin/${year}/camps/${camp.id}/registrations-print`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border bg-background hover:bg-muted transition-colors"
-                          onClick={(e) => e.stopPropagation()}
+                    <TableCell>
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRegistrationsCampId(camp.id);
+                          }}
                         >
-                          <Printer className="size-3" />
-                          Print
-                        </a>
-                      )}
+                          <EyeIcon className="size-3.5 mr-1.5" />
+                          View
+                        </Button>
+                        {camp.registeredCount > 0 && (
+                          <a
+                            href={`/admin/${year}/camps/${camp.id}/registrations-print`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border bg-background hover:bg-muted transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Printer className="size-3" />
+                            Print
+                          </a>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -164,6 +183,15 @@ export function CampsList({ camps, year }: CampsListProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {registrationsCamp && (
+        <CampRegistrationsDialog
+          camp={{ id: registrationsCamp.id, name: registrationsCamp.name }}
+          year={year}
+          open={!!registrationsCampId}
+          onOpenChange={(open) => !open && setRegistrationsCampId(null)}
+        />
+      )}
     </div>
   );
 }
