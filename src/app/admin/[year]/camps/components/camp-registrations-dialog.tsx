@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/table";
 import type { RegistrationRow } from "../actions";
 import { getCampRegistrations } from "../actions";
+import type { AdminRegistration } from "../../registrations/schema";
+import { RegistrationModal } from "../../registrations/components/registration-modal";
 
 interface CampRegistrationsDialogProps {
   camp: { id: string; name: string };
@@ -76,10 +78,37 @@ export function CampRegistrationsDialog({
     );
   }, []);
 
+  const [selectedReg, setSelectedReg] = useState<AdminRegistration | null>(null);
+
   const formatPrice = (pricePaid: number | null) => {
     if (pricePaid == null) return "-";
     return `$${(pricePaid / 100).toFixed(2)}`;
   };
+
+  const buildAdminRegistration = (row: RegistrationRow): AdminRegistration =>
+    ({
+      id: row.id,
+      campId: row.campId,
+      priceId: "",
+      camperId: row.camperId,
+      numDays: null,
+      pricePaid: row.pricePaid,
+      status: row.status,
+      stripePaymentIntentId: null,
+      stripeSessionId: null,
+      createdAt: row.createdAt,
+      updatedAt: row.createdAt,
+      campYear: { year: row.campYear, campId: row.campId },
+      camper: {
+        id: row.camperId,
+        firstName: row.camperFirstName,
+        lastName: row.camperLastName,
+        userId: "",
+      },
+      price: row.priceName
+        ? { id: "", name: row.priceName, price: 0 }
+        : null,
+    }) as unknown as AdminRegistration;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,7 +157,13 @@ export function CampRegistrationsDialog({
                     </TableHeader>
                     <TableBody>
                       {group.map((reg) => (
-                        <TableRow key={reg.id}>
+                        <TableRow
+                          key={reg.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() =>
+                            setSelectedReg(buildAdminRegistration(reg))
+                          }
+                        >
                           <TableCell className="font-medium">
                             {reg.camperFirstName} {reg.camperLastName}
                           </TableCell>
@@ -154,6 +189,13 @@ export function CampRegistrationsDialog({
           )}
         </div>
       </DialogContent>
+
+      <RegistrationModal
+        registration={selectedReg}
+        userRole="admin"
+        onClose={() => setSelectedReg(null)}
+        onRefresh={() => {}}
+      />
     </Dialog>
   );
 }

@@ -30,6 +30,9 @@ export type CampWithYearAndCounts = CampWithYear & {
 
 export type RegistrationRow = {
   id: string;
+  campId: string;
+  campName: string;
+  campYear: number;
   camperId: string;
   camperFirstName: string;
   camperLastName: string;
@@ -107,6 +110,9 @@ export const getCampRegistrations = adminPanelAction(
     const rows = await db
       .select({
         id: registrations.id,
+        campId: registrations.campId,
+        campName: camps.name,
+        campYear: registrations.campYear,
         camperId: registrations.camperId,
         camperFirstName: campers.firstName,
         camperLastName: campers.lastName,
@@ -119,6 +125,7 @@ export const getCampRegistrations = adminPanelAction(
       .from(registrations)
       .innerJoin(campers, eq(registrations.camperId, campers.id))
       .innerJoin(user, eq(campers.userId, user.id))
+      .innerJoin(camps, eq(registrations.campId, camps.id))
       .innerJoin(
         campYearPrices,
         and(
