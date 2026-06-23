@@ -43,6 +43,65 @@ export type RegistrationRow = {
   createdAt: Date;
 };
 
+export type CampPrintType = "registration" | "medical";
+
+export type CampPrintRegistration = {
+  id: string;
+  campName: string;
+  campYear: number;
+  priceName: string | null;
+  camper: {
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    dateOfBirth: string;
+    gender: string | null;
+    shirtSize: string | null;
+    swimmingLevel: string | null;
+    hasBeenToCamp: boolean | null;
+    arePhotosAllowed: boolean;
+    dietaryRestrictions: string | null;
+    address: {
+      addressLine1: string;
+      addressLine2: string | null;
+      city: string;
+      stateProv: string;
+      country: string;
+      postalZip: string;
+    } | null;
+  };
+  emergencyContacts: Array<{
+    name: string;
+    phone: string;
+    email: string | null;
+    relationship: string;
+    relationshipOther: string | null;
+  }>;
+  details: {
+    cabinRequest: string | null;
+    parentSignature: string | null;
+    additionalInfo: string | null;
+  } | null;
+  medicalInfo: {
+    healthCareNumber: string;
+    familyDoctor: string;
+    doctorPhone: string;
+    height: string | null;
+    weight: string | null;
+    hasAllergies: boolean;
+    allergiesDetails: string | null;
+    usesEpiPen: boolean;
+    hasMedicationsAtCamp: boolean;
+    medicationsAtCampDetails: string | null;
+    hasMedicationsNotAtCamp: boolean;
+    medicationsNotAtCampDetails: string | null;
+    otcPermissions: string[] | null;
+    hasMedicalConditions: boolean;
+    medicalConditionsDetails: string | null;
+    additionalInfo: string | null;
+  } | null;
+};
+
 export const getCampsForAdmin = adminAction(
   async (year: number): Promise<CampWithYearAndCounts[]> => {
     const allCamps = await db.query.camps.findMany({
@@ -75,7 +134,8 @@ export const getCampsForAdmin = adminAction(
       if (!countsByCampId.has(row.campId)) {
         countsByCampId.set(row.campId, { registered: 0, draft: 0 });
       }
-      const entry = countsByCampId.get(row.campId)!;
+      const entry = countsByCampId.get(row.campId);
+      if (!entry) continue;
       if (row.status === "registered") {
         entry.registered = row.count;
       } else if (row.status === "draft") {
@@ -143,6 +203,116 @@ export const getCampRegistrations = adminPanelAction(
       .orderBy(registrations.createdAt);
 
     return rows;
+  },
+);
+
+export const getCampPrintRegistrations = adminAction(
+  async (params: {
+    campId: string;
+    year: number;
+    type: CampPrintType;
+  }): Promise<CampPrintRegistration[]> => {
+    const rows = await db.query.registrations.findMany({
+      where: and(
+        eq(registrations.campId, params.campId),
+        eq(registrations.campYear, params.year),
+        eq(registrations.status, "registered"),
+      ),
+      orderBy: (registrations, { asc }) => [asc(registrations.createdAt)],
+      with: {
+        camper: {
+          with: {
+            user: {
+              columns: {
+                email: true,
+              },
+            },
+            address: true,
+            medicalInfo: true,
+            emergencyContacts: {
+              with: {
+                emergencyContact: true,
+              },
+              orderBy: (contacts, { asc }) => [asc(contacts.priority)],
+            },
+          },
+        },
+        campYear: {
+          with: {
+            camp: true,
+          },
+        },
+        price: true,
+        details: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      campName: row.campYear.camp.name,
+      campYear: row.campYear.year,
+      priceName: row.price?.name ?? null,
+      camper: {
+        firstName: row.camper.firstName,
+        lastName: row.camper.lastName,
+        email: row.camper.user.email,
+        dateOfBirth: row.camper.dateOfBirth,
+        gender: row.camper.gender,
+        shirtSize: row.camper.shirtSize,
+        swimmingLevel: row.camper.swimmingLevel,
+        hasBeenToCamp: row.camper.hasBeenToCamp,
+        arePhotosAllowed: row.camper.arePhotosAllowed,
+        dietaryRestrictions: row.camper.dietaryRestrictions,
+        address: row.camper.address
+          ? {
+              addressLine1: row.camper.address.addressLine1,
+              addressLine2: row.camper.address.addressLine2,
+              city: row.camper.address.city,
+              stateProv: row.camper.address.stateProv,
+              country: row.camper.address.country,
+              postalZip: row.camper.address.postalZip,
+            }
+          : null,
+      },
+      emergencyContacts: row.camper.emergencyContacts.map((contact) => ({
+        name: contact.emergencyContact.name,
+        phone: contact.emergencyContact.phone,
+        email: contact.emergencyContact.email,
+        relationship: contact.emergencyContact.relationship,
+        relationshipOther: contact.emergencyContact.relationshipOther,
+      })),
+      details: row.details
+        ? {
+            cabinRequest: row.details.cabinRequest,
+            parentSignature: row.details.parentSignature,
+            additionalInfo: row.details.additionalInfo,
+          }
+        : null,
+      medicalInfo: row.camper.medicalInfo
+        ? {
+            healthCareNumber: row.camper.medicalInfo.healthCareNumber,
+            familyDoctor: row.camper.medicalInfo.familyDoctor,
+            doctorPhone: row.camper.medicalInfo.doctorPhone,
+            height: row.camper.medicalInfo.height,
+            weight: row.camper.medicalInfo.weight,
+            hasAllergies: row.camper.medicalInfo.hasAllergies,
+            allergiesDetails: row.camper.medicalInfo.allergiesDetails,
+            usesEpiPen: row.camper.medicalInfo.usesEpiPen,
+            hasMedicationsAtCamp: row.camper.medicalInfo.hasMedicationsAtCamp,
+            medicationsAtCampDetails:
+              row.camper.medicalInfo.medicationsAtCampDetails,
+            hasMedicationsNotAtCamp:
+              row.camper.medicalInfo.hasMedicationsNotAtCamp,
+            medicationsNotAtCampDetails:
+              row.camper.medicalInfo.medicationsNotAtCampDetails,
+            otcPermissions: row.camper.medicalInfo.otcPermissions,
+            hasMedicalConditions: row.camper.medicalInfo.hasMedicalConditions,
+            medicalConditionsDetails:
+              row.camper.medicalInfo.medicalConditionsDetails,
+            additionalInfo: row.camper.medicalInfo.additionalInfo,
+          }
+        : null,
+    }));
   },
 );
 
