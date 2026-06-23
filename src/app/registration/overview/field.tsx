@@ -24,6 +24,11 @@ import type { Camp } from "@/lib/types/common-types";
 import { formatDateRange, getDaysBetweenDates } from "@/lib/utils";
 import type { Camper } from "./schema";
 
+const isWithinDays = (dateStr: string, days: number) => {
+  const diffMs = new Date(dateStr).getTime() - Date.now();
+  return diffMs / (1000 * 60 * 60 * 24) <= days;
+};
+
 // These default values are used for mapping keys, not runtime defaults
 const defaultCamperValues: Camper = {
   id: createId(),
@@ -73,6 +78,10 @@ export const OverviewFieldGroup = withFieldGroup({
 
     const validCamps = camps.filter(
       (c) => !camper?.registrations.some((r) => r.campId === c.id),
+    );
+
+    const selectableCamps = validCamps.filter(
+      (c) => !isWithinDays(c.startDate, 5),
     );
 
     return (
@@ -174,6 +183,7 @@ export const OverviewFieldGroup = withFieldGroup({
                               const campOptions = validCamps.map((c) => ({
                                 value: c.id,
                                 name: `${c.name} (${formatDateRange(c.startDate, c.endDate)})`,
+                                disabled: isWithinDays(c.startDate, 5),
                               }));
                               if (itemField.state.value) {
                                 const c = campLookup[itemField.state.value];
@@ -182,6 +192,9 @@ export const OverviewFieldGroup = withFieldGroup({
                                   name: c
                                     ? `${c.name} (${formatDateRange(c.startDate, c.endDate)})`
                                     : "Unknown Camp",
+                                  disabled: c
+                                    ? isWithinDays(c.startDate, 5)
+                                    : true,
                                 });
                               }
                               return (
@@ -290,9 +303,9 @@ export const OverviewFieldGroup = withFieldGroup({
                 <Button
                   className="w-fit"
                   type="button"
-                  disabled={!validCamps.length}
+                  disabled={!selectableCamps.length}
                   onClick={() => {
-                    const defaultCamp = validCamps[0];
+                    const defaultCamp = selectableCamps[0];
                     const defaultPrice = defaultCamp.prices[0];
                     field.pushValue({
                       id: createId(),
