@@ -72,7 +72,7 @@ export function CampRegistrationsDialog({
   );
 
   const copyEmails = useCallback((emails: string[]) => {
-    navigator.clipboard.writeText(emails.join("\n")).then(
+    navigator.clipboard.writeText(emails.join(", ")).then(
       () => toast.success("Emails copied to clipboard"),
       () => toast.error("Failed to copy emails"),
     );
