@@ -3,9 +3,11 @@
 import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { adminAction } from "@/lib/auth-helpers";
+import { adminAction, adminPanelAction } from "@/lib/auth-helpers";
+import { user } from "@/lib/data/auth-schema";
 import { db } from "@/lib/data/db";
 import {
+  campers,
   camps,
   campYearPrices,
   campYears,
@@ -24,6 +26,21 @@ import {
 export type CampWithYearAndCounts = CampWithYear & {
   registeredCount: number;
   draftCount: number;
+};
+
+export type RegistrationRow = {
+  id: string;
+  campId: string;
+  campName: string;
+  campYear: number;
+  camperId: string;
+  camperFirstName: string;
+  camperLastName: string;
+  camperEmail: string;
+  status: string;
+  pricePaid: number | null;
+  priceName: string;
+  createdAt: Date;
 };
 
 export const getCampsForAdmin = adminAction(
@@ -82,6 +99,50 @@ export const getCampsForAdmin = adminAction(
       };
     });
     return result;
+  },
+);
+
+export const getCampRegistrations = adminPanelAction(
+  async (params: {
+    campId: string;
+    year: number;
+  }): Promise<RegistrationRow[]> => {
+    const rows = await db
+      .select({
+        id: registrations.id,
+        campId: registrations.campId,
+        campName: camps.name,
+        campYear: registrations.campYear,
+        camperId: registrations.camperId,
+        camperFirstName: campers.firstName,
+        camperLastName: campers.lastName,
+        camperEmail: user.email,
+        status: registrations.status,
+        pricePaid: registrations.pricePaid,
+        priceName: campYearPrices.name,
+        createdAt: registrations.createdAt,
+      })
+      .from(registrations)
+      .innerJoin(campers, eq(registrations.camperId, campers.id))
+      .innerJoin(user, eq(campers.userId, user.id))
+      .innerJoin(camps, eq(registrations.campId, camps.id))
+      .innerJoin(
+        campYearPrices,
+        and(
+          eq(registrations.priceId, campYearPrices.id),
+          eq(registrations.campId, campYearPrices.campId),
+          eq(registrations.campYear, campYearPrices.year),
+        ),
+      )
+      .where(
+        and(
+          eq(registrations.campId, params.campId),
+          eq(registrations.campYear, params.year),
+        ),
+      )
+      .orderBy(registrations.createdAt);
+
+    return rows;
   },
 );
 
