@@ -17,7 +17,7 @@ export default function Select({
 }: {
   isNumber?: boolean;
   placeholder?: string;
-  options: { value: string; name: string }[];
+  options: { value: string; name: string; disabled?: boolean }[];
   onValueChange?: (value: string) => void;
 } & SelectTriggerProps) {
   const field = useFieldContext<string | number>();
@@ -35,7 +35,11 @@ export default function Select({
       </SelectTrigger>
       <SelectContent>
         {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value.toString()}>
+          <SelectItem
+            key={opt.value}
+            value={opt.value.toString()}
+            disabled={opt.disabled}
+          >
             {opt.name}
           </SelectItem>
         ))}

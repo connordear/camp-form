@@ -1,7 +1,10 @@
 "use client";
 
-import { TentIcon } from "lucide-react";
-import { useState } from "react";
+import { EyeIcon, TentIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useReactToPrint } from "react-to-print";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -18,13 +21,52 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { CampWithYear } from "@/lib/services/camp-service";
+import type { CampPrintRegistration, CampPrintType } from "../actions";
+import { getCampPrintRegistrations } from "../actions";
 import { AddCampDialog } from "./add-camp-dialog";
 import { CampForm } from "./camp-form";
+import { CampPrintMenu } from "./camp-print-menu";
+import { CampRegistrationsDialog } from "./camp-registrations-dialog";
+import { MedicalPrintout } from "./medical-printout";
+import { PRINT_PAGE_STYLE } from "./print-utils";
+import { RegistrationPrintout } from "./registration-printout";
 
 type CampWithCounts = CampWithYear & {
   registeredCount: number;
   draftCount: number;
 };
+
+const MONTH_LABELS = [
+  "Jan.",
+  "Feb.",
+  "Mar.",
+  "Apr.",
+  "May.",
+  "Jun.",
+  "Jul.",
+  "Aug.",
+  "Sep.",
+  "Oct.",
+  "Nov.",
+  "Dec.",
+];
+
+function formatDateRange(startDate: string, endDate: string) {
+  const [startYear, startMonth, startDay] = startDate.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endDate.split("-").map(Number);
+
+  if (!startYear || !startMonth || !startDay || !endMonth || !endDay) {
+    return `${startDate} - ${endDate}`;
+  }
+
+  const startLabel = `${MONTH_LABELS[startMonth - 1]} ${startDay}`;
+  const endLabel =
+    startMonth === endMonth && startYear === endYear
+      ? `${endDay}`
+      : `${MONTH_LABELS[endMonth - 1]} ${endDay}`;
+
+  return `${startLabel} - ${endLabel}`;
+}
 
 interface CampsListProps {
   camps: CampWithCounts[];
@@ -34,6 +76,77 @@ interface CampsListProps {
 export function CampsList({ camps, year }: CampsListProps) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   const selectedCamp = camps.find((c) => c.id === selectedCampId);
+  const [registrationsCampId, setRegistrationsCampId] = useState<string | null>(
+    null,
+  );
+  const registrationsCamp = camps.find((c) => c.id === registrationsCampId);
+  const registrationPrintRef = useRef<HTMLDivElement>(null);
+  const medicalPrintRef = useRef<HTMLDivElement>(null);
+  const pendingPrintTypeRef = useRef<CampPrintType | null>(null);
+  const [printingCampId, setPrintingCampId] = useState<string | null>(null);
+  const [printJob, setPrintJob] = useState<{
+    type: CampPrintType;
+    campName: string;
+    data: CampPrintRegistration[];
+  } | null>(null);
+
+  const printRegistration = useReactToPrint({
+    contentRef: registrationPrintRef,
+    documentTitle: () => `${printJob?.campName ?? "Camp"} Registration Forms`,
+    pageStyle: PRINT_PAGE_STYLE,
+    onAfterPrint: () => setPrintJob(null),
+    onPrintError: () => toast.error("Failed to open print dialog"),
+  });
+
+  const printMedical = useReactToPrint({
+    contentRef: medicalPrintRef,
+    documentTitle: () => `${printJob?.campName ?? "Camp"} Medical Forms`,
+    pageStyle: PRINT_PAGE_STYLE,
+    onAfterPrint: () => setPrintJob(null),
+    onPrintError: () => toast.error("Failed to open print dialog"),
+  });
+
+  useEffect(() => {
+    if (!printJob || !pendingPrintTypeRef.current) return;
+
+    const frameId = requestAnimationFrame(() => {
+      if (pendingPrintTypeRef.current === "registration") {
+        printRegistration();
+      } else {
+        printMedical();
+      }
+      pendingPrintTypeRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [printJob, printMedical, printRegistration]);
+
+  async function handlePrint(camp: CampWithCounts, type: CampPrintType) {
+    setPrintingCampId(camp.id);
+    const toastId = toast.loading(`Loading ${type} forms...`);
+
+    try {
+      const data = await getCampPrintRegistrations({
+        campId: camp.id,
+        year,
+        type,
+      });
+
+      if (data.length === 0) {
+        toast.info("No registered campers to print", { id: toastId });
+        return;
+      }
+
+      pendingPrintTypeRef.current = type;
+      setPrintJob({ type, campName: camp.name, data });
+      toast.success("Print forms ready", { id: toastId });
+    } catch (error) {
+      toast.error("Failed to load print forms", { id: toastId });
+      console.error(error);
+    } finally {
+      setPrintingCampId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,13 +176,14 @@ export function CampsList({ camps, year }: CampsListProps) {
                   Registered
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Dates</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {camps.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="h-32 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center">
@@ -124,9 +238,32 @@ export function CampsList({ camps, year }: CampsListProps) {
                     <TableCell className="hidden lg:table-cell">
                       <span className="text-muted-foreground">
                         {camp.campYear?.startDate && camp.campYear?.endDate
-                          ? `${new Date(camp.campYear.startDate).toLocaleDateString()} - ${new Date(camp.campYear.endDate).toLocaleDateString()}`
+                          ? formatDateRange(
+                              camp.campYear.startDate,
+                              camp.campYear.endDate,
+                            )
                           : "-"}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRegistrationsCampId(camp.id);
+                          }}
+                        >
+                          <EyeIcon className="size-3.5 mr-1.5" />
+                          View
+                        </Button>
+                        <CampPrintMenu
+                          disabled={printingCampId !== null}
+                          loading={printingCampId === camp.id}
+                          onPrint={(type) => handlePrint(camp, type)}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -149,6 +286,30 @@ export function CampsList({ camps, year }: CampsListProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {registrationsCamp && (
+        <CampRegistrationsDialog
+          camp={{ id: registrationsCamp.id, name: registrationsCamp.name }}
+          year={year}
+          open={!!registrationsCampId}
+          onOpenChange={(open) => !open && setRegistrationsCampId(null)}
+        />
+      )}
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed left-[-10000px] top-0 bg-white"
+      >
+        {printJob?.type === "registration" && (
+          <RegistrationPrintout
+            ref={registrationPrintRef}
+            data={printJob.data}
+          />
+        )}
+        {printJob?.type === "medical" && (
+          <MedicalPrintout ref={medicalPrintRef} data={printJob.data} />
+        )}
+      </div>
     </div>
   );
 }
