@@ -57,7 +57,7 @@ Two things in the existing code that matter here:
 - The proxy patterns `/admin/users(.*)`, `/admin/discounts(.*)` and `/admin/camps(.*)` never match the real URLs (`/admin/2026/users`), so only the page-level `adminPage()` wrappers enforce admin-only access today. Campground admin routes have no year segment, so a proxy pattern for them will work, but still wrap every page and action.
 - `capacity` on `camp_years` is stored and displayed but never enforced. Do not copy that approach. Campsite availability must be enforced by the database.
 
-Conventions to follow: server actions in an `actions.ts` beside the page, Zod schemas in `schema.ts` beside the page or in `src/lib/types/`, shared queries in `src/lib/services/`, money in integer cents, Biome formatting (`bunx biome check --write`).
+Conventions to follow: server actions in an `actions.ts` beside the page, Zod schemas in `schema.ts` beside the page or in `src/lib/types/`, shared queries in `src/lib/services/`, money in integer cents, timestamps as `timestamp with time zone` (`{ withTimezone: true }`), Biome formatting (`bunx biome check --write`).
 
 ## 3. Data model
 
@@ -244,9 +244,31 @@ Add `checkout.session.expired` to the events the Stripe webhook endpoint subscri
 | `/campground/bookings` | Signed in | My bookings: upcoming, past, cancelled |
 | `/campground/bookings/[id]` | Signed in, owner only | Booking detail, confirmation state after payment, cancel button |
 
-Availability UI: 13 sites is small enough to show everything. After the guest picks a date range, list all sites with their features, rate, total for the stay, and available or unavailable. Let guests filter by feature (for example, power only). Below that, an optional month grid (sites as rows, days as columns) helps guests find open dates. Build the list first.
+Availability UI: 13 sites is small enough to show everything. After the guest picks a date range, list all sites with an icon for each feature they have (see Feature icons below), rate, total for the stay, and available or unavailable. Let guests filter by feature (for example, power only). Below that, an optional month grid (sites as rows, days as columns) helps guests find open dates. Build the list first.
 
 Show the cancellation policy as windows that do not overlap, never as overlapping thresholds. Before dates are chosen use `refundWindows` ("7 days or more before check-in: full refund", "1 to 6 days before: 50%", "On or after check-in day: no refund"). Once the stay is known, use `refundSchedule` to show real dates ("On or before Jul 3, 2027: full refund"). Both live in `src/lib/campground/policy.ts`.
+
+### Feature icons
+
+Every site shows one icon for each feature it has, wherever sites are listed: the guest availability list, the map marker details, the booking form and booking detail, and the admin Sites table. Sites have no "type"; the icons are how guests tell sites apart at a glance.
+
+- Define the icons once, next to the labels, as `CAMPSITE_FEATURE_ICONS: Record<CampsiteFeature, LucideIcon>` in `src/lib/types/campground-schemas.ts`, and render them through one `FeatureIcons` component so every page matches. Adding a feature to `CAMPSITE_FEATURES` must fail to typecheck until it has a label and an icon.
+- Icons (lucide-react, already a dependency):
+
+  | Feature | Icon |
+  |---|---|
+  | power | `PlugZap` |
+  | water | `Droplet` |
+  | sewer | `Toilet` |
+  | fire_pit | `FlameKindling` |
+  | picnic_table | `Utensils` (lucide has no picnic table icon) |
+  | pull_through | `ArrowRightLeft` |
+  | shade | `Trees` |
+  | waterfront | `Waves` |
+
+- Show features in `CAMPSITE_FEATURES` order, so the same feature is always in the same place.
+- An icon never stands alone: show it with its label in roomy layouts (the list, the booking form), and with a tooltip plus a screen-reader label where space is tight (map markers, the admin table). Decorative icons get `aria-hidden`.
+- Sites with no features show nothing rather than an empty placeholder.
 
 ### Site map
 
@@ -254,7 +276,7 @@ Guests see a simple illustrated map of the campground with one marker per site, 
 
 - **Background:** one image at `public/campground/map.svg`, drawn for this purpose: the loop road, the access road, Range Rd 281, a "To camp office / waterfront" label and a north arrow. The owner supplied a rough sketch showing the 13 sites along the outside of the east side of the loop. Do not ship a Google Maps screenshot (their terms do not allow it); redraw the roads as a few SVG paths. Keep the file replaceable so the camp can swap in a nicer illustration later without code changes.
 - **Markers:** rendered by a `SiteMap` component as absolutely positioned buttons over the image, placed with `left: mapX%` and `top: mapY%` inside a container that keeps the image's aspect ratio. Percent coordinates mean the map scales to any screen width with no extra work. Sites with null coordinates are left off the map and still appear in the list.
-- **Marker states:** available, unavailable, selected. Each marker shows the site number. Do not rely on colour alone: unavailable markers are also muted and struck through or hatched, and every marker has an accessible label such as "Site 7, power, available". Add a small legend, and distinguish site type by marker shape or a small icon.
+- **Marker states:** available, unavailable, selected. Each marker shows the site number. Do not rely on colour alone: unavailable markers are also muted and struck through or hatched, and every marker has an accessible label listing its features, such as "Site 7, power, water, fire pit, available". Markers show only the site number; selecting or hovering a marker shows its feature icons. Add a small legend for the marker states.
 - **Behaviour:** the map and the site list show the same data and share one selection. Clicking a marker selects that site and scrolls to or highlights its row; hovering or focusing a row highlights its marker. Before dates are chosen the map shows all sites neutrally as a "where things are" overview. The list remains the primary control and must work fully without the map (keyboard, screen reader, very small screens).
 - **Mobile:** markers need a tap target of at least 32px. With 13 sites along one road this fits at phone width; if markers overlap, let the map scroll horizontally inside its container at a fixed minimum width.
 - **Admin placement:** on the Sites admin page, a "Place on map" control shows the same map; clicking it sets `mapX` / `mapY` for the site being edited, with the other sites shown faintly for reference. This avoids hand-typing coordinates and lets the camp fix positions themselves.
