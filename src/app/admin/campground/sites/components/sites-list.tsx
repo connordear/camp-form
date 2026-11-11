@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPinIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { MapPinIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { formatCents } from "@/lib/campground/money";
 import type { Campsite } from "@/lib/services/campground-service";
 import { CAMPSITE_FEATURE_LABELS } from "@/lib/types/campground-schemas";
 import { setSiteActive } from "../actions";
+import { SiteActionsMenu } from "./site-actions-menu";
 import { SiteDialog } from "./site-dialog";
 
 interface SitesListProps {
@@ -78,7 +79,7 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
         <div>
           <h1 className="text-2xl font-bold">Campsites</h1>
           <p className="text-muted-foreground">
-            Sites, types and nightly rates. Deactivated sites cannot be booked
+            Sites, features and nightly rates. Deactivated sites cannot be booked
             but keep their existing bookings.
           </p>
         </div>
@@ -97,7 +98,7 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="py-0 gap-0 overflow-hidden">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -153,15 +154,11 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
                         <ActiveSwitch key={String(site.isActive)} site={site} />
                       </TableCell>
                       <TableCell className="text-right">
-                        <SiteDialog
+                        <SiteActionsMenu
+                          // Remount after a save so the edit form starts from the saved values.
+                          key={site.updatedAt.toString()}
                           site={site}
-                          canDelete={bookingCount === 0}
-                          trigger={
-                            <Button variant="outline" size="sm">
-                              <PencilIcon className="size-4 mr-1" />
-                              Edit
-                            </Button>
-                          }
+                          bookingCount={bookingCount}
                         />
                       </TableCell>
                     </TableRow>

@@ -1,8 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { adminAction } from "@/lib/auth-helpers";
+import { duplicateSiteName } from "@/lib/campground/site-names";
 import { db } from "@/lib/data/db";
 import { PG_FOREIGN_KEY_VIOLATION, pgErrorCode } from "@/lib/data/pg-errors";
 import { campsites } from "@/lib/data/schema";
@@ -48,6 +49,39 @@ export const setSiteActive = adminAction(
     return site;
   },
 );
+
+/**
+ * Copy a site with a new name (see duplicateSiteName). The copy goes to the
+ * end of the list and is not placed on the map, so markers never overlap.
+ */
+export const duplicateSite = adminAction(async (id: string) => {
+  const site = await getSiteById(String(id));
+  if (!site) throw new Error("Site not found");
+
+  const existing = await db.select({ name: campsites.name }).from(campsites);
+  const [{ value: maxSortOrder }] = await db
+    .select({ value: max(campsites.sortOrder) })
+    .from(campsites);
+
+  const [copy] = await db
+    .insert(campsites)
+    .values({
+      name: duplicateSiteName(
+        site.name,
+        existing.map((s) => s.name),
+      ),
+      features: site.features,
+      nightlyRate: site.nightlyRate,
+      maxOccupancy: site.maxOccupancy,
+      description: site.description,
+      isActive: site.isActive,
+      sortOrder: (maxSortOrder ?? 0) + 1,
+    })
+    .returning();
+
+  revalidatePath(SITES_PATH);
+  return copy;
+});
 
 /**
  * Delete a site that has never been booked. Sites with bookings must be

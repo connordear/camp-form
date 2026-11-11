@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import {
   deleteE2ESites,
   E2E_SITE_PREFIX,
@@ -12,12 +12,26 @@ import { authFile } from "./users";
 test.use({ storageState: authFile("admin") });
 
 test.describe("campground sites", () => {
-  const name = `${E2E_SITE_PREFIX} ${Date.now()}`;
+  const stamp = Date.now();
+  const name = `${E2E_SITE_PREFIX} ${stamp}`;
+  // Duplicating a name that ends in a number increments it.
+  const copyName = `${E2E_SITE_PREFIX} ${stamp + 1}`;
+
+  const openMenu = async (page: Page, siteName: string, item: string) => {
+    await page
+      .getByRole("button", { name: `Actions for ${siteName}`, exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: item }).click();
+  };
 
   test.beforeAll(deleteE2ESites);
   test.afterAll(deleteE2ESites);
 
-  test("create, edit, deactivate and delete a site", async ({ page }) => {
+  test("create, edit, deactivate, duplicate and delete a site", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/admin/campground/sites");
     const row = page.getByRole("row").filter({ hasText: name });
 
@@ -52,7 +66,7 @@ test.describe("campground sites", () => {
     });
 
     // Edit
-    await row.getByRole("button", { name: "Edit" }).click();
+    await openMenu(page, name, "Edit");
     await dialog.getByLabel("Nightly rate ($)").fill("50");
     await dialog.getByRole("button", { name: "Water", exact: true }).click();
     await dialog.getByRole("button", { name: "Save Changes" }).click();
@@ -69,17 +83,38 @@ test.describe("campground sites", () => {
     await expect(row.getByRole("switch")).not.toBeChecked();
     expect((await getSiteByName(name))?.isActive).toBe(false);
 
-    // Delete (allowed because it has no bookings)
-    await row.getByRole("button", { name: "Edit" }).click();
-    await dialog.getByRole("button", { name: "Delete" }).click();
-    await page
-      .getByRole("alertdialog")
-      .getByRole("button", { name: "Delete" })
-      .click();
-    // While a dialog is open the table is aria-hidden, so wait for it to close.
-    await expect(page.getByText("Site deleted")).toBeVisible();
-    await expect(dialog).toBeHidden();
+    // Duplicate
+    await openMenu(page, name, "Duplicate");
+    await expect(page.getByText(`Created ${copyName}`)).toBeVisible();
+    const copyRow = page.getByRole("row").filter({ hasText: copyName });
+    await expect(copyRow).toContainText("$50.00");
+    expect(await getSiteByName(copyName)).toMatchObject({
+      nightlyRate: 5000,
+      maxOccupancy: 5,
+      features: ["power"],
+      isActive: false,
+      mapX: null,
+      mapY: null,
+    });
+
+    // Delete needs the site name typed in; the name can be copied.
+    await openMenu(page, name, "Delete");
+    const confirm = page.getByRole("alertdialog");
+    const deleteButton = confirm.getByRole("button", { name: "Delete site" });
+    await expect(deleteButton).toBeDisabled();
+    await confirm.getByRole("button", { name: "Copy site name" }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      name,
+    );
+    const input = confirm.getByLabel(/to confirm/);
+    await input.fill("wrong name");
+    await expect(deleteButton).toBeDisabled();
+    await input.fill(name);
+    await deleteButton.click();
+    await expect(page.getByText(`${name} deleted`)).toBeVisible();
+    await expect(confirm).toBeHidden();
     await expect(row).toHaveCount(0);
+    await expect(copyRow).toHaveCount(1);
     expect(await getSiteByName(name)).toBeUndefined();
   });
 });

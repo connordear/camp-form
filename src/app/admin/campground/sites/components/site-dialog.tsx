@@ -1,19 +1,8 @@
 "use client";
 
-import { CheckIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,30 +25,32 @@ import {
   CAMPSITE_FEATURE_LABELS,
   campsiteFormSchema,
 } from "@/lib/types/campground-schemas";
-import { createSite, deleteSite, updateSite } from "../actions";
+import { createSite, updateSite } from "../actions";
 
 interface SiteDialogProps {
   /** If provided, the dialog edits this site. Otherwise it creates one. */
   site?: Campsite;
-  /** Only sites with no bookings can be deleted. */
-  canDelete?: boolean;
   defaultSortOrder?: number;
-  trigger: React.ReactNode;
+  /** Element that opens the dialog. Omit when controlling `open` instead. */
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SiteDialog({
   site,
-  canDelete = false,
   defaultSortOrder = 0,
   trigger,
+  open,
+  onOpenChange,
 }: SiteDialogProps) {
   const isEditMode = !!site;
-  const [isOpen, setIsOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open ?? internalOpen;
+  const setIsOpen = onOpenChange ?? setInternalOpen;
   // The rate is typed in dollars and kept as text while editing.
-  const [rateText, setRateText] = useState(
-    site ? (site.nightlyRate / 100).toFixed(2) : "",
-  );
+  const initialRateText = site ? (site.nightlyRate / 100).toFixed(2) : "";
+  const [rateText, setRateText] = useState(initialRateText);
 
   const form = useAppForm({
     defaultValues: {
@@ -100,27 +91,18 @@ export function SiteDialog({
     },
   });
 
-  const handleDelete = async () => {
-    if (!site) return;
-    setIsDeleting(true);
-    const toastId = toast.loading("Deleting site...");
-    try {
-      await deleteSite(site.id);
-      toast.success("Site deleted", { id: toastId });
-      setIsOpen(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete site",
-        { id: toastId },
-      );
-    } finally {
-      setIsDeleting(false);
+  // Closing without saving throws away unsaved edits.
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      form.reset();
+      setRateText(initialRateText);
     }
+    setIsOpen(next);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <form.AppForm>
           <form
@@ -305,50 +287,12 @@ export function SiteDialog({
               </FieldSet>
             </div>
 
-            <DialogFooter
-              className={
-                isEditMode && canDelete
-                  ? "flex-col gap-2 sm:flex-row sm:justify-between"
-                  : undefined
-              }
-            >
-              {isEditMode && canDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={isDeleting}
-                    >
-                      <Trash2Icon className="size-4 mr-1" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete site</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Delete &quot;{site?.name}&quot;? This cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        className="bg-destructive text-white hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-
+            <DialogFooter>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => handleOpenChange(false)}
                 >
                   Cancel
                 </Button>
