@@ -9,6 +9,7 @@ import {
   jsonb,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   unique,
@@ -34,8 +35,10 @@ const id = () =>
     .$defaultFn(() => createId());
 
 const timestamps = {
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
@@ -147,7 +150,7 @@ export const registrations = pgTable(
       .default("draft"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
     stripeSessionId: text("stripe_session_id"),
-    refundedAt: timestamp("refunded_at"),
+    refundedAt: timestamp("refunded_at", { withTimezone: true }),
     refundAmount: integer("refund_amount"),
     refundReason: text("refund_reason"),
     stripeRefundId: text("stripe_refund_id"),
@@ -469,6 +472,10 @@ export const campsites = pgTable("campsites", {
   nightlyRate: integer("nightly_rate").notNull(), // cents, before tax
   maxOccupancy: integer("max_occupancy").notNull().default(6),
   description: text(),
+  // Marker position on the site map, as a percentage of the map image
+  // (0-100 from the left and from the top). Null means not placed yet.
+  mapX: real("map_x"),
+  mapY: real("map_y"),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   ...timestamps,
@@ -511,7 +518,7 @@ export const bookings = pgTable(
     checkOut: date("check_out").notNull(), // morning of departure, exclusive
     status: text({ enum: BOOKING_STATUSES }).notNull().default("pending"),
     source: text({ enum: BOOKING_SOURCES }).notNull().default("online"),
-    holdExpiresAt: timestamp("hold_expires_at"),
+    holdExpiresAt: timestamp("hold_expires_at", { withTimezone: true }),
     subtotal: integer().notNull(), // sum of night prices, before tax
     pricePaid: integer("price_paid"), // Stripe amount_total, tax included
     paidOffline: boolean("paid_offline").notNull().default(false),
@@ -520,7 +527,7 @@ export const bookings = pgTable(
       .notNull(), // snapshot at booking time
     stripeSessionId: text("stripe_session_id"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
-    cancelledAt: timestamp("cancelled_at"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancelledBy: text("cancelled_by", { enum: ["guest", "admin"] }),
     refundAmount: integer("refund_amount"),
     stripeRefundId: text("stripe_refund_id"),
