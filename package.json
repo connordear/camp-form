@@ -7,7 +7,8 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "test": "bun test",
+    "test": "bun test src",
+    "test:e2e": "playwright test",
     "build": "next build --turbopack",
     "start": "npx drizzle-kit migrate && next start",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
@@ -73,6 +74,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
     "@faker-js/faker": "^10.1.0",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.4.4",

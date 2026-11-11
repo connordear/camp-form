@@ -142,7 +142,7 @@ export function SiteDialog({
                 <form.AppField name="name">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Site name *</FieldLabel>
+                      <FieldLabel htmlFor="name">Site name *</FieldLabel>
                       <field.WithErrors>
                         <field.TextInput placeholder="e.g. Site 7" />
                       </field.WithErrors>
@@ -154,9 +154,12 @@ export function SiteDialog({
                   <form.AppField name="nightlyRate">
                     {(field) => (
                       <Field>
-                        <FieldLabel>Nightly rate ($) *</FieldLabel>
+                        <FieldLabel htmlFor="nightlyRate">
+                          Nightly rate ($) *
+                        </FieldLabel>
                         <field.WithErrors>
                           <Input
+                            id="nightlyRate"
                             inputMode="decimal"
                             placeholder="45.00"
                             value={rateText}
@@ -176,9 +179,12 @@ export function SiteDialog({
                   <form.AppField name="maxOccupancy">
                     {(field) => (
                       <Field>
-                        <FieldLabel>Max people *</FieldLabel>
+                        <FieldLabel htmlFor="maxOccupancy">
+                          Max people *
+                        </FieldLabel>
                         <field.WithErrors>
                           <Input
+                            id="maxOccupancy"
                             type="number"
                             min={1}
                             value={
@@ -234,9 +240,12 @@ export function SiteDialog({
                   <form.AppField name="sortOrder">
                     {(field) => (
                       <Field>
-                        <FieldLabel>Display order</FieldLabel>
+                        <FieldLabel htmlFor="sortOrder">
+                          Display order
+                        </FieldLabel>
                         <field.WithErrors>
                           <Input
+                            id="sortOrder"
                             type="number"
                             value={
                               Number.isNaN(field.state.value)
@@ -256,8 +265,9 @@ export function SiteDialog({
                 <form.AppField name="description">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Description</FieldLabel>
+                      <FieldLabel htmlFor="description">Description</FieldLabel>
                       <Textarea
+                        id="description"
                         placeholder="Shown to guests, e.g. lakeside, shaded, fits a 30 ft trailer"
                         rows={3}
                         value={field.state.value ?? ""}
@@ -273,13 +283,16 @@ export function SiteDialog({
                   {(field) => (
                     <Field className="flex items-center justify-between rounded-lg border p-4">
                       <div>
-                        <FieldLabel className="mb-0">Active</FieldLabel>
+                        <FieldLabel htmlFor="isActive" className="mb-0">
+                          Active
+                        </FieldLabel>
                         <p className="text-sm text-muted-foreground">
                           Inactive sites cannot be booked.
                         </p>
                       </div>
                       <div>
                         <Switch
+                          id="isActive"
                           checked={field.state.value}
                           onCheckedChange={(checked) =>
                             field.handleChange(checked)

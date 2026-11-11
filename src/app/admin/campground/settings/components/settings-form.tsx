@@ -24,11 +24,13 @@ interface SettingsFormProps {
 }
 
 function NumberInput({
+  id,
   value,
   onChange,
   onBlur,
   min = 1,
 }: {
+  id: string;
   value: number;
   onChange: (value: number) => void;
   onBlur: () => void;
@@ -36,6 +38,7 @@ function NumberInput({
 }) {
   return (
     <Input
+      id={id}
       type="number"
       min={min}
       step={1}
@@ -115,13 +118,16 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               {(field) => (
                 <Field className="flex items-center justify-between rounded-lg border p-4">
                   <div>
-                    <FieldLabel className="mb-0">Booking open</FieldLabel>
+                    <FieldLabel htmlFor="isBookingOpen" className="mb-0">
+                      Booking open
+                    </FieldLabel>
                     <p className="text-sm text-muted-foreground">
                       When off, guests can browse but not book.
                     </p>
                   </div>
                   <div>
                     <Switch
+                      id="isBookingOpen"
                       checked={field.state.value}
                       onCheckedChange={(checked) => field.handleChange(checked)}
                     />
@@ -175,9 +181,10 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <form.AppField name="minNights">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Minimum nights</FieldLabel>
+                    <FieldLabel htmlFor="minNights">Minimum nights</FieldLabel>
                     <field.WithErrors>
                       <NumberInput
+                        id="minNights"
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
@@ -189,9 +196,10 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <form.AppField name="maxNights">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Maximum nights</FieldLabel>
+                    <FieldLabel htmlFor="maxNights">Maximum nights</FieldLabel>
                     <field.WithErrors>
                       <NumberInput
+                        id="maxNights"
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
@@ -203,9 +211,12 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <form.AppField name="maxAdvanceDays">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Book up to (days ahead)</FieldLabel>
+                    <FieldLabel htmlFor="maxAdvanceDays">
+                      Book up to (days ahead)
+                    </FieldLabel>
                     <field.WithErrors>
                       <NumberInput
+                        id="maxAdvanceDays"
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
@@ -220,9 +231,10 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <form.AppField name="checkInTime">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Check-in time</FieldLabel>
+                    <FieldLabel htmlFor="checkInTime">Check-in time</FieldLabel>
                     <field.WithErrors>
                       <Input
+                        id="checkInTime"
                         type="time"
                         value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
@@ -235,9 +247,12 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               <form.AppField name="checkOutTime">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Check-out time</FieldLabel>
+                    <FieldLabel htmlFor="checkOutTime">
+                      Check-out time
+                    </FieldLabel>
                     <field.WithErrors>
                       <Input
+                        id="checkOutTime"
                         type="time"
                         value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
@@ -272,8 +287,11 @@ export function SettingsForm({ settings }: SettingsFormProps) {
             <form.AppField name="policyText">
               {(field) => (
                 <Field>
-                  <FieldLabel>Extra policy wording (optional)</FieldLabel>
+                  <FieldLabel htmlFor="policyText">
+                    Extra policy wording (optional)
+                  </FieldLabel>
                   <Textarea
+                    id="policyText"
                     rows={3}
                     placeholder="Shown to guests alongside the refund tiers"
                     value={field.state.value ?? ""}

@@ -28,7 +28,7 @@ Assumptions not yet confirmed by the owner (build them this way, keep them easy 
 5. A refund percentage applies to the whole amount paid, tax included.
 6. One site per booking. A guest who wants two sites makes two bookings.
 
-Out of scope: multi-site carts, waitlists, variable pricing, a drawn site map, point of sale, check-in tracking.
+Out of scope: multi-site carts, waitlists, variable pricing, point of sale, check-in tracking.
 
 ## 2. Existing code to know
 
@@ -79,6 +79,8 @@ export const campsites = pgTable("campsites", {
   nightlyRate: integer("nightly_rate").notNull(), // cents, before tax
   maxOccupancy: integer("max_occupancy").notNull().default(6),
   description: text(),
+  mapX: real("map_x"),                          // marker position on the site map, 0-100 (% from left); null = not placed
+  mapY: real("map_y"),                          // 0-100 (% from top)
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   ...timestamps,
@@ -246,6 +248,18 @@ Availability UI: 13 sites is small enough to show everything. After the guest pi
 
 Show the cancellation policy as windows that do not overlap, never as overlapping thresholds. Before dates are chosen use `refundWindows` ("7 days or more before check-in: full refund", "1 to 6 days before: 50%", "On or after check-in day: no refund"). Once the stay is known, use `refundSchedule` to show real dates ("On or before Jul 3, 2027: full refund"). Both live in `src/lib/campground/policy.ts`.
 
+### Site map
+
+Guests see a simple illustrated map of the campground with one marker per site, so they know where the site they are booking is. This is the usual campground-booking pattern: a static background drawing with clickable, colour-coded markers on top. It is not an interactive geographic map; do not add Leaflet, Mapbox or Google Maps.
+
+- **Background:** one image at `public/campground/map.svg`, drawn for this purpose: the loop road, the access road, Range Rd 281, a "To camp office / waterfront" label and a north arrow. The owner supplied a rough sketch showing the 13 sites along the outside of the east side of the loop. Do not ship a Google Maps screenshot (their terms do not allow it); redraw the roads as a few SVG paths. Keep the file replaceable so the camp can swap in a nicer illustration later without code changes.
+- **Markers:** rendered by a `SiteMap` component as absolutely positioned buttons over the image, placed with `left: mapX%` and `top: mapY%` inside a container that keeps the image's aspect ratio. Percent coordinates mean the map scales to any screen width with no extra work. Sites with null coordinates are left off the map and still appear in the list.
+- **Marker states:** available, unavailable, selected. Each marker shows the site number. Do not rely on colour alone: unavailable markers are also muted and struck through or hatched, and every marker has an accessible label such as "Site 7, power, available". Add a small legend, and distinguish site type by marker shape or a small icon.
+- **Behaviour:** the map and the site list show the same data and share one selection. Clicking a marker selects that site and scrolls to or highlights its row; hovering or focusing a row highlights its marker. Before dates are chosen the map shows all sites neutrally as a "where things are" overview. The list remains the primary control and must work fully without the map (keyboard, screen reader, very small screens).
+- **Mobile:** markers need a tap target of at least 32px. With 13 sites along one road this fits at phone width; if markers overlap, let the map scroll horizontally inside its container at a fixed minimum width.
+- **Admin placement:** on the Sites admin page, a "Place on map" control shows the same map; clicking it sets `mapX` / `mapY` for the site being edited, with the other sites shown faintly for reference. This avoids hand-typing coordinates and lets the camp fix positions themselves.
+- **Reuse:** show the same component read-only, with the booked site highlighted, on the booking detail page and optionally in the admin bookings page.
+
 The cancel dialog must show the exact refund amount, computed server-side from the booking's tier snapshot, before the guest confirms.
 
 Every server action re-checks ownership (`booking.userId === session.user.id`). Never trust a booking id from the client.
@@ -340,9 +354,10 @@ Check: the C1 checks pass. An admin can add sites and edit settings. `staff` and
 6. `/campground/bookings` and `/campground/bookings/[id]`.
 7. Cleanup C2: `?redirect=` support in sign-in, sign-up, verification and the proxy.
 8. Home page and navbar entry points.
-9. Cleanup C3: document the webhook events in `README.md` and flag the Stripe dashboard step in the PR description.
+9. Site map, as its own PR after the list-based flow works: background SVG, `SiteMap` component on `/campground` and the booking detail page, and the admin "Place on map" control.
+10. Cleanup C3: document the webhook events in `README.md` and flag the Stripe dashboard step in the PR description.
 
-Check: the C2 checks pass. Book a site end to end. Open two browsers, hold the same site and dates in both, and confirm the second gets the "no longer available" error. Abandon a checkout and confirm the site frees up after expiry (temporarily shorten the hold in development, or trigger `stripe trigger checkout.session.expired` with matching metadata). Replay a `checkout.session.completed` event and confirm nothing changes. Confirm a signed-out guest who picks a site lands back on the booking form after signing up.
+Check: the C2 checks pass. Place all 13 sites on the map from admin, then confirm a guest can select a site from either the map or the list, that unavailable sites are visibly different on the map for chosen dates, and that the map is usable at phone width. Book a site end to end. Open two browsers, hold the same site and dates in both, and confirm the second gets the "no longer available" error. Abandon a checkout and confirm the site frees up after expiry (temporarily shorten the hold in development, or trigger `stripe trigger checkout.session.expired` with matching metadata). Replay a `checkout.session.completed` event and confirm nothing changes. Confirm a signed-out guest who picks a site lands back on the booking form after signing up.
 
 ### Phase 3: admin operations and cancellation
 
