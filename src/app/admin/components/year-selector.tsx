@@ -55,7 +55,11 @@ export function YearSelector({
 
   const navigateToYear = (year: number) => {
     // Replace the year in the pathname: /admin/2025/registrations -> /admin/2026/registrations
-    const newPath = pathname.replace(/^(\/admin\/)\d{4}/, `$1${year}`);
+    // Off a year-scoped page (e.g. /admin/campground), go to that year's registrations.
+    const yearPath = /^(\/admin\/)\d{4}/;
+    const newPath = yearPath.test(pathname)
+      ? pathname.replace(yearPath, `$1${year}`)
+      : `/admin/${year}/registrations`;
     router.push(newPath);
   };
 

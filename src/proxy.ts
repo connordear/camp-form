@@ -7,16 +7,21 @@ const publicRoutes = [
   "/",
   "/sign-in",
   "/sign-up",
+  "/campground",
   "/help/(.*)",
   "/api/auth/(.*)",
   "/api/webhooks/(.*)",
   "/api/health",
 ];
 
+// First match wins, so the catch-all must stay last. Year-scoped camp admin
+// URLs look like /admin/2026/users. These are a second layer of protection:
+// every page and action still checks the role itself (adminPage/adminAction).
 const adminRouteRoles: Array<{ pattern: string; roles: readonly string[] }> = [
-  { pattern: "/admin/users(.*)", roles: ADMIN_ROLES },
-  { pattern: "/admin/discounts(.*)", roles: ADMIN_ROLES },
-  { pattern: "/admin/camps(.*)", roles: ADMIN_ROLES },
+  { pattern: "/admin/[^/]+/users(/.*)?", roles: ADMIN_ROLES },
+  { pattern: "/admin/[^/]+/discounts(/.*)?", roles: ADMIN_ROLES },
+  { pattern: "/admin/[^/]+/camps(/.*)?", roles: ADMIN_ROLES },
+  { pattern: "/admin/campground(/.*)?", roles: ADMIN_ROLES },
   { pattern: "/admin(.*)", roles: ADMIN_PANEL_ROLES },
 ];
 

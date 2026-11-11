@@ -4,6 +4,7 @@ import {
   boolean,
   date,
   foreignKey,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -355,6 +356,7 @@ export const userRelations = relations(user, ({ many }) => ({
   campers: many(campers),
   addresses: many(addresses),
   emergencyContacts: many(emergencyContacts),
+  bookings: many(bookings),
 }));
 
 export const addressesRelations = relations(addresses, ({ many, one }) => ({
@@ -417,5 +419,161 @@ export const registrationsRelations = relations(registrations, ({ one }) => ({
   details: one(registrationDetails, {
     fields: [registrations.id],
     references: [registrationDetails.registrationId],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// Campground
+// ---------------------------------------------------------------------------
+
+// What a site has. Placeholder list until the owner confirms; add keys here
+// (and a label in CAMPSITE_FEATURE_LABELS) to offer a new feature.
+export const CAMPSITE_FEATURES = [
+  "power",
+  "water",
+  "sewer",
+  "fire_pit",
+  "picnic_table",
+  "pull_through",
+  "shade",
+  "waterfront",
+] as const;
+export type CampsiteFeature = (typeof CAMPSITE_FEATURES)[number];
+
+export const BOOKING_STATUSES = [
+  "pending",
+  "confirmed",
+  "cancelled",
+  "expired",
+] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+export const BOOKING_SOURCES = ["online", "admin"] as const;
+export type BookingSource = (typeof BOOKING_SOURCES)[number];
+
+export type CancellationTier = { minDaysBefore: number; refundPercent: number };
+
+export const DEFAULT_CANCELLATION_TIERS: CancellationTier[] = [
+  { minDaysBefore: 7, refundPercent: 100 },
+  { minDaysBefore: 1, refundPercent: 50 },
+];
+
+export const campsites = pgTable("campsites", {
+  id: id(),
+  name: text().notNull(),
+  features: text()
+    .array()
+    .$type<CampsiteFeature[]>()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  nightlyRate: integer("nightly_rate").notNull(), // cents, before tax
+  maxOccupancy: integer("max_occupancy").notNull().default(6),
+  description: text(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  ...timestamps,
+});
+
+// Single row, id fixed to "default".
+export const campgroundSettings = pgTable("campground_settings", {
+  id: text().primaryKey().default("default"),
+  isBookingOpen: boolean("is_booking_open").notNull().default(false),
+  seasonStart: date("season_start"), // first bookable night
+  seasonEnd: date("season_end"), // last bookable check-out date
+  minNights: integer("min_nights").notNull().default(1),
+  maxNights: integer("max_nights").notNull().default(14),
+  maxAdvanceDays: integer("max_advance_days").notNull().default(365),
+  checkInTime: text("check_in_time").notNull().default("14:00"),
+  checkOutTime: text("check_out_time").notNull().default("11:00"),
+  cancellationTiers: jsonb("cancellation_tiers")
+    .$type<CancellationTier[]>()
+    .notNull()
+    .default(DEFAULT_CANCELLATION_TIERS),
+  policyText: text("policy_text"), // optional extra wording shown to guests
+  ...timestamps,
+});
+
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .references(() => campsites.id, { onDelete: "restrict" })
+      .notNull(),
+    userId: text("user_id").references(() => user.id), // null for admin-entered phone bookings
+    guestName: text("guest_name").notNull(),
+    guestEmail: text("guest_email"),
+    guestPhone: text("guest_phone").notNull(),
+    partySize: integer("party_size").notNull(),
+    notes: text(),
+    adminNotes: text("admin_notes"),
+    checkIn: date("check_in").notNull(), // first night
+    checkOut: date("check_out").notNull(), // morning of departure, exclusive
+    status: text({ enum: BOOKING_STATUSES }).notNull().default("pending"),
+    source: text({ enum: BOOKING_SOURCES }).notNull().default("online"),
+    holdExpiresAt: timestamp("hold_expires_at"),
+    subtotal: integer().notNull(), // sum of night prices, before tax
+    pricePaid: integer("price_paid"), // Stripe amount_total, tax included
+    paidOffline: boolean("paid_offline").notNull().default(false),
+    cancellationTiers: jsonb("cancellation_tiers")
+      .$type<CancellationTier[]>()
+      .notNull(), // snapshot at booking time
+    stripeSessionId: text("stripe_session_id"),
+    stripePaymentIntentId: text("stripe_payment_intent_id"),
+    cancelledAt: timestamp("cancelled_at"),
+    cancelledBy: text("cancelled_by", { enum: ["guest", "admin"] }),
+    refundAmount: integer("refund_amount"),
+    stripeRefundId: text("stripe_refund_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.userId),
+    index().on(t.siteId, t.checkIn),
+    index().on(t.status),
+  ],
+);
+
+// One row per site per occupied night. The primary key is what prevents double booking.
+export const bookingNights = pgTable(
+  "booking_nights",
+  {
+    siteId: text("site_id")
+      .references(() => campsites.id, { onDelete: "restrict" })
+      .notNull(),
+    night: date().notNull(),
+    bookingId: text("booking_id").references(() => bookings.id, {
+      onDelete: "cascade",
+    }),
+    price: integer().notNull().default(0), // nightly rate charged for this night
+    blockReason: text("block_reason"), // set when an admin blocks the night, bookingId null
+  },
+  (t) => [
+    primaryKey({ columns: [t.siteId, t.night] }),
+    index().on(t.bookingId),
+  ],
+);
+
+export const campsitesRelations = relations(campsites, ({ many }) => ({
+  bookings: many(bookings),
+  nights: many(bookingNights),
+}));
+
+export const bookingsRelations = relations(bookings, ({ one, many }) => ({
+  site: one(campsites, {
+    fields: [bookings.siteId],
+    references: [campsites.id],
+  }),
+  user: one(user, { fields: [bookings.userId], references: [user.id] }),
+  nights: many(bookingNights),
+}));
+
+export const bookingNightsRelations = relations(bookingNights, ({ one }) => ({
+  site: one(campsites, {
+    fields: [bookingNights.siteId],
+    references: [campsites.id],
+  }),
+  booking: one(bookings, {
+    fields: [bookingNights.bookingId],
+    references: [bookings.id],
   }),
 }));
