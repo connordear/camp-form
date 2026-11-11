@@ -39,4 +39,6 @@ bun run test:e2e e2e/admin-access.e2e.ts           # one file
 bun x playwright show-report                       # last HTML report
 ```
 
+The payment test uses Stripe test mode. Stripe sometimes answers repeated automated payments with an hCaptcha challenge; if the test reports that, wait a few minutes before running it again.
+
 The tests create their own data (`E2E Test Camp`, `E2E Site …`) and remove it afterwards, and restore the campground settings they change.

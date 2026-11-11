@@ -142,7 +142,13 @@ export async function createRegistrationFixture(email: string) {
     parentSignature: "E2E Parent",
   });
 
-  return { registrationId: registration.id, campId: camp.id, year };
+  return {
+    registrationId: registration.id,
+    campId: camp.id,
+    year,
+    startDate,
+    endDate,
+  };
 }
 
 export async function getRegistrationStatus(id: string) {

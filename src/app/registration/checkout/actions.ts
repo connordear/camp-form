@@ -13,6 +13,7 @@ import {
   type RegistrationForDiscount,
 } from "@/lib/services/discount-service";
 import { getRegistrationsForCheckoutPage } from "@/lib/services/registration-service";
+import { formatDateRangeWithYear } from "@/lib/utils";
 
 /**
  * Individual registration data for display.
@@ -40,24 +41,6 @@ export type CheckoutCamper = {
 /**
  * Formats a date range string from start and end dates.
  */
-function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  const options: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-  };
-
-  const startStr = start.toLocaleDateString("en-US", options);
-  const endStr = end.toLocaleDateString("en-US", {
-    ...options,
-    year: "numeric",
-  });
-
-  return `${startStr} - ${endStr}`;
-}
-
 /**
  * Server action to fetch all checkout data for the current user.
  * Returns campers with their registrations grouped together.
@@ -122,7 +105,10 @@ export async function getCheckoutData(
         id: registration.id,
         camperId: camper.id,
         campName: campYear.camp.name,
-        campDates: formatDateRange(campYear.startDate, campYear.endDate),
+        campDates: formatDateRangeWithYear(
+          campYear.startDate,
+          campYear.endDate,
+        ),
         price,
         numDays: registration.numDays,
         status,
