@@ -1,5 +1,6 @@
 import * as schema from "@/lib/data/schema";
 import { db } from "./db";
+import { seedCampground } from "./seed-campground";
 
 // 2026 Camp Data Configuration
 const CAMPS_DATA = [
@@ -177,6 +178,9 @@ async function seed() {
 
     console.log(`   ✅ Created ${data.name}`);
   }
+
+  // 4. CAMPGROUND (adds settings and placeholder sites only if missing)
+  await seedCampground();
 
   console.log("✨ Seeding Complete!");
   process.exit(0);

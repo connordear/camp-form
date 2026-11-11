@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  MapPinIcon,
   MenuIcon,
+  SettingsIcon,
   TagIcon,
   TentIcon,
   UserCircleIcon,
@@ -27,15 +29,80 @@ import { useAdminYear } from "@/hooks/use-admin-year";
 import { cn } from "@/lib/utils";
 import { YearSelector } from "./year-selector";
 
+type AdminRoleName = "admin" | "hcp" | "staff";
+
 interface AdminNavProps {
   availableYears: number[];
-  userRole: "admin" | "hcp" | "staff";
+  userRole: AdminRoleName;
+}
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  /** Year-scoped links are built as /admin/{year}{href}. */
+  yearScoped: boolean;
+  adminOnly?: boolean;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Camp",
+    yearScoped: true,
+    items: [
+      { href: "/registrations", label: "Registrations", icon: UsersIcon },
+      { href: "/camps", label: "Camps", icon: TentIcon, adminOnly: true },
+      {
+        href: "/discounts",
+        label: "Discounts",
+        icon: TagIcon,
+        adminOnly: true,
+      },
+      {
+        href: "/users",
+        label: "Users",
+        icon: UserCircleIcon,
+        adminOnly: true,
+      },
+    ],
+  },
+  {
+    label: "Campground",
+    yearScoped: false,
+    adminOnly: true,
+    items: [
+      // TODO(Phase 3): Bookings at /admin/campground/bookings.
+      { href: "/admin/campground/sites", label: "Sites", icon: MapPinIcon },
+      {
+        href: "/admin/campground/settings",
+        label: "Settings",
+        icon: SettingsIcon,
+      },
+    ],
+  },
+];
+
+function visibleGroups(userRole: AdminRoleName): NavGroup[] {
+  const isAdmin = userRole === "admin";
+  return NAV_GROUPS.filter((g) => isAdmin || !g.adminOnly)
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => isAdmin || !i.adminOnly),
+    }))
+    .filter((g) => g.items.length > 0);
 }
 
 interface AdminNavLinkProps {
   href: string;
   children: React.ReactNode;
   icon: React.ComponentType<{ className?: string }>;
+  yearScoped?: boolean;
   collapsed?: boolean;
   onClick?: () => void;
 }
@@ -44,14 +111,15 @@ function AdminNavLink({
   href,
   children,
   icon: Icon,
+  yearScoped = true,
   collapsed = false,
   onClick,
 }: AdminNavLinkProps) {
   const pathname = usePathname();
   const { currentYear } = useAdminYear();
 
-  // Build full href with year: /admin/2025/registrations
-  const fullHref = `/admin/${currentYear}${href}`;
+  // Year-scoped links: /admin/2025/registrations. Others are used as given.
+  const fullHref = yearScoped ? `/admin/${currentYear}${href}` : href;
 
   const isActive = pathname.startsWith(fullHref);
 
@@ -84,59 +152,77 @@ function AdminNavLink({
   return linkContent;
 }
 
+interface NavGroupsProps {
+  availableYears: number[];
+  userRole: AdminRoleName;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}
+
+function NavGroups({
+  availableYears,
+  userRole,
+  collapsed = false,
+  onNavigate,
+}: NavGroupsProps) {
+  return (
+    <nav className="flex flex-col gap-4 w-full">
+      {visibleGroups(userRole).map((group, index) => (
+        <div
+          key={group.label}
+          className={cn(
+            "flex flex-col gap-1",
+            collapsed && index > 0 && "border-t pt-4",
+          )}
+        >
+          {!collapsed && (
+            <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {group.label}
+            </div>
+          )}
+          {group.yearScoped && (
+            <div
+              className={cn("pb-1", collapsed ? "flex justify-center" : "px-1")}
+            >
+              <YearSelector
+                availableYears={availableYears}
+                collapsed={collapsed}
+              />
+            </div>
+          )}
+          {group.items.map((item) => (
+            <AdminNavLink
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              yearScoped={group.yearScoped}
+              collapsed={collapsed}
+              onClick={onNavigate}
+            >
+              {item.label}
+            </AdminNavLink>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
 function AdminNavContent({ availableYears, userRole }: AdminNavProps) {
   return (
     <>
       {/* Desktop Sidebar - full width */}
       <div className="hidden lg:flex w-64 h-[calc(100vh-4rem)] sticky top-16 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col p-4">
-        <nav className="flex flex-col gap-1">
-          <AdminNavLink href="/registrations" icon={UsersIcon}>
-            Registrations
-          </AdminNavLink>
-          {userRole === "admin" && (
-            <>
-              <AdminNavLink href="/camps" icon={TentIcon}>
-                Camps
-              </AdminNavLink>
-              <AdminNavLink href="/discounts" icon={TagIcon}>
-                Discounts
-              </AdminNavLink>
-              <AdminNavLink href="/users" icon={UserCircleIcon}>
-                Users
-              </AdminNavLink>
-            </>
-          )}
-        </nav>
-
-        <div className="mt-auto pt-4 border-t">
-          <YearSelector availableYears={availableYears} />
-        </div>
+        <NavGroups availableYears={availableYears} userRole={userRole} />
       </div>
 
       {/* Tablet Sidebar - collapsed icon-only */}
-      <div className="hidden md:flex lg:hidden w-14 h-[calc(100vh-4rem)] sticky top-16 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col items-center py-4">
-        <nav className="flex flex-col gap-1 w-full px-2">
-          <AdminNavLink href="/registrations" icon={UsersIcon} collapsed>
-            Registrations
-          </AdminNavLink>
-          {userRole === "admin" && (
-            <>
-              <AdminNavLink href="/camps" icon={TentIcon} collapsed>
-                Camps
-              </AdminNavLink>
-              <AdminNavLink href="/discounts" icon={TagIcon} collapsed>
-                Discounts
-              </AdminNavLink>
-              <AdminNavLink href="/users" icon={UserCircleIcon} collapsed>
-                Users
-              </AdminNavLink>
-            </>
-          )}
-        </nav>
-
-        <div className="mt-auto pt-4 border-t w-full flex justify-center">
-          <YearSelector availableYears={availableYears} collapsed />
-        </div>
+      <div className="hidden md:flex lg:hidden w-14 h-[calc(100vh-4rem)] sticky top-16 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col items-center py-4 px-2">
+        <NavGroups
+          availableYears={availableYears}
+          userRole={userRole}
+          collapsed
+        />
       </div>
     </>
   );
@@ -168,43 +254,12 @@ function MobileNav({ availableYears, userRole }: AdminNavProps) {
             </SheetTitle>
           </SheetHeader>
 
-          <nav className="flex flex-col gap-1 p-4">
-            <AdminNavLink
-              href="/registrations"
-              icon={UsersIcon}
-              onClick={closeSheet}
-            >
-              Registrations
-            </AdminNavLink>
-            {userRole === "admin" && (
-              <>
-                <AdminNavLink
-                  href="/camps"
-                  icon={TentIcon}
-                  onClick={closeSheet}
-                >
-                  Camps
-                </AdminNavLink>
-                <AdminNavLink
-                  href="/discounts"
-                  icon={TagIcon}
-                  onClick={closeSheet}
-                >
-                  Discounts
-                </AdminNavLink>
-                <AdminNavLink
-                  href="/users"
-                  icon={UserCircleIcon}
-                  onClick={closeSheet}
-                >
-                  Users
-                </AdminNavLink>
-              </>
-            )}
-          </nav>
-
-          <div className="mt-auto p-4 border-t absolute bottom-0 left-0 right-0">
-            <YearSelector availableYears={availableYears} />
+          <div className="p-4">
+            <NavGroups
+              availableYears={availableYears}
+              userRole={userRole}
+              onNavigate={closeSheet}
+            />
           </div>
         </SheetContent>
       </Sheet>

@@ -1,46 +1,12 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { ADMIN_PANEL_ROLES, ADMIN_ROLES } from "@/lib/auth-helpers";
-
-const publicRoutes = [
-  "/",
-  "/sign-in",
-  "/sign-up",
-  "/help/(.*)",
-  "/api/auth/(.*)",
-  "/api/webhooks/(.*)",
-  "/api/health",
-];
-
-const adminRouteRoles: Array<{ pattern: string; roles: readonly string[] }> = [
-  { pattern: "/admin/users(.*)", roles: ADMIN_ROLES },
-  { pattern: "/admin/discounts(.*)", roles: ADMIN_ROLES },
-  { pattern: "/admin/camps(.*)", roles: ADMIN_ROLES },
-  { pattern: "/admin(.*)", roles: ADMIN_PANEL_ROLES },
-];
-
-function matchesPattern(pathname: string, patterns: string[]): boolean {
-  return patterns.some((pattern) => {
-    const regex = new RegExp(`^${pattern}$`);
-    return regex.test(pathname);
-  });
-}
-
-function getAllowedRolesForPath(pathname: string): readonly string[] | null {
-  for (const route of adminRouteRoles) {
-    const regex = new RegExp(`^${route.pattern}$`);
-    if (regex.test(pathname)) {
-      return route.roles;
-    }
-  }
-  return null;
-}
+import { getAllowedRolesForPath, isPublicRoute } from "@/lib/route-access";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (matchesPattern(pathname, publicRoutes)) {
+  if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 

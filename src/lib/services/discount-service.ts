@@ -1,4 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { endOfDay } from "@/lib/campground/dates";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 
@@ -90,7 +91,6 @@ export async function evaluateDiscounts(
   const numCampers = uniqueCamperIds.size;
 
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const applicableDiscounts: ApplicableDiscount[] = [];
 
@@ -99,12 +99,9 @@ export async function evaluateDiscounts(
 
     switch (discount.conditionType) {
       case "deadline":
-        // Check if current date is before the deadline
         if (discount.deadlineDate) {
-          const deadline = new Date(discount.deadlineDate);
-          // Set deadline to end of day for comparison
-          deadline.setHours(23, 59, 59, 999);
-          isApplicable = today <= deadline;
+          // The deadline runs through the end of that day at camp.
+          isApplicable = now <= endOfDay(discount.deadlineDate);
         }
         break;
 

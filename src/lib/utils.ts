@@ -91,3 +91,30 @@ export function capitalize(str: string): string {
   if (!str) return str;
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+/**
+ * "Nov 18 - Nov 20, 2026" from two "YYYY-MM-DD" date strings. The strings are
+ * read as calendar dates, so the result does not depend on the time zone the
+ * code runs in. (`new Date("2026-11-18")` is midnight UTC, which is still
+ * Nov 17 in Alberta.)
+ */
+export function formatDateRangeWithYear(
+  startDate: string,
+  endDate: string,
+): string {
+  const asUtc = (date: string) => {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  };
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  };
+  const start = asUtc(startDate).toLocaleDateString("en-US", options);
+  const end = asUtc(endDate).toLocaleDateString("en-US", {
+    ...options,
+    year: "numeric",
+  });
+  return `${start} - ${end}`;
+}
