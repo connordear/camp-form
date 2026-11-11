@@ -3,6 +3,7 @@ import {
   addDays,
   campgroundToday,
   daysUntil,
+  endOfDay,
   formatDisplayDate,
   isDateString,
   nightsBetween,
@@ -96,5 +97,52 @@ describe("formatDisplayDate", () => {
   test("formats without shifting the day", () => {
     expect(formatDisplayDate("2027-07-03")).toBe("Jul 3, 2027");
     expect(formatDisplayDate("2027-01-01")).toBe("Jan 1, 2027");
+  });
+});
+
+describe("endOfDay", () => {
+  test("is the last moment of the date in Alberta", () => {
+    // May is MDT (UTC-6), so 23:59:59.999 local is 05:59:59.999 UTC next day.
+    expect(endOfDay("2026-05-31").toISOString()).toBe(
+      "2026-06-01T05:59:59.999Z",
+    );
+    // January is MST (UTC-7).
+    expect(endOfDay("2027-01-15").toISOString()).toBe(
+      "2027-01-16T06:59:59.999Z",
+    );
+  });
+
+  test("handles days when the clocks change", () => {
+    // Clocks spring forward on 2027-03-14 and fall back on 2027-11-07; both
+    // days end after the change, so MDT and MST respectively.
+    expect(endOfDay("2027-03-14").toISOString()).toBe(
+      "2027-03-15T05:59:59.999Z",
+    );
+    expect(endOfDay("2027-11-07").toISOString()).toBe(
+      "2027-11-08T06:59:59.999Z",
+    );
+    expect(endOfDay("2027-03-13").toISOString()).toBe(
+      "2027-03-14T06:59:59.999Z",
+    );
+  });
+
+  test("does not depend on the server time zone", () => {
+    const original = process.env.TZ;
+    try {
+      for (const tz of ["UTC", "America/Edmonton", "Asia/Tokyo"]) {
+        process.env.TZ = tz;
+        expect(endOfDay("2026-05-31").toISOString()).toBe(
+          "2026-06-01T05:59:59.999Z",
+        );
+      }
+    } finally {
+      process.env.TZ = original;
+    }
+  });
+
+  test("accepts another time zone", () => {
+    expect(endOfDay("2026-05-31", "UTC").toISOString()).toBe(
+      "2026-05-31T23:59:59.999Z",
+    );
   });
 });

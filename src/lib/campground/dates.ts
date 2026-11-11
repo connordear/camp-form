@@ -7,6 +7,8 @@
  * is always computed in the campground's own time zone.
  */
 
+// The camp and the campground share one property, so this is the time zone
+// for every "what day is it" question in the app, camp deadlines included.
 // TODO: confirm with the owner (see docs/campground-booking-plan.md, section 10).
 export const CAMPGROUND_TIMEZONE = "America/Edmonton";
 
@@ -87,4 +89,46 @@ export function formatDisplayDate(dateStr: string): string {
     day: "numeric",
     year: "numeric",
   }).format(new Date(toUtcMs(dateStr)));
+}
+
+/** Milliseconds `timeZone` is ahead of UTC at `instant` (negative west of UTC). */
+function timeZoneOffsetMs(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(instant));
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  const wallClockAsUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second"),
+  );
+  return wallClockAsUtc - Math.floor(instant / 1000) * 1000;
+}
+
+/**
+ * The last millisecond of `dateStr` in `timeZone` (23:59:59.999 local time),
+ * as a real instant. Use it for deadlines that run "through" a date.
+ */
+export function endOfDay(
+  dateStr: string,
+  timeZone: string = CAMPGROUND_TIMEZONE,
+): Date {
+  // Midnight starting the next day, local time, minus one millisecond.
+  const nextMidnightAsUtc = toUtcMs(addDays(dateStr, 1));
+  let instant =
+    nextMidnightAsUtc - timeZoneOffsetMs(nextMidnightAsUtc, timeZone);
+  // Re-check in case the guess landed on the other side of a DST change.
+  instant = nextMidnightAsUtc - timeZoneOffsetMs(instant, timeZone);
+  return new Date(instant - 1);
 }

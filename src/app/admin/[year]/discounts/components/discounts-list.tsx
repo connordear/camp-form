@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { endOfDay, formatDisplayDate } from "@/lib/campground/dates";
 import type { Discount } from "@/lib/services/discount-service";
 import {
   CONDITION_TYPE_LABELS,
@@ -39,11 +40,7 @@ function formatAmount(discount: Discount): string {
 
 function formatDeadline(date: string | null): string {
   if (!date) return "N/A";
-  return new Date(date).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatDisplayDate(date);
 }
 
 function DiscountCard({ discount }: { discount: Discount }) {
@@ -69,7 +66,7 @@ function DiscountCard({ discount }: { discount: Discount }) {
   const isDeadlinePassed =
     discount.conditionType === "deadline" &&
     discount.deadlineDate &&
-    new Date(discount.deadlineDate) < new Date();
+    new Date() > endOfDay(discount.deadlineDate);
 
   return (
     <Card className={!isActive ? "opacity-60" : undefined}>

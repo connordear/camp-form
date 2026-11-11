@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type Stripe from "stripe";
 import { adminAction } from "@/lib/auth-helpers";
+import { endOfDay } from "@/lib/campground/dates";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
 import { stripe } from "@/lib/stripe";
@@ -33,9 +34,10 @@ async function createStripeCoupon(data: DiscountFormData): Promise<string> {
 
   // Set redemption deadline if applicable
   if (data.conditionType === "deadline" && data.deadlineDate) {
-    const deadline = new Date(data.deadlineDate);
-    deadline.setHours(23, 59, 59, 999);
-    couponParams.redeem_by = Math.floor(deadline.getTime() / 1000);
+    // Redeemable through the end of the deadline day at camp.
+    couponParams.redeem_by = Math.floor(
+      endOfDay(data.deadlineDate).getTime() / 1000,
+    );
   }
 
   const coupon = await stripe.coupons.create(couponParams);
