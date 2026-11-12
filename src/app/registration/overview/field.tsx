@@ -188,7 +188,7 @@ export const OverviewFieldGroup = withFieldGroup({
                               if (itemField.state.value) {
                                 const c = campLookup[itemField.state.value];
                                 campOptions.unshift({
-                                  value: c.id,
+                                  value: itemField.state.value,
                                   name: c
                                     ? `${c.name} (${formatDateRange(c.startDate, c.endDate)})`
                                     : "Unknown Camp",

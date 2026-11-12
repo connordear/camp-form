@@ -13,6 +13,7 @@ import {
   registrations,
   user,
 } from "@/lib/data/schema";
+import { getUpcomingCampYear } from "@/lib/services/home-service";
 import { getRegistrationsForUser } from "@/lib/services/registration-service";
 import { campSchema } from "@/lib/types/common-schema";
 import type { Camp } from "@/lib/types/common-types";
@@ -62,11 +63,13 @@ export async function getCampsForYear(year: number): Promise<Camp[]> {
   return z.array(campSchema).parse(Object.values(result));
 }
 
-export async function getRegistrations(): Promise<CampFormUser | undefined> {
+export async function getRegistrations(
+  year: number | null,
+): Promise<CampFormUser | undefined> {
   const session = await requireAuth();
   const userId = session.user.id;
 
-  const res = await getRegistrationsForUser(userId);
+  const res = await getRegistrationsForUser(userId, year);
 
   if (!res) {
     // User doesn't exist yet in our DB - this shouldn't happen with Better Auth
@@ -84,6 +87,9 @@ export async function saveRegistrationsForUser(
   const userId = session.user.id;
 
   const campersData = saveCampersSchema.parse(rawCampersData);
+  // The form only holds this year's registrations, so only this year's
+  // drafts can have been removed from it.
+  const year = await getUpcomingCampYear();
 
   return await db.transaction(async (tx) => {
     // 1. Get User
@@ -119,7 +125,7 @@ export async function saveRegistrationsForUser(
       // --- PROCESS REGISTRATIONS ---
       const activeRegIds: string[] = [];
 
-      if (camperRegistrations) {
+      if (camperRegistrations && year !== null) {
         for (const reg of camperRegistrations) {
           const { ...regData } = reg;
 
@@ -157,6 +163,7 @@ export async function saveRegistrationsForUser(
             .where(
               and(
                 eq(registrations.camperId, camperData.id),
+                eq(registrations.campYear, year),
                 eq(registrations.status, "draft"),
                 notInArray(registrations.id, activeRegIds),
               ),
@@ -168,6 +175,7 @@ export async function saveRegistrationsForUser(
             .where(
               and(
                 eq(registrations.camperId, camperData.id),
+                eq(registrations.campYear, year),
                 eq(registrations.status, "draft"),
               ),
             );
@@ -198,7 +206,13 @@ export async function saveRegistrationsForUser(
       where: eq(user.id, userData.id),
       with: {
         campers: {
-          with: { registrations: true },
+          orderBy: asc(campers.createdAt),
+          with: {
+            registrations: {
+              where:
+                year === null ? sql`false` : eq(registrations.campYear, year),
+            },
+          },
         },
       },
     });
