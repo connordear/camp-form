@@ -74,7 +74,8 @@ export interface BookingEmailDetails {
   /** "When you cancel" and "Refund" pairs, already worded. */
   refundSchedule: Array<[string, string]>;
   policyText: string | null;
-  bookingUrl: string;
+  /** Null when the guest has no account to view it in. */
+  bookingUrl: string | null;
 }
 
 export function generateBookingConfirmedEmailText(d: BookingEmailDetails) {
@@ -88,8 +89,7 @@ export function generateBookingConfirmedEmailText(d: BookingEmailDetails) {
     "Cancellation policy:",
     ...d.refundSchedule.map(([when, refund]) => `- ${when}: ${refund}`),
     ...(d.policyText ? ["", d.policyText] : []),
-    "",
-    `View your booking: ${d.bookingUrl}`,
+    ...(d.bookingUrl ? ["", `View your booking: ${d.bookingUrl}`] : []),
   ].join("\n");
 }
 
@@ -118,7 +118,7 @@ export function generateBookingConfirmedEmailHtml(d: BookingEmailDetails) {
         ${rows}
       </table>
       ${d.policyText ? `<p style="font-size: 14px; color: #444; white-space: pre-line;">${e(d.policyText)}</p>` : ""}
-      <a href="${e(d.bookingUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">View booking</a>
+      ${d.bookingUrl ? `<a href="${e(d.bookingUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">View booking</a>` : ""}
     </div>
   `;
 }
@@ -155,6 +155,55 @@ export function generateBookingUnavailableEmailHtml(
       <p>Your payment for <strong>${e(d.siteName)}, ${e(d.stay)}</strong> arrived after your hold on the site ran out, and someone else booked it in the meantime.</p>
       <p>We have refunded the full <strong>${e(d.refundAmount)}</strong>. Refunds usually take 5 to 10 business days to appear on your statement.</p>
       <a href="${e(d.campgroundUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Choose another site</a>
+    </div>
+  `;
+}
+
+export interface BookingCancelledEmailDetails {
+  guestName: string;
+  siteName: string;
+  stay: string;
+  /** e.g. "$31.50"; "$0.00" when nothing is refunded. */
+  refundAmount: string;
+  hasRefund: boolean;
+  /** Refunded to their card (true) or handed back by the camp (false). */
+  refundToCard: boolean;
+  campgroundUrl: string;
+}
+
+function cancelledRefundLine(d: BookingCancelledEmailDetails): string {
+  if (!d.hasRefund) {
+    return "Under the cancellation policy for this booking, no refund is due.";
+  }
+  return d.refundToCard
+    ? `We have refunded ${d.refundAmount} to the card you paid with. Refunds usually take 5 to 10 business days to appear on your statement.`
+    : `You are owed a refund of ${d.refundAmount}. The camp office will be in touch to arrange it.`;
+}
+
+export function generateBookingCancelledEmailText(
+  d: BookingCancelledEmailDetails,
+) {
+  return [
+    `Hi ${d.guestName},`,
+    "",
+    `Your campsite booking for ${d.siteName}, ${d.stay} has been cancelled.`,
+    cancelledRefundLine(d),
+    "",
+    `If you'd like to book another stay: ${d.campgroundUrl}`,
+  ].join("\n");
+}
+
+export function generateBookingCancelledEmailHtml(
+  d: BookingCancelledEmailDetails,
+) {
+  const e = escapeHtml;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Your campsite booking is cancelled</h2>
+      <p>Hi ${e(d.guestName)},</p>
+      <p>Your booking for <strong>${e(d.siteName)}, ${e(d.stay)}</strong> has been cancelled.</p>
+      <p>${e(cancelledRefundLine(d))}</p>
+      <a href="${e(d.campgroundUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Book another stay</a>
     </div>
   `;
 }

@@ -8,7 +8,12 @@ import {
   stayCost,
 } from "@/lib/campground/booking";
 import { campgroundToday, nightsBetween } from "@/lib/campground/dates";
-import { sortTiers, validateStay } from "@/lib/campground/policy";
+import { formatCents } from "@/lib/campground/money";
+import {
+  calculateRefund,
+  sortTiers,
+  validateStay,
+} from "@/lib/campground/policy";
 import { db } from "@/lib/data/db";
 import { PG_UNIQUE_VIOLATION, pgErrorCode } from "@/lib/data/pg-errors";
 import { bookingNights, bookings, campsites } from "@/lib/data/schema";
@@ -514,4 +519,118 @@ export async function expireBookingFromSession(
     .where(eq(bookings.id, bookingId));
   if (!booking || booking.stripeSessionId !== session.id) return;
   await expirePendingBooking(bookingId);
+}
+
+// ---------------------------------------------------------------------------
+// Cancellation
+// ---------------------------------------------------------------------------
+
+/**
+ * What the policy refunds if this booking is cancelled on `today`, from the
+ * booking's own tier snapshot (never today's settings).
+ */
+export function policyRefund(
+  booking: Pick<Booking, "pricePaid" | "cancellationTiers" | "checkIn">,
+  today: string = campgroundToday(),
+): { percent: number; amount: number } {
+  return calculateRefund(
+    booking.pricePaid ?? 0,
+    booking.cancellationTiers,
+    booking.checkIn,
+    today,
+  );
+}
+
+export type CancelOptions = {
+  by: "guest" | "admin";
+  /**
+   * Admins only: refund this many cents instead of the policy amount.
+   * Between 0 and the amount paid.
+   */
+  refundAmount?: number;
+};
+
+/**
+ * Cancel a confirmed booking, refund it and free its nights.
+ *
+ * Stripe-paid bookings are refunded through Stripe. For bookings paid
+ * offline, the amount is only recorded, so the camp knows what to hand back.
+ * The caller sends the cancellation email.
+ */
+export async function cancelBooking(
+  bookingId: string,
+  { by, refundAmount }: CancelOptions,
+): Promise<BookingWithSite> {
+  const booking = await loadBookingWithSite(bookingId);
+  if (!booking) throw new BookingError("Booking not found.");
+  if (booking.status !== "confirmed") {
+    throw new BookingError("Only confirmed bookings can be cancelled.");
+  }
+
+  const paid = booking.pricePaid ?? 0;
+  let amount: number;
+  if (refundAmount === undefined) {
+    amount = policyRefund(booking).amount;
+  } else {
+    if (by !== "admin") {
+      throw new Error("Only admins can choose the refund amount");
+    }
+    if (!Number.isInteger(refundAmount) || refundAmount < 0) {
+      throw new BookingError("Enter a refund of $0.00 or more.");
+    }
+    if (refundAmount > paid) {
+      throw new BookingError(
+        `The refund cannot be more than the ${formatCents(paid)} paid.`,
+      );
+    }
+    amount = refundAmount;
+  }
+
+  let stripeRefundId: string | null = null;
+  if (amount > 0 && !booking.paidOffline) {
+    if (!booking.stripePaymentIntentId) {
+      throw new Error(`Booking ${bookingId} has no payment to refund`);
+    }
+    // One refund per booking, even if the cancel is sent twice.
+    const refund = await stripe.refunds.create(
+      {
+        payment_intent: booking.stripePaymentIntentId,
+        amount,
+        reason: "requested_by_customer",
+        metadata: { kind: CAMPSITE_BOOKING_KIND, bookingId, cancelledBy: by },
+      },
+      { idempotencyKey: `booking-refund-${bookingId}` },
+    );
+    stripeRefundId = refund.id;
+    amount = refund.amount;
+  }
+
+  const now = new Date();
+  const cancelled = await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(bookings)
+      .set({
+        status: "cancelled",
+        cancelledAt: now,
+        cancelledBy: by,
+        refundAmount: amount,
+        stripeRefundId,
+        holdExpiresAt: null,
+        updatedAt: now,
+      })
+      .where(and(eq(bookings.id, bookingId), eq(bookings.status, "confirmed")))
+      .returning({ id: bookings.id });
+    if (updated.length === 0) return false;
+    await tx
+      .delete(bookingNights)
+      .where(eq(bookingNights.bookingId, bookingId));
+    return true;
+  });
+  if (!cancelled) {
+    throw new BookingError("This booking has already been cancelled.");
+  }
+
+  const result = await loadBookingWithSite(bookingId);
+  if (!result) throw new Error(`Booking ${bookingId} disappeared`);
+  return result;
 }

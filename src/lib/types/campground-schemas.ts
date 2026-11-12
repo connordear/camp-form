@@ -166,3 +166,60 @@ export const bookingRequestSchema = bookingGuestSchema.extend({
 
 export type BookingGuestData = z.input<typeof bookingGuestSchema>;
 export type BookingRequestData = z.input<typeof bookingRequestSchema>;
+
+const optionalText = (max: number, label: string) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Keep ${label} under ${max} characters`)
+    .nullable()
+    .transform((v) => (v ? v : null));
+
+const pickDate = (message: string) =>
+  z.string().min(1, message).refine(isDateString, message);
+
+// A booking the office takes by phone or email and is paid for offline.
+export const adminBookingSchema = bookingGuestSchema
+  .extend({
+    siteId: z.string().min(1, "Pick a site"),
+    checkIn: pickDate("Pick a check-in date"),
+    checkOut: pickDate("Pick a check-out date"),
+    guestEmail: z
+      .string()
+      .trim()
+      .nullable()
+      .transform((v) => (v ? v : null))
+      .pipe(z.email("Enter a valid email, or leave it blank").nullable()),
+    notes: optionalText(1000, "notes"),
+    adminNotes: optionalText(1000, "office notes"),
+    pricePaid: z
+      .number({ error: "Enter the amount paid in dollars, e.g. 94.50" })
+      .int("Enter dollars and cents, e.g. 94.50")
+      .min(0, "Cannot be negative"),
+    sendConfirmation: z.boolean(),
+  })
+  .refine((d) => !d.checkIn || !d.checkOut || d.checkOut > d.checkIn, {
+    path: ["checkOut"],
+    message: "Check-out must be after check-in",
+  });
+
+export type AdminBookingData = z.input<typeof adminBookingSchema>;
+
+// Nights taken off sale. `lastNight` is inclusive, as people think of it.
+export const blockNightsSchema = z
+  .object({
+    siteId: z.string().min(1, "Pick a site"),
+    firstNight: pickDate("Pick the first night"),
+    lastNight: pickDate("Pick the last night"),
+    reason: z
+      .string()
+      .trim()
+      .min(1, "Say why, e.g. repairs or staff use")
+      .max(200, "Keep the reason under 200 characters"),
+  })
+  .refine((d) => !d.firstNight || !d.lastNight || d.lastNight >= d.firstNight, {
+    path: ["lastNight"],
+    message: "The last night cannot be before the first",
+  });
+
+export type BlockNightsData = z.input<typeof blockNightsSchema>;

@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDaysIcon, SearchIcon } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BookingStatusBadge } from "@/components/campground/booking-status";
 import { Button } from "@/components/ui/button";
@@ -89,14 +90,10 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
   }, [bookings, today, view, query]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Campsite bookings</h1>
-        <p className="text-muted-foreground">
-          Every online booking. Cancelling, refunds and phone bookings are
-          coming; for now, refunds are made in the Stripe dashboard.
-        </p>
-      </div>
+    <section className="space-y-4" aria-labelledby="bookings-list-heading">
+      <h2 id="bookings-list-heading" className="text-lg font-semibold">
+        All bookings
+      </h2>
 
       <div className="flex flex-wrap items-center gap-4">
         <ButtonGroup aria-label="Show bookings">
@@ -162,14 +159,24 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
                 {visible.map((b) => (
                   <TableRow key={b.id}>
                     <TableCell className="whitespace-nowrap">
-                      <div className="font-medium">
+                      <Link
+                        href={`/admin/campground/bookings/${b.id}`}
+                        className="font-medium underline-offset-4 hover:underline"
+                      >
                         {formatStayRange(b.checkIn, b.checkOut)}
-                      </div>
+                      </Link>
                       <div className="text-xs text-muted-foreground">
                         {nightsLabel(daysUntil(b.checkOut, b.checkIn))}
                       </div>
                     </TableCell>
-                    <TableCell>{b.site.name}</TableCell>
+                    <TableCell>
+                      {b.site.name}
+                      {b.source === "admin" && (
+                        <div className="text-xs text-muted-foreground">
+                          Phone booking
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="font-medium">{b.guestName}</div>
                       <div className="text-xs text-muted-foreground">
@@ -209,6 +216,6 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
           </CardContent>
         </Card>
       )}
-    </div>
+    </section>
   );
 }

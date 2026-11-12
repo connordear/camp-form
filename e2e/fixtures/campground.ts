@@ -107,3 +107,80 @@ export async function restoreSettings(row: SettingsRow | undefined) {
     .values(row)
     .onConflictDoUpdate({ target: schema.campgroundSettings.id, set: values });
 }
+
+type BookingRow = typeof schema.bookings.$inferSelect;
+
+/**
+ * A confirmed booking paid by card, as if a guest had gone through checkout.
+ * The payment is a real Stripe test charge made server side (no checkout
+ * page, so no captcha), so cancelling it makes a real Stripe refund.
+ */
+export async function createPaidBooking(input: {
+  siteId: string;
+  checkIn: string;
+  checkOut: string;
+  pricePaid: number;
+  guestName?: string;
+  userId?: string | null;
+  tiers?: Array<{ minDaysBefore: number; refundPercent: number }>;
+}): Promise<BookingRow> {
+  const { stripe } = await import("@/lib/stripe");
+  const { nightsBetween } = await import("@/lib/campground/dates");
+  const intent = await stripe.paymentIntents.create({
+    amount: input.pricePaid,
+    currency: "cad",
+    payment_method: "pm_card_visa",
+    confirm: true,
+    automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+    metadata: { kind: "campsite_booking", e2e: "true" },
+  });
+  const nights = nightsBetween(input.checkIn, input.checkOut);
+  const [booking] = await db
+    .insert(schema.bookings)
+    .values({
+      siteId: input.siteId,
+      userId: input.userId ?? null,
+      guestName: input.guestName ?? "Card Guest",
+      guestEmail: null,
+      guestPhone: "780-555-0199",
+      partySize: 2,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      status: "confirmed",
+      source: "online",
+      subtotal: input.pricePaid,
+      pricePaid: input.pricePaid,
+      stripePaymentIntentId: intent.id,
+      cancellationTiers: input.tiers ?? [
+        { minDaysBefore: 7, refundPercent: 100 },
+        { minDaysBefore: 1, refundPercent: 50 },
+      ],
+    })
+    .returning();
+  await db.insert(schema.bookingNights).values(
+    nights.map((night) => ({
+      siteId: input.siteId,
+      night,
+      bookingId: booking.id,
+      price: Math.round(input.pricePaid / nights.length),
+    })),
+  );
+  return booking;
+}
+
+export async function getBooking(id: string) {
+  const [row] = await db
+    .select()
+    .from(schema.bookings)
+    .where(eq(schema.bookings.id, id));
+  return row;
+}
+
+export async function setCancellationTiers(
+  tiers: Array<{ minDaysBefore: number; refundPercent: number }>,
+) {
+  await db
+    .update(schema.campgroundSettings)
+    .set({ cancellationTiers: tiers })
+    .where(eq(schema.campgroundSettings.id, "default"));
+}

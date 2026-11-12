@@ -177,6 +177,25 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
         </div>
       )}
 
+      {booking.status === "cancelled" && (
+        <div className="flex gap-3 items-start rounded-lg border p-4">
+          <CircleAlertIcon className="size-5 shrink-0 mt-0.5" aria-hidden />
+          <div className="text-sm space-y-1">
+            <p className="font-medium">This booking was cancelled.</p>
+            <p>
+              {!booking.refundAmount
+                ? "No refund was due under the cancellation policy."
+                : booking.stripeRefundId
+                  ? `We've refunded ${formatCents(booking.refundAmount)} to your card. It usually takes 5 to 10 business days to appear.`
+                  : `You're owed a refund of ${formatCents(booking.refundAmount)}. The camp office will arrange it with you.`}
+            </p>
+            <Link href={retryHref} className="underline">
+              See sites for these dates
+            </Link>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl flex flex-wrap items-center gap-2">

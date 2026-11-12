@@ -11,6 +11,8 @@ import {
   refundSchedule,
 } from "@/lib/campground/policy";
 import {
+  generateBookingCancelledEmailHtml,
+  generateBookingCancelledEmailText,
   generateBookingConfirmedEmailHtml,
   generateBookingConfirmedEmailText,
   generateBookingUnavailableEmailHtml,
@@ -48,7 +50,10 @@ export async function sendBookingConfirmedEmail(booking: BookingWithSite) {
           ],
       ),
       policyText: settings.policyText,
-      bookingUrl: `${getBaseUrl()}/campground/bookings/${booking.id}`,
+      // Phone bookings for guests without an account have no page to visit.
+      bookingUrl: booking.userId
+        ? `${getBaseUrl()}/campground/bookings/${booking.id}`
+        : null,
     };
     await sendEmail({
       to: booking.guestEmail,
@@ -82,5 +87,29 @@ export async function sendBookingUnavailableEmail(booking: BookingWithSite) {
       `Failed to send unavailable notice for booking ${booking.id}`,
       err,
     );
+  }
+}
+
+export async function sendBookingCancelledEmail(booking: BookingWithSite) {
+  if (!booking.guestEmail) return;
+  try {
+    const refund = booking.refundAmount ?? 0;
+    const details = {
+      guestName: booking.guestName,
+      siteName: booking.site.name,
+      stay: formatStayRange(booking.checkIn, booking.checkOut),
+      refundAmount: formatCents(refund),
+      hasRefund: refund > 0,
+      refundToCard: booking.stripeRefundId !== null,
+      campgroundUrl: `${getBaseUrl()}/campground`,
+    };
+    await sendEmail({
+      to: booking.guestEmail,
+      subject: `Booking cancelled: ${booking.site.name}, ${details.stay}`,
+      text: generateBookingCancelledEmailText(details),
+      html: generateBookingCancelledEmailHtml(details),
+    });
+  } catch (err) {
+    console.error(`Failed to send cancellation for booking ${booking.id}`, err);
   }
 }

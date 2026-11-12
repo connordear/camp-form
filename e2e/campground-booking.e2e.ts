@@ -283,7 +283,11 @@ test.describe("admin", () => {
     await expect(
       page.getByRole("heading", { name: "Campsite bookings" }),
     ).toBeVisible();
-    const row = page.getByRole("row").filter({ hasText: SITE_NAME });
+    // The list, not the month grid above it.
+    const row = page
+      .getByRole("region", { name: "All bookings" })
+      .getByRole("row")
+      .filter({ hasText: SITE_NAME });
     await expect(row).toContainText("Awaiting payment");
     await expect(row).toContainText("780-555-0123");
     await expect(row).toContainText("Bringing a canoe");
