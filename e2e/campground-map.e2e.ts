@@ -83,9 +83,10 @@ test.describe("admin", () => {
 });
 
 test.describe("guest", () => {
-  test("map markers show availability and select the site in the list", async ({
+  test("markers show availability and select rows, and rows select markers", async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
     const free = await createE2ESite({
       name: SITE_NAME,
       features: ["power", "water"],
@@ -106,36 +107,94 @@ test.describe("guest", () => {
     // Not placed: in the list, not on the map.
     await createE2ESite({ name: `${E2E_SITE_PREFIX} Map 43` });
 
-    // Before dates: neutral markers.
+    // Before dates: neutral markers, with the price, and a hint.
     await page.goto("/campground");
     await expect(
-      page.getByRole("button", { name: `${SITE_NAME}, power, water`, exact: true }),
+      page.getByRole("button", {
+        name: `${SITE_NAME}, $40.00 a night, power, water`,
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: new RegExp(`^${E2E_SITE_PREFIX} Map 43`) }),
+      page.getByRole("button", {
+        name: new RegExp(`^${E2E_SITE_PREFIX} Map 43`),
+      }),
     ).toHaveCount(0);
+    await expect(page.getByText("Pick dates to see availability")).toBeVisible();
 
     await page.goto(`/campground?checkIn=${checkIn}&checkOut=${checkOut}`);
     const freeMarker = page.getByRole("button", {
-      name: `${SITE_NAME}, power, water, available`,
+      name: `${SITE_NAME}, $40.00 a night, power, water, available`,
     });
     await expect(freeMarker).toBeVisible();
+    // Booked: drawn, but not something to click.
     await expect(
-      page.getByRole("button", {
-        name: `${E2E_SITE_PREFIX} Map 42, not available`,
+      page.getByRole("img", {
+        name: `${E2E_SITE_PREFIX} Map 42, $40.00 a night, not available`,
       }),
     ).toBeVisible();
 
-    // Choosing a marker jumps to and highlights that site's row.
+    // Hovering a row highlights its marker, and the other way round.
+    const row = page.locator(`#site-${free.id}`);
+    await row.hover();
+    await expect(freeMarker).toHaveClass(/ring-amber-300/);
+    await freeMarker.hover();
+    await expect(row).toHaveAttribute("data-highlighted", "true");
+
+    // Choosing a marker highlights its row; the page doesn't move.
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await freeMarker.click();
-    await expect(page).toHaveURL(new RegExp(`#site-${free.id}$`));
     await expect(freeMarker).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(`#site-${free.id}`)).toBeInViewport();
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    await expect(row).toBeInViewport();
+    await expect(row).toHaveAttribute("data-highlighted", "true");
     await expect(
-      page.locator(`#site-${free.id}`).getByRole("link", {
-        name: `Book ${SITE_NAME}`,
+      row.getByRole("link", { name: `Book ${SITE_NAME}` }),
+    ).toBeVisible();
+    expect(page.url()).not.toContain("#");
+
+    // Escape clears it.
+    await page.keyboard.press("Escape");
+    await expect(freeMarker).toHaveAttribute("aria-pressed", "false");
+
+    // Clicking anywhere on a row selects its marker.
+    await row.click({ position: { x: 40, y: 60 } });
+    await expect(freeMarker).toHaveAttribute("aria-pressed", "true");
+
+    // Filtering dims the markers that don't match instead of removing them.
+    await page.goto(
+      `/campground?checkIn=${checkIn}&checkOut=${checkOut}&features=power`,
+    );
+    await expect(
+      page.getByRole("img", {
+        name: /^E2E.* Map 42, .*doesn't match your filters$/,
       }),
     ).toBeVisible();
+  });
+
+  test("phones switch between list and map, with a sheet for the site", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await createE2ESite({
+      name: SITE_NAME,
+      features: ["power"],
+      mapX: 30,
+      mapY: 40,
+    });
+    await page.goto(`/campground?checkIn=${checkIn}&checkOut=${checkOut}`);
+
+    await page.getByRole("button", { name: `Show ${SITE_NAME} on the map` }).click();
+    const sheet = page.getByRole("region", { name: `${SITE_NAME} details` });
+    await expect(sheet).toBeVisible();
+    await expect(
+      sheet.getByRole("link", { name: `Book ${SITE_NAME}` }),
+    ).toBeVisible();
+    await sheet.getByRole("button", { name: "Close" }).click();
+    await expect(sheet).toHaveCount(0);
+
+    await page.getByRole("button", { name: "List" }).click();
+    await expect(page.locator("[data-site-id]").first()).toBeVisible();
   });
 });
 

@@ -49,7 +49,13 @@ export function MapPlacement({ sites }: { sites: Campsite[] }) {
   };
 
   const selected = sites.find((s) => s.id === selectedId);
-  const mapSites = sites.map((s) => ({ ...s, ...positions[s.id] }));
+  // Only what the map needs: the admin markers are named without the price.
+  const mapSites = sites.map(({ id, name, features, mapX, mapY }) => ({
+    id,
+    name,
+    features,
+    ...(positions[id] ?? { mapX, mapY }),
+  }));
   const unplacedCount = sites.filter(
     (s) => positions[s.id]?.mapX === null,
   ).length;

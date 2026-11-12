@@ -19,6 +19,8 @@ interface FeatureIconsProps {
    * "compact": icons only, each with a tooltip and a screen-reader label.
    */
   variant?: "labelled" | "compact";
+  /** Text size for "labelled"; "xs" for tight spots like map cards. */
+  size?: "sm" | "xs";
   className?: string;
 }
 
@@ -29,6 +31,7 @@ interface FeatureIconsProps {
 export function FeatureIcons({
   features,
   variant = "labelled",
+  size = "sm",
   className,
 }: FeatureIconsProps) {
   const ordered = CAMPSITE_FEATURES.filter((f) => features.includes(f));
@@ -68,7 +71,11 @@ export function FeatureIcons({
 
   return (
     <ul
-      className={cn("flex flex-wrap items-center gap-x-3 gap-y-1", className)}
+      className={cn(
+        "flex flex-wrap items-center gap-y-1",
+        size === "xs" ? "gap-x-2.5" : "gap-x-3",
+        className,
+      )}
       aria-label="Features"
     >
       {ordered.map((feature) => {
@@ -76,9 +83,15 @@ export function FeatureIcons({
         return (
           <li
             key={feature}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground"
+            className={cn(
+              "inline-flex items-center gap-1 text-muted-foreground",
+              size === "xs" ? "text-xs" : "text-sm",
+            )}
           >
-            <Icon className="size-4" aria-hidden />
+            <Icon
+              className={size === "xs" ? "size-3.5" : "size-4"}
+              aria-hidden
+            />
             {CAMPSITE_FEATURE_LABELS[feature]}
           </li>
         );

@@ -1,11 +1,6 @@
-import { CircleAlertIcon, TentIcon } from "lucide-react";
+import { CircleAlertIcon } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { FeatureIcons } from "@/components/campground/feature-icons";
 import { PolicyTable } from "@/components/campground/policy-table";
-import type { MarkerState } from "@/components/campground/site-map";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,10 +12,8 @@ import {
   formatClockTime,
   formatStayRange,
   nightsLabel,
-  stayCost,
 } from "@/lib/campground/booking";
 import { campgroundToday, formatDisplayDate } from "@/lib/campground/dates";
-import { formatCents } from "@/lib/campground/money";
 import { validateStay } from "@/lib/campground/policy";
 import {
   getAvailability,
@@ -30,14 +23,12 @@ import {
   getActiveSites,
   getCampgroundSettings,
 } from "@/lib/services/campground-service";
-import { CampgroundMap } from "./components/campground-map";
 import { CampgroundSearch } from "./components/campground-search";
+import { type BrowserRow, SiteBrowser } from "./components/site-browser";
 import {
-  campgroundHref,
   firstSelectableDate,
   lastSelectableDate,
   parseCampgroundSearch,
-  siteRowId,
 } from "./search-params";
 
 export const metadata: Metadata = { title: "Campground booking" };
@@ -80,25 +71,29 @@ export default async function CampgroundPage({ searchParams }: PageProps) {
   const visible = rows.filter((r) =>
     search.features.every((f) => r.site.features.includes(f)),
   );
-  const markerStates: Record<string, MarkerState> = Object.fromEntries(
-    visible.map((r) => [
-      r.site.id,
-      !r.checked
-        ? "neutral"
-        : r.takenNights.length === 0
-          ? "available"
-          : "unavailable",
-    ]),
-  );
-  const mappedCount = visible.filter(
-    (r) => r.site.mapX !== null && r.site.mapY !== null,
-  ).length;
   const availableCount = visible.filter(
     (r) => r.checked && r.takenNights.length === 0,
   ).length;
+  const browserRows: BrowserRow[] = rows.map(
+    ({ site, takenNights, checked }) => ({
+      site: {
+        id: site.id,
+        name: site.name,
+        features: site.features,
+        description: site.description,
+        maxOccupancy: site.maxOccupancy,
+        nightlyRate: site.nightlyRate,
+        mapX: site.mapX,
+        mapY: site.mapY,
+      },
+      takenNights,
+      checked,
+      matches: search.features.every((f) => site.features.includes(f)),
+    }),
+  );
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8 space-y-6">
+    <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Book a campsite</h1>
         <p className="text-muted-foreground">
@@ -159,107 +154,14 @@ export default async function CampgroundPage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        {mappedCount > 0 && (
-          <CampgroundMap
-            sites={visible.map((r) => r.site)}
-            states={markerStates}
-            hasDates={nights !== null && settings.isBookingOpen}
-          />
-        )}
-
-        {visible.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center py-10 text-center">
-              <TentIcon
-                className="size-10 text-muted-foreground mb-3"
-                aria-hidden
-              />
-              <p className="text-muted-foreground">
-                {rows.length === 0
-                  ? "No sites are listed yet."
-                  : "No sites have all of those features. Try removing a filter."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <ul className="space-y-3">
-            {visible.map(({ site, takenNights, checked }) => {
-              const available = checked && takenNights.length === 0;
-              return (
-                <li
-                  key={site.id}
-                  id={siteRowId(site.id)}
-                  data-site-id={site.id}
-                  tabIndex={-1}
-                  className="scroll-mt-24 rounded-xl outline-none target:ring-4 target:ring-amber-400"
-                >
-                  <Card
-                    className={checked && !available ? "opacity-70" : undefined}
-                  >
-                    <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
-                      <div className="space-y-1.5">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {site.name}
-                          {checked &&
-                            (available ? (
-                              <Badge className="bg-green-600 text-white">
-                                Available
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">
-                                {takenNights.length === nights
-                                  ? "Booked"
-                                  : `Booked ${takenNights.length} of ${nights} nights`}
-                              </Badge>
-                            ))}
-                        </CardTitle>
-                        <FeatureIcons features={site.features} />
-                        {site.description && (
-                          <CardDescription>{site.description}</CardDescription>
-                        )}
-                        <p className="text-sm text-muted-foreground">
-                          Up to {site.maxOccupancy}{" "}
-                          {site.maxOccupancy === 1 ? "person" : "people"}
-                        </p>
-                      </div>
-                      <div className="text-right space-y-2">
-                        <p>
-                          <span className="font-semibold">
-                            {formatCents(site.nightlyRate)}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {" "}
-                            / night
-                          </span>
-                        </p>
-                        {nights !== null && (
-                          <p className="text-sm text-muted-foreground">
-                            {formatCents(stayCost(site.nightlyRate, nights))}{" "}
-                            for {nightsLabel(nights)}, plus tax
-                          </p>
-                        )}
-                        {available && (
-                          <Button asChild>
-                            <Link
-                              href={campgroundHref("/campground/book", {
-                                site: site.id,
-                                checkIn: search.checkIn,
-                                checkOut: search.checkOut,
-                              })}
-                              aria-label={`Book ${site.name}`}
-                            >
-                              Book
-                            </Link>
-                          </Button>
-                        )}
-                      </div>
-                    </CardHeader>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <SiteBrowser
+          rows={browserRows}
+          nights={nights}
+          checkIn={search.checkIn}
+          checkOut={search.checkOut}
+          needsDates={settings.isBookingOpen && nights === null}
+          filteredOut={rows.length > 0}
+        />
       </section>
 
       <Card>
