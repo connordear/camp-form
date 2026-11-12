@@ -61,16 +61,20 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
+          <NavigationMenuItem className="hidden sm:block">
+            <NavigationMenuLink asChild>
+              <Link href="/registration/overview">Summer Camp</Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="hidden sm:block">
+            <NavigationMenuLink asChild>
+              <Link href="/campground">Campground</Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
       <div className="flex gap-4 items-center">
         <ThemeToggle />
-        <Link href="/registration/overview" className="hidden sm:inline">
-          Summer camp
-        </Link>
-        <Link href="/campground" className="hidden sm:inline">
-          Campground
-        </Link>
         {showAdminLink && <Link href="/admin">Admin</Link>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -20,7 +20,7 @@ export default function NavSignedOut() {
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
-              <Link href="/registration/overview">Summer camp</Link>
+              <Link href="/registration/overview">Summer Camp</Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
