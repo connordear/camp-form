@@ -20,6 +20,7 @@
     "db:seed:users": "bun run ./src/lib/data/seed-users.ts",
     "db:seed:campground": "bun run ./src/lib/data/seed-campground.ts",
     "db:seed:bookings": "bun run ./src/lib/data/seed-campground-bookings.ts",
+    "db:seed:bookings:many": "bun run ./src/lib/data/seed-campground-bookings.ts --many",
     "db:up": "bun run db:generate && bun run db:migrate",
     "db:nuke": "bun ./src/lib/data/reset-db.ts",
     "db:reset": "bun ./src/lib/data/reset-db.ts && bun run db:migrate && bun run db:seed && bun run db:seed:users",

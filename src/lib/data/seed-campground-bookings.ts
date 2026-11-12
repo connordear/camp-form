@@ -3,6 +3,10 @@
 // Re-running replaces the bookings and blocked nights this script made before
 // (marked with SEED_MARKER) and leaves everything else alone. Online bookings
 // get a real Stripe *test mode* payment, so refunds work from the admin panel.
+//
+// `--many` also adds a few hundred generated bookings, enough to page every
+// tab of the admin bookings list. Those are paid offline (no Stripe calls), so
+// cancelling one only records the refund.
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   addDays,
@@ -262,7 +266,184 @@ async function createTestPayment(amount: number): Promise<string | null> {
   }
 }
 
-async function seedCampgroundBookings() {
+/** Same bookings on every run, so the list looks the same each time. */
+function seededRandom(seed: number) {
+  let state = seed;
+  return () => {
+    state = (state * 1_103_515_245 + 12_345) % 2_147_483_648;
+    return state / 2_147_483_648;
+  };
+}
+
+const FIRST_NAMES = [
+  "Ada",
+  "Ben",
+  "Cara",
+  "Dev",
+  "Ella",
+  "Finn",
+  "Gwen",
+  "Hugo",
+  "Iris",
+  "Jon",
+  "Kira",
+  "Leo",
+  "Maya",
+  "Nate",
+  "Opal",
+  "Paul",
+  "Quinn",
+  "Rosa",
+  "Sam",
+  "Tess",
+];
+const LAST_NAMES = [
+  "Armstrong",
+  "Bergen",
+  "Cardinal",
+  "Doerksen",
+  "Enns",
+  "Fehr",
+  "Gagnon",
+  "Hiebert",
+  "Isaac",
+  "Janzen",
+  "Kroeker",
+  "Loewen",
+  "Martens",
+  "Nickel",
+  "Olfert",
+  "Peters",
+  "Quiring",
+  "Rempel",
+  "Sawatzky",
+  "Toews",
+];
+
+type Site = typeof schema.campsites.$inferSelect;
+
+/**
+ * Lots of bookings for trying the admin list's paging: back-to-back stays on
+ * every site from 90 days ago to 90 days ahead, plus cancellations and
+ * abandoned checkouts, which hold no nights. Nights that are already taken
+ * are skipped.
+ */
+async function seedManyBookings(sites: Site[], today: string, now: Date) {
+  const random = seededRandom(20_260_701);
+  const pick = <T>(list: T[]) => list[Math.floor(random() * list.length)];
+  const guest = () => `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+
+  const taken = new Set(
+    (
+      await db
+        .select({
+          siteId: schema.bookingNights.siteId,
+          night: schema.bookingNights.night,
+        })
+        .from(schema.bookingNights)
+    ).map((n) => `${n.siteId}|${n.night}`),
+  );
+
+  type Row = typeof schema.bookings.$inferInsert;
+  const rows: Array<{ booking: Row; site: Site; nights: string[] }> = [];
+  const add = (
+    site: Site,
+    from: number,
+    nightCount: number,
+    status: Plan["status"],
+  ) => {
+    const checkIn = addDays(today, from);
+    const checkOut = addDays(checkIn, nightCount);
+    const nights = nightsBetween(checkIn, checkOut);
+    const holds = status === "confirmed";
+    if (holds && nights.some((n) => taken.has(`${site.id}|${n}`))) return;
+    if (holds) for (const n of nights) taken.add(`${site.id}|${n}`);
+
+    const name = guest();
+    const subtotal = site.nightlyRate * nightCount;
+    const pricePaid =
+      status === "expired" ? null : Math.round(subtotal * (1 + GST));
+    const created = new Date(
+      now.getTime() -
+        Math.max(1, 30 - from + Math.floor(random() * 20)) * 86_400_000,
+    );
+    rows.push({
+      site,
+      nights: holds ? nights : [],
+      booking: {
+        siteId: site.id,
+        userId: null,
+        guestName: name,
+        guestEmail: emailFor(`${name} ${rows.length}`),
+        guestPhone: `780-555-${String(2000 + rows.length).slice(-4)}`,
+        partySize: Math.min(1 + Math.floor(random() * 6), site.maxOccupancy),
+        notes: random() < 0.15 ? "Bringing a dog." : null,
+        adminNotes: SEED_MARKER,
+        checkIn,
+        checkOut,
+        status,
+        source: status === "expired" ? "online" : "admin",
+        holdExpiresAt: null,
+        subtotal,
+        pricePaid,
+        paidOffline: status !== "expired",
+        cancellationTiers: TIERS,
+        cancelledAt:
+          status === "cancelled"
+            ? new Date(created.getTime() + 86_400_000)
+            : null,
+        cancelledBy:
+          status === "cancelled" ? (random() < 0.5 ? "guest" : "admin") : null,
+        refundAmount:
+          status === "cancelled" && pricePaid
+            ? Math.round(pricePaid * pick([0, 0.5, 1]))
+            : null,
+        createdAt: created,
+        updatedAt: created,
+      },
+    });
+  };
+
+  for (const site of sites.filter((s) => s.isActive)) {
+    let day = -90 + Math.floor(random() * 4);
+    while (day < 90) {
+      const nightCount = 1 + Math.floor(random() * 4);
+      add(site, day, nightCount, "confirmed");
+      day += nightCount + Math.floor(random() * 5);
+    }
+  }
+  for (let i = 0; i < 70; i++) {
+    const from = Math.floor(random() * 180) - 90;
+    add(pick(sites), from, 1 + Math.floor(random() * 4), "cancelled");
+    add(pick(sites), from, 1 + Math.floor(random() * 4), "expired");
+  }
+
+  await db.transaction(async (tx) => {
+    const ids = await tx
+      .insert(schema.bookings)
+      .values(rows.map((r) => r.booking))
+      .returning({ id: schema.bookings.id });
+    const nights = rows.flatMap((r, i) =>
+      r.nights.map((night) => ({
+        siteId: r.site.id,
+        night,
+        bookingId: ids[i].id,
+        price: r.site.nightlyRate,
+      })),
+    );
+    for (let i = 0; i < nights.length; i += 1000) {
+      await tx.insert(schema.bookingNights).values(nights.slice(i, i + 1000));
+    }
+  });
+
+  const count = (status: Plan["status"]) =>
+    rows.filter((r) => r.booking.status === status).length;
+  console.log(
+    `   ✅ Added ${rows.length} generated bookings: ${count("confirmed")} stays, ${count("cancelled")} cancelled, ${count("expired")} expired holds`,
+  );
+}
+
+async function seedCampgroundBookings({ many = false } = {}) {
   await seedCampground();
 
   const sites = await db
@@ -429,6 +610,8 @@ async function seedCampgroundBookings() {
   console.log(
     `   ✅ Created ${made} sample bookings${skipped ? ` (${skipped} skipped, site already taken)` : ""} and ${blocked} blocked nights`,
   );
+
+  if (many) await seedManyBookings(sites, today, now);
 }
 
 /** Seeded guests get a placeholder address, which also marks them as seeded. */
@@ -437,7 +620,7 @@ function emailFor(name: string): string {
 }
 
 if (import.meta.main) {
-  seedCampgroundBookings()
+  seedCampgroundBookings({ many: process.argv.includes("--many") })
     .then(() => process.exit(0))
     .catch((err) => {
       console.error("❌ Seeding sample bookings failed:", err);
