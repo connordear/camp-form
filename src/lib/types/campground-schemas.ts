@@ -1,3 +1,14 @@
+import {
+  ArrowRightLeft,
+  Droplet,
+  FlameKindling,
+  type LucideIcon,
+  PlugZap,
+  Toilet,
+  Trees,
+  Utensils,
+  Waves,
+} from "lucide-react";
 import { z } from "zod";
 import { isDateString } from "@/lib/campground/dates";
 import { validateTiers } from "@/lib/campground/policy";
@@ -12,6 +23,18 @@ export const CAMPSITE_FEATURE_LABELS: Record<CampsiteFeature, string> = {
   pull_through: "Pull-through",
   shade: "Shade",
   waterfront: "Waterfront",
+};
+
+// Lucide has no picnic table icon, so Utensils stands in for it.
+export const CAMPSITE_FEATURE_ICONS: Record<CampsiteFeature, LucideIcon> = {
+  power: PlugZap,
+  water: Droplet,
+  sewer: Toilet,
+  fire_pit: FlameKindling,
+  picnic_table: Utensils,
+  pull_through: ArrowRightLeft,
+  shade: Trees,
+  waterfront: Waves,
 };
 
 export const campsiteFormSchema = z.object({
@@ -103,3 +126,43 @@ export const campgroundSettingsFormSchema = z
 export type CampgroundSettingsFormData = z.infer<
   typeof campgroundSettingsFormSchema
 >;
+
+// Guest details for a new online booking. Stay and party-size rules that
+// depend on settings or the site are checked by createHold.
+export const bookingGuestSchema = z.object({
+  guestName: z
+    .string()
+    .trim()
+    .min(1, "Enter the name the booking is under")
+    .max(100, "Keep the name under 100 characters"),
+  guestPhone: z
+    .string()
+    .trim()
+    .regex(
+      /^[+()\-.\s\d]{7,25}$/,
+      "Enter a phone number we can reach you at, e.g. 780-555-0123",
+    )
+    .refine(
+      (v) => v.replace(/\D/g, "").length >= 7,
+      "Enter a phone number we can reach you at, e.g. 780-555-0123",
+    ),
+  partySize: z
+    .number({ error: "Enter the number of people" })
+    .int("Must be a whole number")
+    .min(1, "At least 1 person"),
+  notes: z
+    .string()
+    .trim()
+    .max(1000, "Keep notes under 1000 characters")
+    .nullable()
+    .transform((v) => (v ? v : null)),
+});
+
+export const bookingRequestSchema = bookingGuestSchema.extend({
+  siteId: z.string().min(1),
+  checkIn: dateString,
+  checkOut: dateString,
+});
+
+export type BookingGuestData = z.input<typeof bookingGuestSchema>;
+export type BookingRequestData = z.input<typeof bookingRequestSchema>;

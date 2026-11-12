@@ -3,7 +3,7 @@
 import { MapPinIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { FeatureIcons } from "@/components/campground/feature-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table";
 import { formatCents } from "@/lib/campground/money";
 import type { Campsite } from "@/lib/services/campground-service";
-import { CAMPSITE_FEATURE_LABELS } from "@/lib/types/campground-schemas";
 import { setSiteActive } from "../actions";
 import { SiteActionsMenu } from "./site-actions-menu";
 import { SiteDialog } from "./site-dialog";
@@ -79,8 +78,8 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
         <div>
           <h1 className="text-2xl font-bold">Campsites</h1>
           <p className="text-muted-foreground">
-            Sites, features and nightly rates. Deactivated sites cannot be booked
-            but keep their existing bookings.
+            Sites, features and nightly rates. Deactivated sites cannot be
+            booked but keep their existing bookings.
           </p>
         </div>
         {addButton}
@@ -132,13 +131,10 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
                         {site.features.length === 0 ? (
                           <span className="text-muted-foreground">None</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {site.features.map((feature) => (
-                              <Badge key={feature} variant="secondary">
-                                {CAMPSITE_FEATURE_LABELS[feature]}
-                              </Badge>
-                            ))}
-                          </div>
+                          <FeatureIcons
+                            features={site.features}
+                            variant="compact"
+                          />
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">

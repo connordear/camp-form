@@ -1,6 +1,6 @@
 import Link from "next/link";
+import CheckoutForm from "@/components/stripe/embedded-checkout-form";
 import { fetchClientSecret } from "./actions";
-import CheckoutForm from "./checkout-form";
 
 type PaymentPageProps = {
   searchParams: Promise<{ ids?: string; applied?: string }>;

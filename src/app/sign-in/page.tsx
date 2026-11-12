@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +16,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { siteConfig } from "@/config/site";
 import { authClient } from "@/lib/auth-client";
+import { authPathWithRedirect, getSafeRedirect } from "@/lib/redirect";
 
+// useSearchParams needs a Suspense boundary on a statically rendered page.
 export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
+  );
+}
+
+function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,6 +36,8 @@ export default function SignInPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState(false);
   const router = useRouter();
+  const redirectParam = useSearchParams().get("redirect");
+  const destination = getSafeRedirect(redirectParam);
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
@@ -41,7 +53,7 @@ export default function SignInPage() {
       const { error } = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/registration/overview",
+        callbackURL: destination,
       });
 
       if (error) {
@@ -51,7 +63,7 @@ export default function SignInPage() {
           setError(error.message || "Failed to sign in");
         }
       } else {
-        router.push("/registration/overview");
+        router.push(destination);
         router.refresh();
       }
     } catch (err) {
@@ -65,7 +77,7 @@ export default function SignInPage() {
     setIsLoading(true);
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/registration/overview",
+      callbackURL: destination,
     });
   };
 
@@ -141,7 +153,7 @@ export default function SignInPage() {
                   onClick={async () => {
                     await authClient.sendVerificationEmail({
                       email: unverifiedEmail,
-                      callbackURL: "/registration/overview",
+                      callbackURL: destination,
                     });
                     setResendSuccess(true);
                   }}
@@ -218,7 +230,10 @@ export default function SignInPage() {
 
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link href="/sign-up" className="underline hover:text-primary">
+              <Link
+                href={authPathWithRedirect("/sign-up", redirectParam)}
+                className="underline hover:text-primary"
+              >
                 Sign up
               </Link>
             </p>

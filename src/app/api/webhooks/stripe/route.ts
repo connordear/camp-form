@@ -4,10 +4,12 @@ import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/data/db";
 import { registrations } from "@/lib/data/schema";
+import { completeBookingCheckout } from "@/lib/services/booking-checkout";
+import {
+  CAMPSITE_BOOKING_KIND,
+  expireBookingFromSession,
+} from "@/lib/services/booking-service";
 import { stripe } from "@/lib/stripe";
-
-/** Checkout sessions created for campsite bookings carry this metadata kind. */
-const CAMPSITE_BOOKING_KIND = "campsite_booking";
 
 function isCampsiteBookingSession(session: Stripe.Checkout.Session): boolean {
   return session.metadata?.kind === CAMPSITE_BOOKING_KIND;
@@ -32,10 +34,8 @@ export async function POST(req: Request) {
     case "checkout.session.completed": {
       const session = event.data.object;
       if (isCampsiteBookingSession(session)) {
-        // TODO(Phase 2): confirm the campsite booking.
-        console.warn(
-          `Campsite booking checkout completed but not yet handled: ${session.metadata?.bookingId}`,
-        );
+        await completeBookingCheckout(session);
+        revalidatePath("/campground");
       } else {
         await handleRegistrationCheckoutCompleted(session);
       }
@@ -45,10 +45,8 @@ export async function POST(req: Request) {
     case "checkout.session.expired": {
       const session = event.data.object;
       if (isCampsiteBookingSession(session)) {
-        // TODO(Phase 2): release the campsite booking hold.
-        console.warn(
-          `Campsite booking checkout expired but not yet handled: ${session.metadata?.bookingId}`,
-        );
+        await expireBookingFromSession(session);
+        revalidatePath("/campground");
       }
       // Registration checkouts: nothing to do.
       break;

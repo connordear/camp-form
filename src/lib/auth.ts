@@ -37,6 +37,8 @@ export const auth = betterAuth({
         html: generateVerificationEmailHtml(url),
       });
     },
+    // The verification link returns to the callbackURL passed on each sign-up
+    // or sign-in call (see src/lib/redirect.ts). This is only a fallback.
     callbackURL: "/registration/overview",
     autoSignInAfterVerification: true,
   },

@@ -50,3 +50,111 @@ export function generatePasswordResetEmailHtml(url: string) {
     </div>
   `;
 }
+
+/** Escape text from the database or a guest before putting it in an email. */
+export function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+export interface BookingEmailDetails {
+  guestName: string;
+  siteName: string;
+  /** e.g. "Jul 3 to 5, 2027" */
+  stay: string;
+  /** e.g. "2 nights" */
+  nights: string;
+  checkInTime: string;
+  checkOutTime: string;
+  amountPaid: string;
+  /** "When you cancel" and "Refund" pairs, already worded. */
+  refundSchedule: Array<[string, string]>;
+  policyText: string | null;
+  bookingUrl: string;
+}
+
+export function generateBookingConfirmedEmailText(d: BookingEmailDetails) {
+  return [
+    `Hi ${d.guestName},`,
+    "",
+    `Your campsite booking is confirmed: ${d.siteName}, ${d.stay} (${d.nights}).`,
+    `Check-in from ${d.checkInTime}. Check-out by ${d.checkOutTime}.`,
+    `Amount paid: ${d.amountPaid}`,
+    "",
+    "Cancellation policy:",
+    ...d.refundSchedule.map(([when, refund]) => `- ${when}: ${refund}`),
+    ...(d.policyText ? ["", d.policyText] : []),
+    "",
+    `View your booking: ${d.bookingUrl}`,
+  ].join("\n");
+}
+
+export function generateBookingConfirmedEmailHtml(d: BookingEmailDetails) {
+  const e = escapeHtml;
+  const rows = d.refundSchedule
+    .map(
+      ([when, refund]) =>
+        `<tr><td style="padding: 6px 16px 6px 0; border-top: 1px solid #eee;">${e(when)}</td><td style="padding: 6px 0; border-top: 1px solid #eee;">${e(refund)}</td></tr>`,
+    )
+    .join("");
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Your campsite is booked</h2>
+      <p>Hi ${e(d.guestName)}, thanks for booking with us. Here are your details.</p>
+      <table style="border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 4px 16px 4px 0; color: #666;">Site</td><td style="padding: 4px 0;"><strong>${e(d.siteName)}</strong></td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; color: #666;">Dates</td><td style="padding: 4px 0;">${e(d.stay)} (${e(d.nights)})</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; color: #666;">Check-in</td><td style="padding: 4px 0;">From ${e(d.checkInTime)}</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; color: #666;">Check-out</td><td style="padding: 4px 0;">By ${e(d.checkOutTime)}</td></tr>
+        <tr><td style="padding: 4px 16px 4px 0; color: #666;">Paid</td><td style="padding: 4px 0;">${e(d.amountPaid)}</td></tr>
+      </table>
+      <h3 style="margin-bottom: 4px;">Cancellation policy</h3>
+      <table style="border-collapse: collapse; font-size: 14px;">
+        <tr style="text-align: left; color: #666;"><th style="padding: 6px 16px 6px 0; font-weight: normal;">When you cancel</th><th style="padding: 6px 0; font-weight: normal;">Refund</th></tr>
+        ${rows}
+      </table>
+      ${d.policyText ? `<p style="font-size: 14px; color: #444; white-space: pre-line;">${e(d.policyText)}</p>` : ""}
+      <a href="${e(d.bookingUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">View booking</a>
+    </div>
+  `;
+}
+
+export interface BookingUnavailableEmailDetails {
+  guestName: string;
+  siteName: string;
+  stay: string;
+  refundAmount: string;
+  campgroundUrl: string;
+}
+
+export function generateBookingUnavailableEmailText(
+  d: BookingUnavailableEmailDetails,
+) {
+  return [
+    `Hi ${d.guestName},`,
+    "",
+    `We're sorry. Your payment for ${d.siteName}, ${d.stay} arrived after your hold on the site ran out, and someone else booked it in the meantime.`,
+    `We have refunded the full ${d.refundAmount}. Refunds usually take 5 to 10 business days to appear on your statement.`,
+    "",
+    `You can choose another site here: ${d.campgroundUrl}`,
+  ].join("\n");
+}
+
+export function generateBookingUnavailableEmailHtml(
+  d: BookingUnavailableEmailDetails,
+) {
+  const e = escapeHtml;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Sorry, that site was no longer available</h2>
+      <p>Hi ${e(d.guestName)},</p>
+      <p>Your payment for <strong>${e(d.siteName)}, ${e(d.stay)}</strong> arrived after your hold on the site ran out, and someone else booked it in the meantime.</p>
+      <p>We have refunded the full <strong>${e(d.refundAmount)}</strong>. Refunds usually take 5 to 10 business days to appear on your statement.</p>
+      <a href="${e(d.campgroundUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin: 16px 0;">Choose another site</a>
+    </div>
+  `;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { LogOut, User } from "lucide-react";
+import { LogOut, TentIcon, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,12 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
       </NavigationMenu>
       <div className="flex gap-4 items-center">
         <ThemeToggle />
+        <Link href="/registration/overview" className="hidden sm:inline">
+          Summer camp
+        </Link>
+        <Link href="/campground" className="hidden sm:inline">
+          Campground
+        </Link>
         {showAdminLink && <Link href="/admin">Admin</Link>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -90,6 +96,12 @@ export default function NavSignedIn({ initialSession }: NavSignedInProps) {
               <Link href="/registration/overview" className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 My Registrations
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/campground/bookings" className="cursor-pointer">
+                <TentIcon className="mr-2 h-4 w-4" />
+                My Bookings
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

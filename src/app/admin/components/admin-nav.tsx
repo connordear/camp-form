@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CalendarDaysIcon,
   MapPinIcon,
   MenuIcon,
   SettingsIcon,
@@ -77,7 +78,11 @@ const NAV_GROUPS: NavGroup[] = [
     yearScoped: false,
     adminOnly: true,
     items: [
-      // TODO(Phase 3): Bookings at /admin/campground/bookings.
+      {
+        href: "/admin/campground/bookings",
+        label: "Bookings",
+        icon: CalendarDaysIcon,
+      },
       { href: "/admin/campground/sites", label: "Sites", icon: MapPinIcon },
       {
         href: "/admin/campground/settings",
