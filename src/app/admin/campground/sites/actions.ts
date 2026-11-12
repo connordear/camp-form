@@ -154,30 +154,32 @@ export const deleteSite = adminAction(
 
 /** Put a site's marker on the map, or take it off with nulls. */
 export const setSiteMapPosition = adminAction(
-  async ({
-    id,
-    mapX,
-    mapY,
-  }: {
-    id: string;
-    mapX: number | null;
-    mapY: number | null;
-  }) => {
-    const place = mapX !== null && mapY !== null;
-    if (place && (!Number.isFinite(mapX) || !Number.isFinite(mapY))) {
-      throw new Error("Invalid map position");
-    }
-    const [site] = await db
-      .update(campsites)
-      .set({
-        mapX: place ? clampMapPercent(Number(mapX)) : null,
-        mapY: place ? clampMapPercent(Number(mapY)) : null,
-      })
-      .where(eq(campsites.id, String(id)))
-      .returning();
-    if (!site) throw new Error("Site not found");
-    revalidatePath(SITES_PATH);
-    revalidatePath("/campground", "layout");
-    return site;
-  },
+  withUserErrors(
+    async ({
+      id,
+      mapX,
+      mapY,
+    }: {
+      id: string;
+      mapX: number | null;
+      mapY: number | null;
+    }) => {
+      const place = mapX !== null && mapY !== null;
+      if (place && (!Number.isFinite(mapX) || !Number.isFinite(mapY))) {
+        throw new UserError("Invalid map position");
+      }
+      const [site] = await db
+        .update(campsites)
+        .set({
+          mapX: place ? clampMapPercent(Number(mapX)) : null,
+          mapY: place ? clampMapPercent(Number(mapY)) : null,
+        })
+        .where(eq(campsites.id, String(id)))
+        .returning();
+      if (!site) throw new UserError("Site not found");
+      revalidatePath(SITES_PATH);
+      revalidatePath("/campground", "layout");
+      return site;
+    },
+  ),
 );

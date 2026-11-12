@@ -41,7 +41,8 @@ export function MapPlacement({ sites }: { sites: Campsite[] }) {
     setPositions((p) => ({ ...p, [id]: pos }));
     saving.current = saving.current.then(async () => {
       try {
-        await setSiteMapPosition({ id, ...pos });
+        const result = await setSiteMapPosition({ id, ...pos });
+        if (!result.ok) toast.error(result.error);
       } catch {
         toast.error("Could not save the map position. Please try again.");
       }
