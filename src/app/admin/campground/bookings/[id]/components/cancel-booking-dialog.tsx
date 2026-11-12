@@ -71,11 +71,15 @@ export function CancelBookingDialog({
         toast.error(result.error);
         return;
       }
-      toast.success(
+      const message =
         amount > 0
           ? `Booking cancelled, ${formatCents(amount)} refunded`
-          : "Booking cancelled",
-      );
+          : "Booking cancelled";
+      if (result.data.emailFailed) {
+        toast.warning(`${message}, but the email to the guest failed`);
+      } else {
+        toast.success(message);
+      }
       setOpen(false);
       reset();
     });

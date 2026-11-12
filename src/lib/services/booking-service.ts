@@ -1,6 +1,7 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import type Stripe from "stripe";
 import { siteConfig } from "@/config/site";
+import { UserError } from "@/lib/action-result";
 import {
   bookingLineItemName,
   holdTimes,
@@ -36,7 +37,7 @@ export const SITE_UNAVAILABLE_MESSAGE =
   "Sorry, someone else just booked this site for some of those nights. Please pick another site or different dates.";
 
 /** A problem the guest can fix. The message is safe to show them. */
-export class BookingError extends Error {
+export class BookingError extends UserError {
   constructor(message: string) {
     super(message);
     this.name = "BookingError";
@@ -101,22 +102,25 @@ async function releaseUserPendingBookings(userId: string) {
     .where(and(eq(bookings.userId, userId), eq(bookings.status, "pending")));
 
   for (const booking of pending) {
-    if (booking.stripeSessionId) {
-      const session = await stripe.checkout.sessions.retrieve(
-        booking.stripeSessionId,
-      );
-      if (session.status === "complete") continue;
-      if (session.status === "open") {
-        try {
-          await stripe.checkout.sessions.expire(booking.stripeSessionId);
-        } catch (err) {
-          // It may have been paid a moment ago; then the webhook confirms it.
-          const latest = await stripe.checkout.sessions.retrieve(
-            booking.stripeSessionId,
-          );
-          if (latest.status === "complete") continue;
-          throw err;
-        }
+    // No session yet means another createHold for this user (a second tab or
+    // a double submit) is still opening its checkout. Releasing it now would
+    // leave that checkout paying for a released hold. If it never gets a
+    // session, its hold lapses on its own.
+    if (!booking.stripeSessionId) continue;
+    const session = await stripe.checkout.sessions.retrieve(
+      booking.stripeSessionId,
+    );
+    if (session.status === "complete") continue;
+    if (session.status === "open") {
+      try {
+        await stripe.checkout.sessions.expire(booking.stripeSessionId);
+      } catch (err) {
+        // It may have been paid a moment ago; then the webhook confirms it.
+        const latest = await stripe.checkout.sessions.retrieve(
+          booking.stripeSessionId,
+        );
+        if (latest.status === "complete") continue;
+        throw err;
       }
     }
     await expirePendingBooking(booking.id);
@@ -334,6 +338,8 @@ export async function getUserBooking(
   userId: string,
   bookingId: string,
 ): Promise<BookingWithSite | undefined> {
+  // So a lapsed hold never reads as still held.
+  await releaseExpiredHolds();
   return db.query.bookings.findFirst({
     where: and(eq(bookings.id, bookingId), eq(bookings.userId, userId)),
     with: { site: true },
@@ -343,6 +349,7 @@ export async function getUserBooking(
 export async function getUserBookings(
   userId: string,
 ): Promise<BookingWithSite[]> {
+  await releaseExpiredHolds();
   return db.query.bookings.findMany({
     where: eq(bookings.userId, userId),
     with: { site: true },
@@ -397,7 +404,11 @@ export async function confirmBookingFromSession(
     console.error(`Campsite checkout ${session.id} has no bookingId`);
     return { kind: "noop" };
   }
-  if (session.payment_status !== "paid") {
+  // A $0 stay completes with "no_payment_required" and no payment intent.
+  if (
+    session.payment_status !== "paid" &&
+    session.payment_status !== "no_payment_required"
+  ) {
     return { kind: "noop" };
   }
 
@@ -474,16 +485,22 @@ export async function confirmBookingFromSession(
     console.error(
       `CAMPSITE BOOKING RACE: booking ${bookingId} was paid after its hold expired and the site was taken. Refunding in full.`,
     );
-    if (!paymentIntentId) {
-      throw new Error(`Booking ${bookingId}: no payment intent to refund`);
+    let refund: { id: string | null; amount: number } = { id: null, amount: 0 };
+    if (amountPaid > 0) {
+      if (!paymentIntentId) {
+        throw new Error(`Booking ${bookingId}: no payment intent to refund`);
+      }
+      // Concurrent callers get the same refund back from the idempotency key.
+      const created = await stripe.refunds.create(
+        {
+          payment_intent: paymentIntentId,
+          metadata: { kind: CAMPSITE_BOOKING_KIND, bookingId },
+        },
+        { idempotencyKey: `booking-unavailable-refund-${bookingId}` },
+      );
+      refund = { id: created.id, amount: created.amount };
     }
-    const refund = await stripe.refunds.create(
-      {
-        payment_intent: paymentIntentId,
-        metadata: { kind: CAMPSITE_BOOKING_KIND, bookingId },
-      },
-      { idempotencyKey: `booking-unavailable-refund-${bookingId}` },
-    );
+    // Only one caller records the refund, and only that one reports it.
     const updated = await db
       .update(bookings)
       .set({
@@ -494,7 +511,13 @@ export async function confirmBookingFromSession(
         stripeRefundId: refund.id,
         updatedAt: new Date(),
       })
-      .where(and(eq(bookings.id, bookingId), eq(bookings.status, "expired")))
+      .where(
+        and(
+          eq(bookings.id, bookingId),
+          eq(bookings.status, "expired"),
+          isNull(bookings.refundAmount),
+        ),
+      )
       .returning({ id: bookings.id });
     if (updated.length === 0) return { kind: "noop" };
   }
@@ -538,6 +561,44 @@ export function policyRefund(
     booking.cancellationTiers,
     booking.checkIn,
     today,
+  );
+}
+
+/**
+ * Refund a cancelled booking through Stripe, once. If an earlier attempt
+ * already refunded it (and then failed to save), that refund is reused, so a
+ * retry on a later day, with a different policy amount, never refunds twice.
+ * The idempotency key covers a double submit; it includes the amount so a
+ * retry with a corrected amount is not refused by Stripe.
+ */
+async function cancellationRefund(
+  bookingId: string,
+  paymentIntentId: string,
+  amount: number,
+  by: CancelOptions["by"],
+): Promise<Stripe.Refund> {
+  const earlier = await stripe.refunds.list({
+    payment_intent: paymentIntentId,
+    limit: 100,
+  });
+  const existing = earlier.data.find(
+    (r) =>
+      r.metadata?.kind === CAMPSITE_BOOKING_KIND &&
+      r.metadata?.bookingId === bookingId &&
+      r.metadata?.cancelledBy !== undefined &&
+      r.status !== "failed" &&
+      r.status !== "canceled",
+  );
+  if (existing) return existing;
+
+  return stripe.refunds.create(
+    {
+      payment_intent: paymentIntentId,
+      amount,
+      reason: "requested_by_customer",
+      metadata: { kind: CAMPSITE_BOOKING_KIND, bookingId, cancelledBy: by },
+    },
+    { idempotencyKey: `booking-refund-${bookingId}-${amount}` },
   );
 }
 
@@ -591,15 +652,11 @@ export async function cancelBooking(
     if (!booking.stripePaymentIntentId) {
       throw new Error(`Booking ${bookingId} has no payment to refund`);
     }
-    // One refund per booking, even if the cancel is sent twice.
-    const refund = await stripe.refunds.create(
-      {
-        payment_intent: booking.stripePaymentIntentId,
-        amount,
-        reason: "requested_by_customer",
-        metadata: { kind: CAMPSITE_BOOKING_KIND, bookingId, cancelledBy: by },
-      },
-      { idempotencyKey: `booking-refund-${bookingId}` },
+    const refund = await cancellationRefund(
+      bookingId,
+      booking.stripePaymentIntentId,
+      amount,
+      by,
     );
     stripeRefundId = refund.id;
     amount = refund.amount;

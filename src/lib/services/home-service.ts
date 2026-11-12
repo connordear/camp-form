@@ -1,5 +1,4 @@
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
-import { bookingGroup } from "@/lib/campground/booking";
+import { and, asc, eq, gt, gte, inArray } from "drizzle-orm";
 import { campgroundToday } from "@/lib/campground/dates";
 import { db } from "@/lib/data/db";
 import { bookings, campers, campYears, registrations } from "@/lib/data/schema";
@@ -68,13 +67,17 @@ export type UserCampgroundStatus = {
 export async function getUserCampgroundStatus(
   userId: string,
 ): Promise<UserCampgroundStatus> {
-  const rows = await db.query.bookings.findMany({
-    where: and(eq(bookings.userId, userId), eq(bookings.status, "confirmed")),
+  const today = campgroundToday();
+  // Confirmed stays that have not ended (what bookingGroup calls "upcoming").
+  const upcoming = await db.query.bookings.findMany({
+    where: and(
+      eq(bookings.userId, userId),
+      eq(bookings.status, "confirmed"),
+      gt(bookings.checkOut, today),
+    ),
     with: { site: { columns: { name: true } } },
     orderBy: [asc(bookings.checkIn)],
   });
-  const today = campgroundToday();
-  const upcoming = rows.filter((b) => bookingGroup(b, today) === "upcoming");
   const first = upcoming[0];
   return {
     next: first

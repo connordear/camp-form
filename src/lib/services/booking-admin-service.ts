@@ -154,6 +154,8 @@ export async function createAdminBooking(
 export async function getAdminBooking(
   id: string,
 ): Promise<AdminBooking | undefined> {
+  // So a lapsed hold never reads as still held.
+  await releaseExpiredHolds();
   return db.query.bookings.findFirst({
     where: eq(bookings.id, id),
     with: {
@@ -218,8 +220,16 @@ export async function unblockNights({
   siteId,
   from,
   to,
-}: Omit<BlockInput, "reason">) {
-  checkRange(from, to);
+}: {
+  siteId: string;
+  from: string;
+  to: string;
+}) {
+  // No night limit here: the list merges back-to-back blocks into one range,
+  // which can be longer than any single block was allowed to be.
+  if (!isValidRange(from, to)) {
+    throw new BookingError("The last date must be after the first.");
+  }
   await db
     .delete(bookingNights)
     .where(

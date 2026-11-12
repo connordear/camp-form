@@ -11,11 +11,11 @@ import {
 } from "./booking";
 
 describe("holdTimes", () => {
-  test("the hold outlives the checkout session", () => {
+  test("the session clears Stripe's 30-minute minimum and the hold outlives it", () => {
     const now = new Date("2027-07-01T12:00:00Z");
     const { sessionExpiresAt, holdExpiresAt } = holdTimes(now);
-    expect(sessionExpiresAt.toISOString()).toBe("2027-07-01T12:30:00.000Z");
-    expect(holdExpiresAt.toISOString()).toBe("2027-07-01T12:35:00.000Z");
+    expect(sessionExpiresAt.toISOString()).toBe("2027-07-01T12:32:00.000Z");
+    expect(holdExpiresAt.toISOString()).toBe("2027-07-01T12:37:00.000Z");
   });
 });
 

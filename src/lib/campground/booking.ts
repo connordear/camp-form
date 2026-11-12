@@ -1,5 +1,5 @@
 // Pure booking helpers: no database, no Stripe. Unit tested.
-import { daysUntil, isDateString } from "./dates";
+import { daysUntil, isDateString, utcDateMs } from "./dates";
 
 /**
  * Stripe's shortest allowed checkout session lifetime is 30 minutes. The hold
@@ -8,6 +8,11 @@ import { daysUntil, isDateString } from "./dates";
  */
 export const CHECKOUT_SESSION_MINUTES = 30;
 export const HOLD_GRACE_MINUTES = 5;
+/**
+ * Added to the session lifetime so it is still at least 30 minutes when Stripe
+ * receives it, after the database insert and the network trip.
+ */
+const SESSION_MARGIN_MINUTES = 2;
 
 export function holdTimes(now: Date = new Date()): {
   sessionExpiresAt: Date;
@@ -15,7 +20,8 @@ export function holdTimes(now: Date = new Date()): {
 } {
   const minute = 60 * 1000;
   const sessionExpiresAt = new Date(
-    now.getTime() + CHECKOUT_SESSION_MINUTES * minute,
+    now.getTime() +
+      (CHECKOUT_SESSION_MINUTES + SESSION_MARGIN_MINUTES) * minute,
   );
   return {
     sessionExpiresAt,
@@ -28,7 +34,7 @@ export function holdTimes(now: Date = new Date()): {
 function parts(dateStr: string) {
   if (!isDateString(dateStr)) throw new Error(`Invalid date: ${dateStr}`);
   const [y, m, d] = dateStr.split("-").map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
+  const date = new Date(utcDateMs(y, m, d));
   const month = new Intl.DateTimeFormat("en-CA", {
     timeZone: "UTC",
     month: "short",

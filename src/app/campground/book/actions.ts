@@ -1,20 +1,17 @@
 "use server";
 
+import { type ActionResult, failure } from "@/lib/action-result";
 import { requireAuth } from "@/lib/auth-helpers";
-import { BookingError, createHold } from "@/lib/services/booking-service";
+import { createHold, type HoldResult } from "@/lib/services/booking-service";
 import {
   type BookingRequestData,
   bookingRequestSchema,
 } from "@/lib/types/campground-schemas";
 
-export type StartBookingResult =
-  | { ok: true; bookingId: string; clientSecret: string }
-  | { ok: false; error: string };
-
 /** Hold the site and open a checkout for it. */
 export async function startBooking(
   input: BookingRequestData,
-): Promise<StartBookingResult> {
+): Promise<ActionResult<HoldResult>> {
   const session = await requireAuth();
 
   const parsed = bookingRequestSchema.safeParse(input);
@@ -26,19 +23,15 @@ export async function startBooking(
   }
 
   try {
-    const result = await createHold(
+    const hold = await createHold(
       { id: session.user.id, email: session.user.email },
       parsed.data,
     );
-    return { ok: true, ...result };
+    return { ok: true, data: hold };
   } catch (err) {
-    if (err instanceof BookingError) {
-      return { ok: false, error: err.message };
-    }
-    console.error("Failed to start booking", err);
-    return {
-      ok: false,
-      error: "Something went wrong starting your booking. Please try again.",
-    };
+    return failure(
+      err,
+      "Something went wrong starting your booking. Please try again.",
+    );
   }
 }

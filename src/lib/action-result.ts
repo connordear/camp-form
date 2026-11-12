@@ -34,3 +34,16 @@ export function withUserErrors<T, R>(
     }
   };
 }
+
+/**
+ * For actions that must always return a result: a `UserError` keeps its
+ * message, anything else is logged and replaced with `fallback`.
+ */
+export function failure(
+  err: unknown,
+  fallback: string,
+): { ok: false; error: string } {
+  if (err instanceof UserError) return { ok: false, error: err.message };
+  console.error(fallback, err);
+  return { ok: false, error: fallback };
+}

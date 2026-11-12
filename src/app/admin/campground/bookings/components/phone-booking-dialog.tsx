@@ -60,11 +60,15 @@ export function PhoneBookingDialog({ sites }: PhoneBookingDialogProps) {
         toast.error(result.error);
         return;
       }
-      toast.success("Booking saved");
+      if (result.data.emailFailed) {
+        toast.warning("Booking saved, but the confirmation email failed");
+      } else {
+        toast.success("Booking saved");
+      }
       formApi.reset();
       setPaidText("");
       setOpen(false);
-      router.push(`/admin/campground/bookings/${result.bookingId}`);
+      router.push(`/admin/campground/bookings/${result.data.bookingId}`);
     },
   });
 

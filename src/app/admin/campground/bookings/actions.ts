@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { type ActionResult, failure } from "@/lib/action-result";
 import { adminAction } from "@/lib/auth-helpers";
 import { addDays } from "@/lib/campground/dates";
 import {
@@ -13,7 +14,7 @@ import {
   sendBookingCancelledEmail,
   sendBookingConfirmedEmail,
 } from "@/lib/services/booking-emails";
-import { BookingError, cancelBooking } from "@/lib/services/booking-service";
+import { cancelBooking } from "@/lib/services/booking-service";
 import {
   type AdminBookingData,
   adminBookingSchema,
@@ -23,16 +24,8 @@ import {
 
 const BOOKINGS_PATH = "/admin/campground/bookings";
 
-export type ActionResult<T = object> =
-  | ({ ok: true } & T)
-  | { ok: false; error: string };
-
-/** Turn a thrown error into something the admin can read. */
-function failure(err: unknown, fallback: string): { ok: false; error: string } {
-  if (err instanceof BookingError) return { ok: false, error: err.message };
-  console.error(fallback, err);
-  return { ok: false, error: fallback };
-}
+/** Whether the email to the guest went out, when one was asked for. */
+export type EmailOutcome = { emailFailed: boolean };
 
 function refresh() {
   revalidatePath(BOOKINGS_PATH, "layout");
@@ -42,7 +35,7 @@ function refresh() {
 export const createPhoneBooking = adminAction(
   async (
     input: AdminBookingData,
-  ): Promise<ActionResult<{ bookingId: string }>> => {
+  ): Promise<ActionResult<{ bookingId: string } & EmailOutcome>> => {
     const parsed = adminBookingSchema.safeParse(input);
     if (!parsed.success) {
       return {
@@ -53,9 +46,10 @@ export const createPhoneBooking = adminAction(
     const { sendConfirmation, ...data } = parsed.data;
     try {
       const booking = await createAdminBooking(data);
-      if (sendConfirmation) await sendBookingConfirmedEmail(booking);
+      const emailFailed =
+        sendConfirmation && !(await sendBookingConfirmedEmail(booking));
       refresh();
-      return { ok: true, bookingId: booking.id };
+      return { ok: true, data: { bookingId: booking.id, emailFailed } };
     } catch (err) {
       return failure(err, "Could not save the booking. Please try again.");
     }
@@ -68,15 +62,16 @@ export const cancelBookingAsAdmin = adminAction(
     /** Cents. The policy amount, or the admin's own. */
     refundAmount: number;
     notifyGuest: boolean;
-  }): Promise<ActionResult> => {
+  }): Promise<ActionResult<EmailOutcome>> => {
     try {
       const booking = await cancelBooking(String(input.bookingId), {
         by: "admin",
         refundAmount: Number(input.refundAmount),
       });
-      if (input.notifyGuest) await sendBookingCancelledEmail(booking);
+      const emailFailed =
+        input.notifyGuest && !(await sendBookingCancelledEmail(booking));
       refresh();
-      return { ok: true };
+      return { ok: true, data: { emailFailed } };
     } catch (err) {
       return failure(err, "Could not cancel the booking. Please try again.");
     }
@@ -87,7 +82,7 @@ export const saveAdminNotes = adminAction(
   async (input: {
     bookingId: string;
     adminNotes: string;
-  }): Promise<ActionResult> => {
+  }): Promise<ActionResult<null>> => {
     const notes = String(input.adminNotes ?? "").trim();
     if (notes.length > 1000) {
       return { ok: false, error: "Keep office notes under 1000 characters." };
@@ -95,7 +90,7 @@ export const saveAdminNotes = adminAction(
     try {
       await updateAdminNotes(String(input.bookingId), notes || null);
       refresh();
-      return { ok: true };
+      return { ok: true, data: null };
     } catch (err) {
       return failure(err, "Could not save the notes. Please try again.");
     }
@@ -103,7 +98,7 @@ export const saveAdminNotes = adminAction(
 );
 
 export const blockSiteNights = adminAction(
-  async (input: BlockNightsData): Promise<ActionResult> => {
+  async (input: BlockNightsData): Promise<ActionResult<null>> => {
     const parsed = blockNightsSchema.safeParse(input);
     if (!parsed.success) {
       return {
@@ -120,7 +115,7 @@ export const blockSiteNights = adminAction(
         reason,
       });
       refresh();
-      return { ok: true };
+      return { ok: true, data: null };
     } catch (err) {
       return failure(err, "Could not block those nights. Please try again.");
     }
@@ -132,7 +127,7 @@ export const unblockSiteNights = adminAction(
     siteId: string;
     from: string;
     to: string;
-  }): Promise<ActionResult> => {
+  }): Promise<ActionResult<null>> => {
     try {
       await unblockNights({
         siteId: String(input.siteId),
@@ -140,7 +135,7 @@ export const unblockSiteNights = adminAction(
         to: String(input.to),
       });
       refresh();
-      return { ok: true };
+      return { ok: true, data: null };
     } catch (err) {
       return failure(err, "Could not unblock those nights. Please try again.");
     }

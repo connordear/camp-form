@@ -55,7 +55,7 @@ export function BookingFlow({
         checkOut,
       });
       if (result.ok) {
-        setClientSecret(result.clientSecret);
+        setClientSecret(result.data.clientSecret);
       } else {
         setError(result.error);
       }

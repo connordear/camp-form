@@ -63,11 +63,11 @@ export async function fetchClientSecret(
   }
 
   const discounts = await getDiscountsByIds(appliedDiscountIds);
-  const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
-  for (const discount of discounts) {
-    const coupon = await getRedeemableCouponId(discount);
-    if (coupon) stripeDiscounts.push({ coupon });
-  }
+  const coupons = await Promise.all(
+    discounts.map((discount) => getRedeemableCouponId(discount)),
+  );
+  const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
+    coupons.filter((c) => c !== null).map((coupon) => ({ coupon }));
 
   const stripeSession = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
