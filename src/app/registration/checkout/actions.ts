@@ -39,9 +39,6 @@ export type CheckoutCamper = {
 };
 
 /**
- * Formats a date range string from start and end dates.
- */
-/**
  * Server action to fetch all checkout data for the current user.
  * Returns campers with their registrations grouped together.
  */

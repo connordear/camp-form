@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDisplayDate } from "@/lib/campground/dates";
 import { capitalize } from "@/lib/utils";
 import {
   getRegistrationDetail,
@@ -415,7 +416,7 @@ export function RegistrationModal({
                 <div>
                   <span className="text-muted-foreground">DOB</span>
                   <p className="font-medium">
-                    {formatDate(detail.camper.dateOfBirth)}
+                    {formatDisplayDate(detail.camper.dateOfBirth)}
                   </p>
                 </div>
                 <div>

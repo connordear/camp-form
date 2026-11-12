@@ -1,6 +1,11 @@
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/data/db";
-import { bookings, campgroundSettings, campsites } from "@/lib/data/schema";
+import {
+  bookingNights,
+  bookings,
+  campgroundSettings,
+  campsites,
+} from "@/lib/data/schema";
 
 export type Campsite = typeof campsites.$inferSelect;
 export type CampgroundSettings = typeof campgroundSettings.$inferSelect;
@@ -40,6 +45,15 @@ export async function getBookingCountsBySite(): Promise<
     .from(bookings)
     .groupBy(bookings.siteId);
   return Object.fromEntries(rows.map((r) => [r.siteId, r.count]));
+}
+
+/** Ids of sites with at least one night blocked by an admin (no booking). */
+export async function getSiteIdsWithBlockedNights(): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ siteId: bookingNights.siteId })
+    .from(bookingNights)
+    .where(isNull(bookingNights.bookingId));
+  return rows.map((r) => r.siteId);
 }
 
 /**

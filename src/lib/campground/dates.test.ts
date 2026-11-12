@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   addDays,
+  ageOn,
   campgroundToday,
   daysUntil,
   endOfDay,
   formatDisplayDate,
+  formatMonthDay,
   isDateString,
   nightsBetween,
 } from "./dates";
@@ -144,5 +146,24 @@ describe("endOfDay", () => {
     expect(endOfDay("2026-05-31", "UTC").toISOString()).toBe(
       "2026-05-31T23:59:59.999Z",
     );
+  });
+});
+
+describe("formatMonthDay", () => {
+  test("leaves out the year", () => {
+    expect(formatMonthDay("2027-07-03")).toBe("Jul 3");
+  });
+});
+
+describe("ageOn", () => {
+  test("counts the birthday from that calendar date", () => {
+    expect(ageOn("2015-06-01", "2026-05-31")).toBe(10);
+    expect(ageOn("2015-06-01", "2026-06-01")).toBe(11);
+    expect(ageOn("2015-06-01", "2026-12-31")).toBe(11);
+  });
+
+  test("handles a leap day birthday", () => {
+    expect(ageOn("2016-02-29", "2027-02-28")).toBe(10);
+    expect(ageOn("2016-02-29", "2027-03-01")).toBe(11);
   });
 });

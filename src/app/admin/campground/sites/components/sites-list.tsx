@@ -24,6 +24,8 @@ import { SiteDialog } from "./site-dialog";
 interface SitesListProps {
   sites: Campsite[];
   bookingCounts: Record<string, number>;
+  /** Ids of sites with nights an admin has blocked. */
+  blockedSiteIds: string[];
 }
 
 function ActiveSwitch({ site }: { site: Campsite }) {
@@ -34,13 +36,18 @@ function ActiveSwitch({ site }: { site: Campsite }) {
     setIsSaving(true);
     setIsActive(checked);
     try {
-      await setSiteActive({ id: site.id, isActive: checked });
+      const result = await setSiteActive({ id: site.id, isActive: checked });
+      if (!result.ok) {
+        setIsActive(!checked);
+        toast.error(result.error);
+        return;
+      }
       toast.success(
         checked ? `${site.name} activated` : `${site.name} deactivated`,
       );
-    } catch (err) {
+    } catch {
       setIsActive(!checked);
-      toast.error(err instanceof Error ? err.message : "Failed to update site");
+      toast.error("Failed to update site");
     } finally {
       setIsSaving(false);
     }
@@ -56,7 +63,11 @@ function ActiveSwitch({ site }: { site: Campsite }) {
   );
 }
 
-export function SitesList({ sites, bookingCounts }: SitesListProps) {
+export function SitesList({
+  sites,
+  bookingCounts,
+  blockedSiteIds,
+}: SitesListProps) {
   const nextSortOrder =
     sites.reduce((max, s) => Math.max(max, s.sortOrder), 0) + 1;
 
@@ -155,6 +166,7 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
                           key={site.updatedAt.toString()}
                           site={site}
                           bookingCount={bookingCount}
+                          hasBlockedNights={blockedSiteIds.includes(site.id)}
                         />
                       </TableCell>
                     </TableRow>

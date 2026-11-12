@@ -37,8 +37,20 @@ export const CAMPSITE_FEATURE_ICONS: Record<CampsiteFeature, LucideIcon> = {
   waterfront: Waves,
 };
 
+// Upper bounds keep every value well inside a Postgres int4 column, so a typo
+// with extra digits is a form error and not a failed insert.
+const MAX_NIGHTLY_RATE_CENTS = 10_000_000; // $100,000
+const MAX_OCCUPANCY = 1000;
+const MAX_SORT_ORDER = 1_000_000;
+const MAX_STAY_NIGHTS = 365;
+const MAX_ADVANCE_DAYS = 3650;
+
 export const campsiteFormSchema = z.object({
-  name: z.string().trim().min(1, "Site name is required"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Site name is required")
+    .max(100, "Site name is too long"),
   features: z
     .array(z.enum(CAMPSITE_FEATURES))
     // Store each feature once, in catalogue order.
@@ -46,13 +58,19 @@ export const campsiteFormSchema = z.object({
   nightlyRate: z
     .number({ error: "Enter a rate in dollars, e.g. 45.00" })
     .int("Rate must be in whole cents")
-    .min(0, "Rate cannot be negative"),
+    .min(0, "Rate cannot be negative")
+    .max(MAX_NIGHTLY_RATE_CENTS, "Rate is too high"),
   maxOccupancy: z
     .number({ error: "Enter a number" })
     .int("Must be a whole number")
-    .min(1, "At least 1 person"),
+    .min(1, "At least 1 person")
+    .max(MAX_OCCUPANCY, `At most ${MAX_OCCUPANCY} people`),
   description: z.string().nullable(),
-  sortOrder: z.number({ error: "Enter a number" }).int(),
+  sortOrder: z
+    .number({ error: "Enter a number" })
+    .int("Must be a whole number")
+    .min(-MAX_SORT_ORDER, "Number is too low")
+    .max(MAX_SORT_ORDER, "Number is too high"),
   isActive: z.boolean(),
 });
 
@@ -84,16 +102,19 @@ export const campgroundSettingsFormSchema = z
     seasonEnd: dateString.nullable(),
     minNights: z
       .number({ error: "Enter a number" })
-      .int()
-      .min(1, "At least 1 night"),
+      .int("Must be a whole number")
+      .min(1, "At least 1 night")
+      .max(MAX_STAY_NIGHTS, `At most ${MAX_STAY_NIGHTS} nights`),
     maxNights: z
       .number({ error: "Enter a number" })
-      .int()
-      .min(1, "At least 1 night"),
+      .int("Must be a whole number")
+      .min(1, "At least 1 night")
+      .max(MAX_STAY_NIGHTS, `At most ${MAX_STAY_NIGHTS} nights`),
     maxAdvanceDays: z
       .number({ error: "Enter a number" })
-      .int()
-      .min(1, "At least 1 day"),
+      .int("Must be a whole number")
+      .min(1, "At least 1 day")
+      .max(MAX_ADVANCE_DAYS, `At most ${MAX_ADVANCE_DAYS} days`),
     checkInTime: timeString,
     checkOutTime: timeString,
     cancellationTiers: z.array(cancellationTierSchema),
