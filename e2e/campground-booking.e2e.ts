@@ -262,7 +262,9 @@ test.describe("admin", () => {
     page,
     browser,
   }) => {
-    // The guest starts a booking, which holds the site.
+    // The guest starts a booking, which holds the site. The note carries a
+    // token no other booking has, so searching for it finds only this one.
+    const noteToken = `canoe-${Date.now()}`;
     const guest = await browser.newContext({
       storageState: authFile("user"),
     });
@@ -270,7 +272,9 @@ test.describe("admin", () => {
       const guestPage = await guest.newPage();
       await guestPage.goto(bookUrl());
       await fillGuestDetails(guestPage);
-      await guestPage.getByLabel(/Notes/).fill("Bringing a canoe");
+      await guestPage
+        .getByLabel(/Notes/)
+        .fill(`Bringing a canoe (${noteToken})`);
       await guestPage
         .getByRole("button", { name: "Continue to payment" })
         .click();
@@ -283,19 +287,23 @@ test.describe("admin", () => {
     await expect(
       page.getByRole("heading", { name: "Campsite bookings" }),
     ).toBeVisible();
-    // The list, not the month grid above it.
+    // The list, not the month grid above it. The list is paged, so search
+    // first rather than rely on the hold landing on page one.
     const row = page
       .getByRole("region", { name: "All bookings" })
       .getByRole("row")
       .filter({ hasText: SITE_NAME });
+    const search = page.getByLabel("Search bookings");
+    await search.fill(SITE_NAME);
     await expect(row).toContainText("Awaiting payment");
     await expect(row).toContainText("780-555-0123");
     await expect(row).toContainText("Bringing a canoe");
 
-    // Search narrows the list; other views do not show the hold.
-    await page.getByLabel("Search bookings").fill("no such guest");
+    // Search narrows the list, including by notes; other views do not show
+    // the hold.
+    await search.fill("no such guest");
     await expect(row).toHaveCount(0);
-    await page.getByLabel("Search bookings").fill("canoe");
+    await search.fill(noteToken);
     await expect(row).toHaveCount(1);
     await page.getByRole("button", { name: /^Past/ }).click();
     await expect(row).toHaveCount(0);
