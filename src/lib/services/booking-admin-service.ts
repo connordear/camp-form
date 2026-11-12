@@ -1,5 +1,27 @@
-import { and, asc, eq, gte, isNull, lt, sql } from "drizzle-orm";
-import { partySizeError, stayCost } from "@/lib/campground/booking";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
+import {
+  BOOKINGS_PAGE_SIZE,
+  type BookingGroup,
+  type BookingListParams,
+  type BookingListView,
+  partySizeError,
+  stayCost,
+} from "@/lib/campground/booking";
 import {
   type BlockedRange,
   groupBlockedNights,
@@ -163,6 +185,117 @@ export async function getAdminBooking(
       user: { columns: { name: true, email: true } },
     },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Bookings list
+// ---------------------------------------------------------------------------
+
+/** Each tab as SQL. Must match `bookingGroup`, which the badges use. */
+function groupCondition(group: BookingGroup, today: string): SQL {
+  switch (group) {
+    case "upcoming":
+      return or(
+        eq(bookings.status, "pending"),
+        and(eq(bookings.status, "confirmed"), gt(bookings.checkOut, today)),
+      ) as SQL;
+    case "past":
+      return and(
+        eq(bookings.status, "confirmed"),
+        lte(bookings.checkOut, today),
+      ) as SQL;
+    case "cancelled":
+      // A late payment refunded because the site was taken counts here too.
+      return or(
+        eq(bookings.status, "cancelled"),
+        and(eq(bookings.status, "expired"), isNotNull(bookings.refundAmount)),
+      ) as SQL;
+    case "expired":
+      return and(
+        eq(bookings.status, "expired"),
+        isNull(bookings.refundAmount),
+      ) as SQL;
+  }
+}
+
+/** Matches the search box against guest, contact, account, site and notes. */
+function searchCondition(query: string): SQL | undefined {
+  if (!query) return undefined;
+  const pattern = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
+  return or(
+    ilike(bookings.guestName, pattern),
+    ilike(bookings.guestEmail, pattern),
+    ilike(bookings.guestPhone, pattern),
+    ilike(bookings.notes, pattern),
+    ilike(user.email, pattern),
+    ilike(campsites.name, pattern),
+  );
+}
+
+export type BookingsPage = {
+  bookings: AdminBooking[];
+  /** Bookings in each tab that match the search. */
+  counts: Record<BookingListView, number>;
+  page: number;
+  totalPages: number;
+};
+
+/**
+ * One page of the admin bookings list. Filtering, counting and paging all
+ * happen in SQL, since every abandoned checkout stays as an expired row.
+ */
+export async function getBookingsPage(
+  { view, query, page }: BookingListParams,
+  today: string,
+): Promise<BookingsPage> {
+  const search = searchCondition(query);
+  const countIn = (group: BookingGroup) =>
+    sql<number>`count(*) filter (where ${groupCondition(group, today)})::int`;
+
+  const [counts] = await db
+    .select({
+      upcoming: countIn("upcoming"),
+      past: countIn("past"),
+      cancelled: countIn("cancelled"),
+      expired: countIn("expired"),
+      all: sql<number>`count(*)::int`,
+    })
+    .from(bookings)
+    .innerJoin(campsites, eq(bookings.siteId, campsites.id))
+    .leftJoin(user, eq(bookings.userId, user.id))
+    .where(search);
+
+  const totalPages = Math.max(1, Math.ceil(counts[view] / BOOKINGS_PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+
+  const rows = await db
+    .select({
+      booking: bookings,
+      site: campsites,
+      user: { name: user.name, email: user.email },
+    })
+    .from(bookings)
+    .innerJoin(campsites, eq(bookings.siteId, campsites.id))
+    .leftJoin(user, eq(bookings.userId, user.id))
+    .where(
+      and(view === "all" ? undefined : groupCondition(view, today), search),
+    )
+    // Upcoming reads best soonest first; everything else newest first.
+    .orderBy(
+      ...(view === "upcoming"
+        ? [asc(bookings.checkIn), asc(bookings.createdAt)]
+        : [desc(bookings.checkIn), desc(bookings.createdAt)]),
+      asc(bookings.id),
+    )
+    .limit(BOOKINGS_PAGE_SIZE)
+    .offset((current - 1) * BOOKINGS_PAGE_SIZE);
+
+  return {
+    bookings: rows.map((r) => ({ ...r.booking, site: r.site, user: r.user })),
+    counts,
+    page: current,
+    totalPages,
+  };
 }
 
 export async function updateAdminNotes(id: string, adminNotes: string | null) {

@@ -111,12 +111,20 @@ interface MonthGridProps {
   month: string;
   today: string;
   grid: MonthGridData;
+  /** Other URL params to keep when changing month (the list's tab, search). */
+  keepParams?: Record<string, string>;
 }
 
 /** Sites down the side, days across the top, bookings and blocks as bars. */
-export function MonthGrid({ month, today, grid }: MonthGridProps) {
+export function MonthGrid({
+  month,
+  today,
+  grid,
+  keepParams = {},
+}: MonthGridProps) {
   const days = monthDays(month);
-  const href = (m: string) => `/admin/campground/bookings?month=${m}`;
+  const href = (m: string) =>
+    `/admin/campground/bookings?${new URLSearchParams({ ...keepParams, month: m })}`;
   const thisMonth = monthOf(today);
 
   return (

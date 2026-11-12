@@ -1,8 +1,14 @@
 "use client";
 
-import { CalendarDaysIcon, SearchIcon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { BookingStatusBadge } from "@/components/campground/booking-status";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -17,18 +23,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  type BookingGroup,
-  bookingGroup,
+  BOOKINGS_PAGE_SIZE,
+  type BookingListView,
   formatStayRange,
   nightsLabel,
 } from "@/lib/campground/booking";
 import { CAMPGROUND_TIMEZONE, daysUntil } from "@/lib/campground/dates";
 import { formatCents } from "@/lib/campground/money";
-import type { AdminBooking } from "@/lib/services/booking-service";
+import type { BookingsPage } from "@/lib/services/booking-admin-service";
 
-type View = BookingGroup | "all";
-
-const VIEWS: Array<{ value: View; label: string }> = [
+const VIEWS: Array<{ value: BookingListView; label: string }> = [
   { value: "upcoming", label: "Upcoming" },
   { value: "past", label: "Past" },
   { value: "cancelled", label: "Cancelled" },
@@ -43,54 +47,76 @@ const bookedOn = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
 });
 
-function matches(booking: AdminBooking, query: string): boolean {
-  if (!query) return true;
-  const q = query.toLowerCase();
-  return [
-    booking.guestName,
-    booking.guestEmail,
-    booking.guestPhone,
-    booking.user?.email,
-    booking.site.name,
-    booking.notes,
-  ].some((v) => v?.toLowerCase().includes(q));
-}
-
 interface BookingsListProps {
-  bookings: AdminBooking[];
-  today: string;
+  bookings: BookingsPage;
+  view: BookingListView;
+  /** The search as the server applied it. */
+  query: string;
 }
 
-export function BookingsList({ bookings, today }: BookingsListProps) {
-  const [view, setView] = useState<View>("upcoming");
-  const [query, setQuery] = useState("");
+export function BookingsList({ bookings, view, query }: BookingsListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState(query);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableBox = useRef<HTMLDivElement>(null);
+  const { counts, page, totalPages } = bookings;
+  const visible = bookings.bookings;
 
-  const counts = useMemo(() => {
-    const c: Record<View, number> = {
-      upcoming: 0,
-      past: 0,
-      cancelled: 0,
-      expired: 0,
-      all: bookings.length,
-    };
-    for (const b of bookings) c[bookingGroup(b, today)]++;
-    return c;
-  }, [bookings, today]);
+  // Follow the URL (back button, links) unless the admin is mid-typing.
+  useEffect(() => {
+    if (!debounce.current) setSearch(query);
+  }, [query]);
+  useEffect(() => () => clearTimeout(debounce.current ?? undefined), []);
 
-  const visible = useMemo(() => {
-    const list = bookings.filter(
-      (b) =>
-        (view === "all" || bookingGroup(b, today) === view) &&
-        matches(b, query.trim()),
+  // Each new page, tab or search starts at the top of the table.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reruns on purpose
+  useEffect(() => {
+    tableBox.current
+      ?.querySelector("[data-slot=table-container]")
+      ?.scrollTo({ top: 0 });
+  }, [page, view, query]);
+
+  /** Change the list's URL params, keeping the calendar month. */
+  const navigate = (changes: { view?: string; q?: string; page?: number }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(changes)) {
+      const keep =
+        value !== undefined &&
+        value !== "" &&
+        !(key === "view" && value === "upcoming") &&
+        !(key === "page" && value === 1);
+      if (keep) params.set(key, String(value));
+      else params.delete(key);
+    }
+    // A new tab or search starts again at the first page.
+    if (changes.page === undefined) params.delete("page");
+    const qs = params.toString();
+    startTransition(() =>
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }),
     );
-    // Upcoming reads best soonest first; everything else newest first.
-    return view === "upcoming"
-      ? [...list].sort((a, b) => a.checkIn.localeCompare(b.checkIn))
-      : list;
-  }, [bookings, today, view, query]);
+  };
+
+  const onSearchChange = (value: string) => {
+    setSearch(value);
+    clearTimeout(debounce.current ?? undefined);
+    debounce.current = setTimeout(() => {
+      debounce.current = null;
+      navigate({ q: value.trim() });
+    }, 300);
+  };
+
+  const first = (page - 1) * BOOKINGS_PAGE_SIZE + 1;
+  const last = first + visible.length - 1;
 
   return (
-    <section className="space-y-4" aria-labelledby="bookings-list-heading">
+    <section
+      className="space-y-4"
+      aria-labelledby="bookings-list-heading"
+      aria-busy={isPending}
+    >
       <h2 id="bookings-list-heading" className="text-lg font-semibold">
         All bookings
       </h2>
@@ -103,7 +129,7 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
               variant={view === v.value ? "default" : "outline"}
               size="sm"
               aria-pressed={view === v.value}
-              onClick={() => setView(v.value)}
+              onClick={() => navigate({ view: v.value })}
             >
               {v.label}
               <span className="tabular-nums opacity-70">{counts[v.value]}</span>
@@ -120,8 +146,8 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
             placeholder="Search guest, phone, email or site"
             aria-label="Search bookings"
             className="pl-8"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
       </div>
@@ -142,9 +168,14 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
         </Card>
       ) : (
         <Card className="py-0 gap-0 overflow-hidden">
-          <CardContent className="p-0">
+          {/* A fixed-height window, so paging never moves the pager and a
+              page of 50 does not run down the screen. */}
+          <CardContent
+            ref={tableBox}
+            className="p-0 [&>[data-slot=table-container]]:max-h-[min(36rem,70vh)]"
+          >
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card shadow-[inset_0_-1px_0_var(--border)] [&_tr]:border-b-0">
                 <TableRow>
                   <TableHead>Dates</TableHead>
                   <TableHead>Site</TableHead>
@@ -215,6 +246,37 @@ export function BookingsList({ bookings, today }: BookingsListProps) {
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground tabular-nums">
+            Showing {first} to {last} of {counts[view]}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Previous page"
+              disabled={page <= 1 || isPending}
+              onClick={() => navigate({ page: page - 1 })}
+            >
+              <ChevronLeftIcon className="size-4" aria-hidden />
+            </Button>
+            <span className="text-sm text-muted-foreground tabular-nums">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Next page"
+              disabled={page >= totalPages || isPending}
+              onClick={() => navigate({ page: page + 1 })}
+            >
+              <ChevronRightIcon className="size-4" aria-hidden />
+            </Button>
+          </div>
+        </div>
       )}
     </section>
   );

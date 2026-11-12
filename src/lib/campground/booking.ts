@@ -103,6 +103,53 @@ export function formatClockTime(hhmm: string): string {
 
 export type BookingGroup = "upcoming" | "past" | "cancelled" | "expired";
 
+/** A tab of the admin bookings list. */
+export type BookingListView = BookingGroup | "all";
+
+export const BOOKING_LIST_VIEWS: readonly BookingListView[] = [
+  "upcoming",
+  "past",
+  "cancelled",
+  "expired",
+  "all",
+];
+
+export const BOOKINGS_PAGE_SIZE = 50;
+
+export type BookingListParams = {
+  view: BookingListView;
+  query: string;
+  page: number;
+};
+
+/** The URL params for a list state, leaving out the defaults. */
+export function bookingListSearch({
+  view,
+  query,
+  page,
+}: BookingListParams): Record<string, string> {
+  return {
+    ...(view !== "upcoming" && { view }),
+    ...(query && { q: query }),
+    ...(page > 1 && { page: String(page) }),
+  };
+}
+
+/** Read the admin bookings list's tab, search and page from the URL. */
+export function parseBookingListParams(params: {
+  view?: string;
+  q?: string;
+  page?: string;
+}): BookingListParams {
+  const view = BOOKING_LIST_VIEWS.find((v) => v === params.view) ?? "upcoming";
+  const page = Number.parseInt(params.page ?? "", 10);
+  return {
+    view,
+    query: (params.q ?? "").trim().slice(0, 100),
+    page: Number.isInteger(page) && page >= 1 ? page : 1,
+  };
+}
+
 /**
  * Where a booking belongs in a list. Unpaid holds count as upcoming while
  * they last. Expired holds that were refunded (paid too late) count as

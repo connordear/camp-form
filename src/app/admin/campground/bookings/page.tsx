@@ -1,11 +1,15 @@
 import { adminPage } from "@/lib/auth-helpers";
+import {
+  bookingListSearch,
+  parseBookingListParams,
+} from "@/lib/campground/booking";
 import { parseMonthParam } from "@/lib/campground/calendar";
 import { campgroundToday } from "@/lib/campground/dates";
 import {
+  getBookingsPage,
   getMonthGrid,
   getUpcomingBlocks,
 } from "@/lib/services/booking-admin-service";
-import { getAllBookings } from "@/lib/services/booking-service";
 import { getAllSites } from "@/lib/services/campground-service";
 import { BlockNightsDialog } from "./components/block-nights-dialog";
 import { BlockedNights } from "./components/blocked-nights";
@@ -13,15 +17,25 @@ import { BookingsList } from "./components/bookings-list";
 import { MonthGrid } from "./components/month-grid";
 import { PhoneBookingDialog } from "./components/phone-booking-dialog";
 
-type PageProps = { searchParams: Promise<{ month?: string }> };
+type PageProps = {
+  searchParams: Promise<{
+    month?: string;
+    view?: string;
+    q?: string;
+    page?: string;
+  }>;
+};
 
 async function CampgroundBookingsPage({ searchParams }: PageProps) {
   const today = campgroundToday();
-  const month = parseMonthParam((await searchParams).month, today);
+  const params = await searchParams;
+  const month = parseMonthParam(params.month, today);
+  const list = parseBookingListParams(params);
   // The grid releases lapsed holds first, so the list below is current too.
+  // The grid shows every booking in the month; only the list is paged.
   const grid = await getMonthGrid(month);
   const [bookings, blocks, sites] = await Promise.all([
-    getAllBookings(),
+    getBookingsPage(list, today),
     getUpcomingBlocks(today),
     getAllSites(),
   ]);
@@ -41,8 +55,13 @@ async function CampgroundBookingsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <MonthGrid month={month} today={today} grid={grid} />
-      <BookingsList bookings={bookings} today={today} />
+      <MonthGrid
+        month={month}
+        today={today}
+        grid={grid}
+        keepParams={bookingListSearch({ ...list, page: bookings.page })}
+      />
+      <BookingsList bookings={bookings} view={list.view} query={list.query} />
       <BlockedNights ranges={blocks} />
     </div>
   );

@@ -361,17 +361,6 @@ export type AdminBooking = BookingWithSite & {
   user: { name: string; email: string } | null;
 };
 
-/** Every booking, newest stay first. For the admin bookings page. */
-export async function getAllBookings(): Promise<AdminBooking[]> {
-  return db.query.bookings.findMany({
-    with: {
-      site: true,
-      user: { columns: { name: true, email: true } },
-    },
-    orderBy: [desc(bookings.checkIn), desc(bookings.createdAt)],
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Payment outcomes (webhook, and the return page as a shortcut)
 // ---------------------------------------------------------------------------

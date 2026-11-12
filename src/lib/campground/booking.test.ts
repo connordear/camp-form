@@ -2,10 +2,12 @@ import { describe, expect, test } from "bun:test";
 import {
   bookingGroup,
   bookingLineItemName,
+  bookingListSearch,
   formatClockTime,
   formatStayRange,
   holdTimes,
   nightsLabel,
+  parseBookingListParams,
   partySizeError,
   stayCost,
 } from "./booking";
@@ -101,5 +103,38 @@ describe("bookingGroup", () => {
     expect(bookingGroup(b("expired", "2027-07-12", 5000), today)).toBe(
       "cancelled",
     );
+  });
+});
+
+describe("parseBookingListParams", () => {
+  test("defaults to the first page of upcoming bookings", () => {
+    expect(parseBookingListParams({})).toEqual({
+      view: "upcoming",
+      query: "",
+      page: 1,
+    });
+  });
+
+  test("reads a valid tab, search and page", () => {
+    expect(
+      parseBookingListParams({ view: "past", q: "  smith ", page: "3" }),
+    ).toEqual({ view: "past", query: "smith", page: 3 });
+  });
+
+  test("ignores an unknown tab or a bad page", () => {
+    expect(parseBookingListParams({ view: "nope", page: "0" })).toEqual({
+      view: "upcoming",
+      query: "",
+      page: 1,
+    });
+    expect(parseBookingListParams({ page: "abc" }).page).toBe(1);
+  });
+
+  test("round-trips through bookingListSearch, leaving out defaults", () => {
+    expect(bookingListSearch({ view: "upcoming", query: "", page: 1 })).toEqual(
+      {},
+    );
+    const state = { view: "expired" as const, query: "site 3", page: 2 };
+    expect(parseBookingListParams(bookingListSearch(state))).toEqual(state);
   });
 });
