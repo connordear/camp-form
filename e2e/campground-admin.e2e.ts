@@ -97,6 +97,18 @@ test.describe("campground sites", () => {
       mapY: null,
     });
 
+    // Names are unique, ignoring case and surrounding spaces.
+    await page.getByRole("button", { name: "Add Site" }).first().click();
+    await dialog.getByLabel("Site name").fill(` ${name.toUpperCase()} `);
+    await dialog.getByLabel("Nightly rate ($)").fill("45");
+    await create.click();
+    await expect(
+      page.getByText(`A site named "${name.toUpperCase()}" already exists`),
+    ).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
+
     // Delete needs the site name typed in; the name can be copied.
     await openMenu(page, name, "Delete");
     const confirm = page.getByRole("alertdialog");

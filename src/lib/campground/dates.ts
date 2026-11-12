@@ -81,6 +81,27 @@ export function nightsBetween(checkIn: string, checkOut: string): string[] {
   return nights;
 }
 
+/** A date string without its year, e.g. "Jul 3". Never shifted by time zone. */
+export function formatMonthDay(dateStr: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(toUtcMs(dateStr)));
+}
+
+/**
+ * Age in whole years on `todayStr` for someone born on `birthDateStr`.
+ * Compares calendar dates, so the birthday counts from its first minute.
+ */
+export function ageOn(birthDateStr: string, todayStr: string): number {
+  toUtcMs(birthDateStr);
+  toUtcMs(todayStr);
+  const years = Number(todayStr.slice(0, 4)) - Number(birthDateStr.slice(0, 4));
+  // "MM-DD" strings compare in calendar order.
+  return todayStr.slice(5) < birthDateStr.slice(5) ? years - 1 : years;
+}
+
 /** A date string for people, e.g. "Jul 3, 2027". Never shifted by time zone. */
 export function formatDisplayDate(dateStr: string): string {
   return new Intl.DateTimeFormat("en-CA", {

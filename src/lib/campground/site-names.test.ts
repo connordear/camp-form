@@ -26,6 +26,18 @@ describe("duplicateSiteName", () => {
     expect(duplicateSiteName("Site A (copy)", [])).toBe("Site A (copy) (copy)");
   });
 
+  test("treats a very long trailing number as part of the name", () => {
+    expect(duplicateSiteName("Lot 10000000000000000000", [])).toBe(
+      "Lot 10000000000000000000 (copy)",
+    );
+    expect(duplicateSiteName("Permit 9007199254740993", [])).toBe(
+      "Permit 9007199254740993 (copy)",
+    );
+    expect(duplicateSiteName("Site 999999999999999", [])).toBe(
+      "Site 1000000000000000",
+    );
+  });
+
   test("numbers further copies", () => {
     expect(
       duplicateSiteName("Site A", [

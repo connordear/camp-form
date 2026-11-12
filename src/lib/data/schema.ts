@@ -461,25 +461,33 @@ export const DEFAULT_CANCELLATION_TIERS: CancellationTier[] = [
   { minDaysBefore: 1, refundPercent: 50 },
 ];
 
-export const campsites = pgTable("campsites", {
-  id: id(),
-  name: text().notNull(),
-  features: text()
-    .array()
-    .$type<CampsiteFeature[]>()
-    .notNull()
-    .default(sql`'{}'::text[]`),
-  nightlyRate: integer("nightly_rate").notNull(), // cents, before tax
-  maxOccupancy: integer("max_occupancy").notNull().default(6),
-  description: text(),
-  // Marker position on the site map, as a percentage of the map image
-  // (0-100 from the left and from the top). Null means not placed yet.
-  mapX: real("map_x"),
-  mapY: real("map_y"),
-  sortOrder: integer("sort_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  ...timestamps,
-});
+export const campsites = pgTable(
+  "campsites",
+  {
+    id: id(),
+    name: text().notNull(),
+    features: text()
+      .array()
+      .$type<CampsiteFeature[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    nightlyRate: integer("nightly_rate").notNull(), // cents, before tax
+    maxOccupancy: integer("max_occupancy").notNull().default(6),
+    description: text(),
+    // Marker position on the site map, as a percentage of the map image
+    // (0-100 from the left and from the top). Null means not placed yet.
+    mapX: real("map_x"),
+    mapY: real("map_y"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    // Names identify a site to admins (duplicate, typed-name delete), so
+    // they are unique ignoring case and surrounding spaces.
+    uniqueIndex("campsites_name_unique").on(sql`lower(trim(${t.name}))`),
+  ],
+);
 
 // Single row, id fixed to "default".
 export const campgroundSettings = pgTable("campground_settings", {

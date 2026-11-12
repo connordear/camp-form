@@ -24,23 +24,42 @@ import { SiteDialog } from "./site-dialog";
 interface SiteActionsMenuProps {
   site: Campsite;
   bookingCount: number;
+  /** An admin has blocked nights on the site (they hold no booking). */
+  hasBlockedNights: boolean;
 }
 
-export function SiteActionsMenu({ site, bookingCount }: SiteActionsMenuProps) {
+export function SiteActionsMenu({
+  site,
+  bookingCount,
+  hasBlockedNights,
+}: SiteActionsMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const canDelete = bookingCount === 0;
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  // Mirrors the foreign keys that stop deleteSite.
+  const deleteBlockedBy =
+    bookingCount > 0
+      ? "has bookings"
+      : hasBlockedNights
+        ? "has blocked nights"
+        : null;
+  const canDelete = deleteBlockedBy === null;
 
   const handleDuplicate = async () => {
+    if (isDuplicating) return;
+    setIsDuplicating(true);
     const toastId = toast.loading(`Duplicating ${site.name}...`);
     try {
-      const copy = await duplicateSite(site.id);
-      toast.success(`Created ${copy.name}`, { id: toastId });
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to duplicate site",
-        { id: toastId },
-      );
+      const result = await duplicateSite(site.id);
+      if (result.ok) {
+        toast.success(`Created ${result.data.name}`, { id: toastId });
+      } else {
+        toast.error(result.error, { id: toastId });
+      }
+    } catch {
+      toast.error("Failed to duplicate site", { id: toastId });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -62,7 +81,7 @@ export function SiteActionsMenu({ site, bookingCount }: SiteActionsMenuProps) {
             <PencilIcon />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={handleDuplicate}>
+          <DropdownMenuItem disabled={isDuplicating} onSelect={handleDuplicate}>
             <CopyPlusIcon />
             Duplicate
           </DropdownMenuItem>
@@ -73,7 +92,7 @@ export function SiteActionsMenu({ site, bookingCount }: SiteActionsMenuProps) {
             onSelect={() => setDeleteOpen(true)}
           >
             <Trash2Icon />
-            {canDelete ? "Delete" : "Delete (has bookings)"}
+            {canDelete ? "Delete" : `Delete (${deleteBlockedBy})`}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
