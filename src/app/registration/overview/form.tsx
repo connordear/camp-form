@@ -89,7 +89,7 @@ export default function OverviewForm({ user, camps }: RegistrationFormProps) {
                 <FieldGroup className="flex flex-col gap-3">
                   {field.state.value.map((camper, i) => (
                     <OverviewFieldGroup
-                      key={`${camper.id}-${i}`}
+                      key={camper.id}
                       form={form}
                       camps={camps}
                       fields={`campers[${i}]`}

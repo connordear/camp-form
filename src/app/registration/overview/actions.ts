@@ -22,9 +22,7 @@ export async function getCamps() {
   return await db.query.camps.findMany();
 }
 
-export async function getCampsForYear(
-  year = new Date().getFullYear(),
-): Promise<Camp[]> {
+export async function getCampsForYear(year: number): Promise<Camp[]> {
   const rows = await db
     .select()
     .from(camps)

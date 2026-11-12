@@ -66,8 +66,9 @@ export async function cleanupRegistrationFixture(email: string) {
 
 /**
  * A complete draft registration, ready to pay, for a camp starting soon in
- * the current year. The checkout page only lists the current year, so this
- * needs at least a week left in the year.
+ * the current year. Registration lists the earliest year with a camp not yet
+ * over, so the fixture camp has to stay inside the current year, which needs
+ * at least a week left in it.
  */
 export async function createRegistrationFixture(email: string) {
   await cleanupRegistrationFixture(email);
