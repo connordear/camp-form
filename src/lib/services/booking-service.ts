@@ -223,7 +223,7 @@ export async function createHold(
   try {
     const metadata = { kind: CAMPSITE_BOOKING_KIND, bookingId };
     const session = await stripe.checkout.sessions.create({
-      ui_mode: "embedded",
+      ui_mode: "embedded_page",
       mode: "payment",
       customer_email: user.email,
       line_items: [

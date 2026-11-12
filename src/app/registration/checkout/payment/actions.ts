@@ -70,7 +70,7 @@ export async function fetchClientSecret(
     coupons.filter((c) => c !== null).map((coupon) => ({ coupon }));
 
   const stripeSession = await stripe.checkout.sessions.create({
-    ui_mode: "embedded",
+    ui_mode: "embedded_page",
     line_items: lineItems,
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,

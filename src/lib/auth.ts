@@ -50,8 +50,8 @@ export const auth = betterAuth({
   },
   plugins: [
     admin(), // For role-based access control
-    nextCookies(), // Auto-set cookies in server actions
     lastLoginMethod(), // Track last authentication method used
+    nextCookies(), // Auto-set cookies in server actions; must stay last
   ],
 });
 

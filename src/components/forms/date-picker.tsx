@@ -69,9 +69,9 @@ export default function DatePicker({
           onSelect={handleSelect}
           defaultMonth={dateValue}
           captionLayout="dropdown"
-          fromYear={fromYear}
-          toYear={toYear}
-          initialFocus
+          startMonth={new Date(fromYear, 0)}
+          endMonth={new Date(toYear, 11)}
+          autoFocus
         />
       </PopoverContent>
     </Popover>
