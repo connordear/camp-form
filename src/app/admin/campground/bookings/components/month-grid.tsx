@@ -26,6 +26,7 @@ function dayOfWeek(date: string): number {
 }
 
 const SITE_COL_REM = 7;
+/** The narrowest a day gets before the grid scrolls sideways. */
 const DAY_COL_REM = 2.25;
 
 const isWeekend = (date: string) => [0, 6].includes(dayOfWeek(date));
@@ -149,17 +150,18 @@ export function MonthGrid({ month, today, grid }: MonthGridProps) {
         ) : (
           <div className="overflow-x-auto rounded-md border">
             {/* Fixed layout keeps every day the same width, whatever the
-                bars inside say. */}
+                bars inside say. The days share the full width, and scroll
+                sideways once they would get narrower than DAY_COL_REM. */}
             <table
-              className="table-fixed border-separate border-spacing-0 text-sm"
+              className="w-full table-fixed border-separate border-spacing-0 text-sm"
               style={{
-                width: `${SITE_COL_REM + days.length * DAY_COL_REM}rem`,
+                minWidth: `${SITE_COL_REM + days.length * DAY_COL_REM}rem`,
               }}
             >
               <colgroup>
                 <col style={{ width: `${SITE_COL_REM}rem` }} />
                 {days.map((d) => (
-                  <col key={d} style={{ width: `${DAY_COL_REM}rem` }} />
+                  <col key={d} />
                 ))}
               </colgroup>
               <caption className="sr-only">
