@@ -3,6 +3,7 @@
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { NumberInput } from "@/components/forms/number-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,23 +71,23 @@ export function SiteDialog({
         isEditMode ? "Saving site..." : "Creating site...",
       );
       try {
+        const result = isEditMode
+          ? await updateSite({ ...value, id: site.id })
+          : await createSite(value);
+        if (!result.ok) {
+          toast.error(result.error, { id: toastId });
+          return;
+        }
         if (isEditMode) {
-          await updateSite({ ...value, id: site.id });
           toast.success("Site saved", { id: toastId });
         } else {
-          await createSite(value);
           toast.success("Site created", { id: toastId });
           formApi.reset();
           setRateText("");
         }
         setIsOpen(false);
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to save site",
-          {
-            id: toastId,
-          },
-        );
+      } catch {
+        toast.error("Failed to save site", { id: toastId });
       }
     },
   });
@@ -165,18 +166,12 @@ export function SiteDialog({
                           Max people *
                         </FieldLabel>
                         <field.WithErrors>
-                          <Input
+                          <NumberInput
                             id="maxOccupancy"
-                            type="number"
                             min={1}
-                            value={
-                              Number.isNaN(field.state.value)
-                                ? ""
-                                : field.state.value
-                            }
-                            onChange={(e) =>
-                              field.handleChange(e.target.valueAsNumber)
-                            }
+                            value={field.state.value}
+                            onChange={field.handleChange}
+                            onBlur={field.handleBlur}
                           />
                         </field.WithErrors>
                       </Field>
@@ -226,17 +221,11 @@ export function SiteDialog({
                           Display order
                         </FieldLabel>
                         <field.WithErrors>
-                          <Input
+                          <NumberInput
                             id="sortOrder"
-                            type="number"
-                            value={
-                              Number.isNaN(field.state.value)
-                                ? ""
-                                : field.state.value
-                            }
-                            onChange={(e) =>
-                              field.handleChange(e.target.valueAsNumber)
-                            }
+                            value={field.state.value}
+                            onChange={field.handleChange}
+                            onBlur={field.handleBlur}
                           />
                         </field.WithErrors>
                       </Field>

@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { NumberInput } from "@/components/forms/number-input";
 import {
   Card,
   CardContent,
@@ -21,32 +22,6 @@ import { TierEditor } from "./tier-editor";
 
 interface SettingsFormProps {
   settings: CampgroundSettings;
-}
-
-function NumberInput({
-  id,
-  value,
-  onChange,
-  onBlur,
-  min = 1,
-}: {
-  id: string;
-  value: number;
-  onChange: (value: number) => void;
-  onBlur: () => void;
-  min?: number;
-}) {
-  return (
-    <Input
-      id={id}
-      type="number"
-      min={min}
-      step={1}
-      value={Number.isNaN(value) ? "" : value}
-      onChange={(e) => onChange(e.target.valueAsNumber)}
-      onBlur={onBlur}
-    />
-  );
 }
 
 export function SettingsForm({ settings }: SettingsFormProps) {
@@ -71,7 +46,12 @@ export function SettingsForm({ settings }: SettingsFormProps) {
     onSubmit: async ({ value, formApi }) => {
       const toastId = toast.loading("Saving settings...");
       try {
-        const saved = await updateCampgroundSettings(value);
+        const result = await updateCampgroundSettings(value);
+        if (!result.ok) {
+          toast.error(result.error, { id: toastId });
+          return;
+        }
+        const saved = result.data;
         toast.success("Settings saved", { id: toastId });
         // Reset to the saved values (tiers come back sorted) so the form is clean.
         formApi.reset({
@@ -86,11 +66,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
           cancellationTiers: saved.cancellationTiers,
           policyText: saved.policyText,
         });
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to save settings",
-          { id: toastId },
-        );
+      } catch {
+        toast.error("Failed to save settings", { id: toastId });
       }
     },
   });
@@ -185,6 +162,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
                     <field.WithErrors>
                       <NumberInput
                         id="minNights"
+                        min={1}
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
@@ -200,6 +178,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
                     <field.WithErrors>
                       <NumberInput
                         id="maxNights"
+                        min={1}
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
@@ -217,6 +196,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
                     <field.WithErrors>
                       <NumberInput
                         id="maxAdvanceDays"
+                        min={1}
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}

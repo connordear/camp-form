@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { authPathWithRedirect } from "@/lib/redirect";
 import { getAllowedRolesForPath, isPublicRoute } from "@/lib/route-access";
 
 export async function proxy(request: NextRequest) {
@@ -15,7 +16,13 @@ export async function proxy(request: NextRequest) {
   });
 
   if (!session) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+    // Come back here after signing in. API calls just get sent to sign-in.
+    const destination = pathname.startsWith("/api/")
+      ? null
+      : `${pathname}${request.nextUrl.search}`;
+    return NextResponse.redirect(
+      new URL(authPathWithRedirect("/sign-in", destination), request.url),
+    );
   }
 
   const allowedRoles = getAllowedRolesForPath(pathname);

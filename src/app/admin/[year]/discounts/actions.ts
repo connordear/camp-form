@@ -3,11 +3,10 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type Stripe from "stripe";
 import { adminAction } from "@/lib/auth-helpers";
-import { endOfDay } from "@/lib/campground/dates";
 import { db } from "@/lib/data/db";
 import { discounts } from "@/lib/data/schema";
+import { createStripeCoupon } from "@/lib/services/discount-coupon-service";
 import { stripe } from "@/lib/stripe";
 import {
   type DiscountFormData,
@@ -16,33 +15,6 @@ import {
 } from "@/lib/types/discount-schemas";
 
 export type Discount = typeof discounts.$inferSelect;
-
-/**
- * Creates a Stripe coupon for a discount
- */
-async function createStripeCoupon(data: DiscountFormData): Promise<string> {
-  const couponParams: Stripe.CouponCreateParams = {
-    name: data.name,
-    currency: "cad",
-  };
-
-  if (data.type === "percentage") {
-    couponParams.percent_off = data.amount;
-  } else {
-    couponParams.amount_off = data.amount;
-  }
-
-  // Set redemption deadline if applicable
-  if (data.conditionType === "deadline" && data.deadlineDate) {
-    // Redeemable through the end of the deadline day at camp.
-    couponParams.redeem_by = Math.floor(
-      endOfDay(data.deadlineDate).getTime() / 1000,
-    );
-  }
-
-  const coupon = await stripe.coupons.create(couponParams);
-  return coupon.id;
-}
 
 /**
  * Updates a Stripe coupon (creates new one since Stripe coupons are mostly immutable)

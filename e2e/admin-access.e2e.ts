@@ -9,6 +9,7 @@ const ADMIN_ONLY_PATHS = [
   "/admin/2026/discounts",
   "/admin/2026/camps",
   "/admin/campground",
+  "/admin/campground/bookings",
   "/admin/campground/sites",
   "/admin/campground/settings",
 ];
@@ -32,6 +33,9 @@ for (const role of ["staff", "hcp"] as const) {
         page.getByRole("heading", { name: "Registrations", level: 1 }),
       ).toBeVisible();
       await expect(page.getByRole("link", { name: "Sites" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Bookings" })).toHaveCount(
+        0,
+      );
       await expect(page.getByRole("link", { name: "Users" })).toHaveCount(0);
     });
   });
@@ -66,9 +70,9 @@ test.describe("as admin", () => {
     });
   }
 
-  test("/admin/campground lands on Sites", async ({ page }) => {
+  test("/admin/campground lands on Bookings", async ({ page }) => {
     await page.goto("/admin/campground");
-    await expect(page).toHaveURL(/\/admin\/campground\/sites$/);
+    await expect(page).toHaveURL(/\/admin\/campground\/bookings$/);
   });
 
   test("camp links keep the year from a campground page", async ({ page }) => {

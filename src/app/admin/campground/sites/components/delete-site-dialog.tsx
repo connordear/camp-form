@@ -59,16 +59,15 @@ export function DeleteSiteDialog({
     setIsDeleting(true);
     const toastId = toast.loading("Deleting site...");
     try {
-      await deleteSite(site.id);
+      const result = await deleteSite(site.id);
+      if (!result.ok) {
+        toast.error(result.error, { id: toastId });
+        return;
+      }
       toast.success(`${site.name} deleted`, { id: toastId });
       handleOpenChange(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete site",
-        {
-          id: toastId,
-        },
-      );
+    } catch {
+      toast.error("Failed to delete site", { id: toastId });
     } finally {
       setIsDeleting(false);
     }

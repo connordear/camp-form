@@ -3,7 +3,7 @@
 import { MapPinIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { FeatureIcons } from "@/components/campground/feature-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table";
 import { formatCents } from "@/lib/campground/money";
 import type { Campsite } from "@/lib/services/campground-service";
-import { CAMPSITE_FEATURE_LABELS } from "@/lib/types/campground-schemas";
 import { setSiteActive } from "../actions";
 import { SiteActionsMenu } from "./site-actions-menu";
 import { SiteDialog } from "./site-dialog";
@@ -25,6 +24,8 @@ import { SiteDialog } from "./site-dialog";
 interface SitesListProps {
   sites: Campsite[];
   bookingCounts: Record<string, number>;
+  /** Ids of sites with nights an admin has blocked. */
+  blockedSiteIds: string[];
 }
 
 function ActiveSwitch({ site }: { site: Campsite }) {
@@ -35,13 +36,18 @@ function ActiveSwitch({ site }: { site: Campsite }) {
     setIsSaving(true);
     setIsActive(checked);
     try {
-      await setSiteActive({ id: site.id, isActive: checked });
+      const result = await setSiteActive({ id: site.id, isActive: checked });
+      if (!result.ok) {
+        setIsActive(!checked);
+        toast.error(result.error);
+        return;
+      }
       toast.success(
         checked ? `${site.name} activated` : `${site.name} deactivated`,
       );
-    } catch (err) {
+    } catch {
       setIsActive(!checked);
-      toast.error(err instanceof Error ? err.message : "Failed to update site");
+      toast.error("Failed to update site");
     } finally {
       setIsSaving(false);
     }
@@ -57,7 +63,11 @@ function ActiveSwitch({ site }: { site: Campsite }) {
   );
 }
 
-export function SitesList({ sites, bookingCounts }: SitesListProps) {
+export function SitesList({
+  sites,
+  bookingCounts,
+  blockedSiteIds,
+}: SitesListProps) {
   const nextSortOrder =
     sites.reduce((max, s) => Math.max(max, s.sortOrder), 0) + 1;
 
@@ -79,8 +89,8 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
         <div>
           <h1 className="text-2xl font-bold">Campsites</h1>
           <p className="text-muted-foreground">
-            Sites, features and nightly rates. Deactivated sites cannot be booked
-            but keep their existing bookings.
+            Sites, features and nightly rates. Deactivated sites cannot be
+            booked but keep their existing bookings.
           </p>
         </div>
         {addButton}
@@ -132,13 +142,10 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
                         {site.features.length === 0 ? (
                           <span className="text-muted-foreground">None</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {site.features.map((feature) => (
-                              <Badge key={feature} variant="secondary">
-                                {CAMPSITE_FEATURE_LABELS[feature]}
-                              </Badge>
-                            ))}
-                          </div>
+                          <FeatureIcons
+                            features={site.features}
+                            variant="compact"
+                          />
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -159,6 +166,7 @@ export function SitesList({ sites, bookingCounts }: SitesListProps) {
                           key={site.updatedAt.toString()}
                           site={site}
                           bookingCount={bookingCount}
+                          hasBlockedNights={blockedSiteIds.includes(site.id)}
                         />
                       </TableCell>
                     </TableRow>

@@ -20,14 +20,14 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { withFieldGroup } from "@/hooks/use-camp-form";
+import { campgroundToday, daysUntil } from "@/lib/campground/dates";
 import type { Camp } from "@/lib/types/common-types";
 import { formatDateRange, getDaysBetweenDates } from "@/lib/utils";
 import type { Camper } from "./schema";
 
-const isWithinDays = (dateStr: string, days: number) => {
-  const diffMs = new Date(dateStr).getTime() - Date.now();
-  return diffMs / (1000 * 60 * 60 * 24) <= days;
-};
+// Counts calendar days at camp, so the cutoff falls at midnight there.
+const isWithinDays = (dateStr: string, days: number) =>
+  daysUntil(dateStr, campgroundToday()) <= days;
 
 // These default values are used for mapping keys, not runtime defaults
 const defaultCamperValues: Camper = {
@@ -188,7 +188,7 @@ export const OverviewFieldGroup = withFieldGroup({
                               if (itemField.state.value) {
                                 const c = campLookup[itemField.state.value];
                                 campOptions.unshift({
-                                  value: c.id,
+                                  value: itemField.state.value,
                                   name: c
                                     ? `${c.name} (${formatDateRange(c.startDate, c.endDate)})`
                                     : "Unknown Camp",

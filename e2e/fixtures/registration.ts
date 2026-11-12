@@ -66,8 +66,9 @@ export async function cleanupRegistrationFixture(email: string) {
 
 /**
  * A complete draft registration, ready to pay, for a camp starting soon in
- * the current year. The checkout page only lists the current year, so this
- * needs at least a week left in the year.
+ * the current year. Registration lists the earliest year with a camp not yet
+ * over, so the fixture camp has to stay inside the current year, which needs
+ * at least a week left in it.
  */
 export async function createRegistrationFixture(email: string) {
   await cleanupRegistrationFixture(email);
@@ -160,4 +161,53 @@ export async function getRegistrationStatus(id: string) {
     .from(schema.registrations)
     .where(eq(schema.registrations.id, id));
   return r;
+}
+
+/**
+ * A draft registration for a camp in an earlier year, which the overview
+ * should neither show nor delete when the family saves.
+ */
+export async function createPastYearDraftFixture(email: string) {
+  await cleanupRegistrationFixture(email);
+  const userId = await userIdFor(email);
+  const year = Number(campgroundToday().slice(0, 4)) - 1;
+
+  const [camp] = await db
+    .insert(schema.camps)
+    .values({ name: E2E_CAMP_NAME, description: "Created by e2e tests" })
+    .returning();
+  await db.insert(schema.campYears).values({
+    campId: camp.id,
+    year,
+    startDate: `${year}-07-01`,
+    endDate: `${year}-07-03`,
+    capacity: 10,
+  });
+  const [price] = await db
+    .insert(schema.campYearPrices)
+    .values({ name: "E2E Price", campId: camp.id, year, price: 10000 })
+    .returning();
+  const [camper] = await db
+    .insert(schema.campers)
+    .values({ userId, ...E2E_CAMPER, dateOfBirth: "2015-06-01" })
+    .returning();
+  const [registration] = await db
+    .insert(schema.registrations)
+    .values({
+      campId: camp.id,
+      campYear: year,
+      priceId: price.id,
+      camperId: camper.id,
+    })
+    .returning();
+
+  return { registrationId: registration.id };
+}
+
+export async function registrationExists(id: string) {
+  const rows = await db
+    .select({ id: schema.registrations.id })
+    .from(schema.registrations)
+    .where(eq(schema.registrations.id, id));
+  return rows.length > 0;
 }

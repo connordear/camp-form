@@ -22,7 +22,9 @@ export default async function AdminLayout({
         availableYears={availableYears}
         userRole={session.user.role as AdminPanelRole}
       />
-      <div className="flex-1 p-6">{children}</div>
+      {/* min-w-0 lets wide content (tables, the month grid) scroll inside
+          the page instead of pushing it wider than the screen. */}
+      <div className="min-w-0 flex-1 p-6">{children}</div>
     </div>
   );
 }

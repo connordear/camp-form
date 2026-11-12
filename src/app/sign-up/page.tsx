@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,8 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { siteConfig } from "@/config/site";
 import { authClient } from "@/lib/auth-client";
+import { authPathWithRedirect, getSafeRedirect } from "@/lib/redirect";
 
+// useSearchParams needs a Suspense boundary on a statically rendered page.
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +34,8 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const redirectParam = useSearchParams().get("redirect");
+  const destination = getSafeRedirect(redirectParam);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +58,7 @@ export default function SignUpPage() {
         email,
         password,
         name,
-        callbackURL: "/registration/overview",
+        callbackURL: destination,
       });
 
       if (error) {
@@ -66,7 +78,7 @@ export default function SignUpPage() {
     setIsLoading(true);
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/registration/overview",
+      callbackURL: destination,
     });
   };
 
@@ -188,7 +200,10 @@ export default function SignUpPage() {
 
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/sign-in" className="underline hover:text-primary">
+              <Link
+                href={authPathWithRedirect("/sign-in", redirectParam)}
+                className="underline hover:text-primary"
+              >
                 Sign in
               </Link>
             </p>

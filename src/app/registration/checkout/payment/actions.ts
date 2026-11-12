@@ -2,6 +2,7 @@
 import type Stripe from "stripe";
 import { siteConfig } from "@/config/site";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getRedeemableCouponId } from "@/lib/services/discount-coupon-service";
 import { getDiscountsByIds } from "@/lib/services/discount-service";
 import { getRegistrationsByIds } from "@/lib/services/registration-service";
 import { stripe } from "@/lib/stripe";
@@ -62,15 +63,14 @@ export async function fetchClientSecret(
   }
 
   const discounts = await getDiscountsByIds(appliedDiscountIds);
+  const coupons = await Promise.all(
+    discounts.map((discount) => getRedeemableCouponId(discount)),
+  );
   const stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] =
-    discounts
-      .filter((d) => d.stripeCouponId)
-      .map((d) => ({
-        coupon: d.stripeCouponId!,
-      }));
+    coupons.filter((c) => c !== null).map((coupon) => ({ coupon }));
 
   const stripeSession = await stripe.checkout.sessions.create({
-    ui_mode: "embedded",
+    ui_mode: "embedded_page",
     line_items: lineItems,
     mode: "payment",
     return_url: `${getBaseUrl()}/registration/checkout/payment/success?session_id={CHECKOUT_SESSION_ID}`,

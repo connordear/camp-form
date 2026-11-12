@@ -95,13 +95,14 @@ export default function DateRangePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="range"
+          resetOnSelect
           selected={dateRange}
           onSelect={handleSelect}
           defaultMonth={dateRange?.from}
           captionLayout="dropdown"
-          fromYear={fromYear}
-          toYear={toYear}
-          initialFocus
+          startMonth={new Date(fromYear, 0)}
+          endMonth={new Date(toYear, 11)}
+          autoFocus
         />
       </PopoverContent>
     </Popover>

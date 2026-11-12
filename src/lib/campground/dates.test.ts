@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   addDays,
+  ageOn,
   campgroundToday,
   daysUntil,
   endOfDay,
   formatDisplayDate,
+  formatMonthDay,
   isDateString,
   nightsBetween,
 } from "./dates";
@@ -13,6 +15,9 @@ describe("isDateString", () => {
   test("accepts real dates", () => {
     expect(isDateString("2027-07-03")).toBe(true);
     expect(isDateString("2028-02-29")).toBe(true);
+    // A mistyped birth year is still a real date (Postgres stores it).
+    expect(isDateString("0015-06-02")).toBe(true);
+    expect(isDateString("0099-12-31")).toBe(true);
   });
 
   test("rejects malformed and impossible dates", () => {
@@ -97,6 +102,7 @@ describe("formatDisplayDate", () => {
   test("formats without shifting the day", () => {
     expect(formatDisplayDate("2027-07-03")).toBe("Jul 3, 2027");
     expect(formatDisplayDate("2027-01-01")).toBe("Jan 1, 2027");
+    expect(formatDisplayDate("0015-06-02")).toContain("Jun 2");
   });
 });
 
@@ -144,5 +150,24 @@ describe("endOfDay", () => {
     expect(endOfDay("2026-05-31", "UTC").toISOString()).toBe(
       "2026-05-31T23:59:59.999Z",
     );
+  });
+});
+
+describe("formatMonthDay", () => {
+  test("leaves out the year", () => {
+    expect(formatMonthDay("2027-07-03")).toBe("Jul 3");
+  });
+});
+
+describe("ageOn", () => {
+  test("counts the birthday from that calendar date", () => {
+    expect(ageOn("2015-06-01", "2026-05-31")).toBe(10);
+    expect(ageOn("2015-06-01", "2026-06-01")).toBe(11);
+    expect(ageOn("2015-06-01", "2026-12-31")).toBe(11);
+  });
+
+  test("handles a leap day birthday", () => {
+    expect(ageOn("2016-02-29", "2027-02-28")).toBe(10);
+    expect(ageOn("2016-02-29", "2027-03-01")).toBe(11);
   });
 });

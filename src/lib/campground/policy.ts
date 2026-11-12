@@ -212,13 +212,13 @@ export function validateStay(
   if (settings.seasonStart && checkIn < settings.seasonStart) {
     return {
       valid: false,
-      error: `The season starts on ${settings.seasonStart}.`,
+      error: `The season starts on ${formatDisplayDate(settings.seasonStart)}.`,
     };
   }
   if (settings.seasonEnd && checkOut > settings.seasonEnd) {
     return {
       valid: false,
-      error: `The last check-out date of the season is ${settings.seasonEnd}.`,
+      error: `The last check-out date of the season is ${formatDisplayDate(settings.seasonEnd)}.`,
     };
   }
 

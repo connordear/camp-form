@@ -15,12 +15,22 @@ export const CAMPGROUND_TIMEZONE = "America/Edmonton";
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * `Date.UTC` for any year. `Date.UTC` itself reads years 0 to 99 as 1900 to
+ * 1999, which would turn a mistyped birth year like 0015 into 1915.
+ */
+export function utcDateMs(y: number, m: number, d: number): number {
+  const date = new Date(Date.UTC(2000, m - 1, d));
+  date.setUTCFullYear(y);
+  return date.getTime();
+}
+
 /** True for a real calendar date in "YYYY-MM-DD" form. */
 export function isDateString(value: string): boolean {
   const match = DATE_RE.exec(value);
   if (!match) return false;
   const [, y, m, d] = match.map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
+  const date = new Date(utcDateMs(y, m, d));
   return (
     date.getUTCFullYear() === y &&
     date.getUTCMonth() === m - 1 &&
@@ -33,7 +43,7 @@ function toUtcMs(dateStr: string): number {
     throw new Error(`Invalid date string: ${dateStr}`);
   }
   const [y, m, d] = dateStr.split("-").map(Number);
-  return Date.UTC(y, m - 1, d);
+  return utcDateMs(y, m, d);
 }
 
 function fromUtcMs(ms: number): string {
@@ -79,6 +89,27 @@ export function nightsBetween(checkIn: string, checkOut: string): string[] {
     nights.push(addDays(checkIn, i));
   }
   return nights;
+}
+
+/** A date string without its year, e.g. "Jul 3". Never shifted by time zone. */
+export function formatMonthDay(dateStr: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(toUtcMs(dateStr)));
+}
+
+/**
+ * Age in whole years on `todayStr` for someone born on `birthDateStr`.
+ * Compares calendar dates, so the birthday counts from its first minute.
+ */
+export function ageOn(birthDateStr: string, todayStr: string): number {
+  toUtcMs(birthDateStr);
+  toUtcMs(todayStr);
+  const years = Number(todayStr.slice(0, 4)) - Number(birthDateStr.slice(0, 4));
+  // "MM-DD" strings compare in calendar order.
+  return todayStr.slice(5) < birthDateStr.slice(5) ? years - 1 : years;
 }
 
 /** A date string for people, e.g. "Jul 3, 2027". Never shifted by time zone. */

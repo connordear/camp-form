@@ -1,9 +1,9 @@
 "use client";
 
 import { PlusIcon, Trash2Icon } from "lucide-react";
+import { NumberInput } from "@/components/forms/number-input";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   addDays,
   campgroundToday,
@@ -22,14 +22,6 @@ import type { CancellationTier } from "@/lib/data/schema";
 interface TierEditorProps {
   value: CancellationTier[];
   onChange: (tiers: CancellationTier[]) => void;
-}
-
-function numberOrNaN(value: string): number {
-  return value === "" ? Number.NaN : Number(value);
-}
-
-function displayNumber(value: number): string | number {
-  return Number.isNaN(value) ? "" : value;
 }
 
 /**
@@ -71,32 +63,24 @@ export function TierEditor({ value, onChange }: TierEditorProps) {
               className="flex flex-wrap items-center gap-2 text-sm"
             >
               <span>Cancel</span>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
-                step={1}
                 className="w-20"
                 aria-label="Days before check-in"
-                value={displayNumber(tier.minDaysBefore)}
-                onChange={(e) =>
-                  updateTier(index, {
-                    minDaysBefore: numberOrNaN(e.target.value),
-                  })
+                value={tier.minDaysBefore}
+                onChange={(minDaysBefore) =>
+                  updateTier(index, { minDaysBefore })
                 }
               />
               <span>or more days before check-in, refund</span>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
                 max={100}
-                step={1}
                 className="w-20"
                 aria-label="Refund percentage"
-                value={displayNumber(tier.refundPercent)}
-                onChange={(e) =>
-                  updateTier(index, {
-                    refundPercent: numberOrNaN(e.target.value),
-                  })
+                value={tier.refundPercent}
+                onChange={(refundPercent) =>
+                  updateTier(index, { refundPercent })
                 }
               />
               <span>%</span>

@@ -1,15 +1,25 @@
-import { type AnyColumn, and, asc, eq, inArray } from "drizzle-orm";
+import { type AnyColumn, and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/data/db";
 import { registrations, user } from "@/lib/data/schema";
 
-export async function getRegistrationsForUser(userId: string) {
+/**
+ * The user's campers with their registrations for one camp year. With no
+ * year (no camps coming up) the campers come back with no registrations.
+ */
+export async function getRegistrationsForUser(
+  userId: string,
+  year: number | null,
+) {
   return await db.query.user.findFirst({
     where: eq(user.id, userId),
     with: {
       campers: {
         orderBy: (t: { createdAt: AnyColumn }) => asc(t.createdAt),
         with: {
-          registrations: true,
+          registrations: {
+            where:
+              year === null ? sql`false` : eq(registrations.campYear, year),
+          },
         },
       },
     },

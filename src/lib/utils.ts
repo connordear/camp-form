@@ -1,5 +1,13 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import {
+  ageOn,
+  campgroundToday,
+  daysUntil,
+  formatDisplayDate,
+  formatMonthDay,
+  isDateString,
+} from "@/lib/campground/dates";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,22 +33,13 @@ export function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-export function getAge(dob: string) {
-  const birthDate = new Date(dob);
-  const today = new Date();
-
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDifference = today.getMonth() - birthDate.getMonth();
-
-  // If the birth month hasn't happened yet, or it's the same month but the day hasn't passed
-  if (
-    monthDifference < 0 ||
-    (monthDifference === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age--;
-  }
-
-  return age;
+/**
+ * Age today, at camp, for a "YYYY-MM-DD" date of birth. Pass `today` to make
+ * it deterministic in tests.
+ */
+export function getAge(dob: string, today: string = campgroundToday()) {
+  if (!isDateString(dob)) return Number.NaN;
+  return ageOn(dob, today);
 }
 
 /**
@@ -54,6 +53,18 @@ export function getDaysBetweenDates(
   endDate: string | Date | number,
   inclusive: boolean = false,
 ): number {
+  // Plain "YYYY-MM-DD" strings are calendar dates: count them as such, so
+  // the result does not depend on the local time zone or daylight saving.
+  if (
+    typeof startDate === "string" &&
+    typeof endDate === "string" &&
+    isDateString(startDate) &&
+    isDateString(endDate)
+  ) {
+    const days = Math.abs(daysUntil(endDate, startDate));
+    return inclusive ? days + 1 : days;
+  }
+
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -102,19 +113,5 @@ export function formatDateRangeWithYear(
   startDate: string,
   endDate: string,
 ): string {
-  const asUtc = (date: string) => {
-    const [y, m, d] = date.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d));
-  };
-  const options: Intl.DateTimeFormatOptions = {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-  };
-  const start = asUtc(startDate).toLocaleDateString("en-US", options);
-  const end = asUtc(endDate).toLocaleDateString("en-US", {
-    ...options,
-    year: "numeric",
-  });
-  return `${start} - ${end}`;
+  return `${formatMonthDay(startDate)} - ${formatDisplayDate(endDate)}`;
 }
