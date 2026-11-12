@@ -207,7 +207,10 @@ test("blocked nights are off sale until unblocked", async ({ page }) => {
   await page.goto(gridUrl(checkIn));
   await page.getByRole("button", { name: "Block nights" }).click();
   const dialog = page.getByRole("dialog");
-  await pickSite(page);
+  await dialog
+    .getByRole("group", { name: /Sites/ })
+    .getByRole("button", { name: new RegExp(`^${SITE_NAME}`) })
+    .click();
   await dialog.getByLabel("First night").fill(checkIn);
   await dialog.getByLabel("Last night").fill(addDays(checkIn, 1));
   await dialog.getByLabel("Reason").fill("Power repairs");

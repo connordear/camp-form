@@ -6,6 +6,7 @@ import {
   gt,
   gte,
   ilike,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -312,7 +313,7 @@ export async function updateAdminNotes(id: string, adminNotes: string | null) {
 // ---------------------------------------------------------------------------
 
 export type BlockInput = {
-  siteId: string;
+  siteIds: string[];
   /** First night blocked. */
   from: string;
   /** Morning after the last night blocked (exclusive). */
@@ -321,31 +322,63 @@ export type BlockInput = {
 };
 
 /**
- * Take nights off sale, for repairs, staff use and so on. All or nothing:
- * if any night is already booked, held or blocked, nothing is blocked.
+ * Take nights off sale on one or more sites, for repairs, staff use and so
+ * on. All or nothing: if any night on any of the sites is already booked,
+ * held or blocked, nothing is blocked.
  */
 export async function blockNights(input: BlockInput) {
   checkRange(input.from, input.to);
-  const site = await getBookableSite(input.siteId);
+  const siteIds = [...new Set(input.siteIds)];
+  if (siteIds.length === 0) throw new BookingError("Pick at least one site.");
+  const sites = await db
+    .select({ id: campsites.id, name: campsites.name })
+    .from(campsites)
+    .where(inArray(campsites.id, siteIds));
+  if (sites.length !== siteIds.length) {
+    throw new BookingError("Site not found.");
+  }
   await releaseExpiredHolds();
+
+  const nights = nightsBetween(input.from, input.to);
   try {
+    // One insert, so the (site_id, night) key rejects the lot on any clash.
     await db.insert(bookingNights).values(
-      nightsBetween(input.from, input.to).map((night) => ({
-        siteId: site.id,
-        night,
-        bookingId: null,
-        price: 0,
-        blockReason: input.reason,
-      })),
+      sites.flatMap((site) =>
+        nights.map((night) => ({
+          siteId: site.id,
+          night,
+          bookingId: null,
+          price: 0,
+          blockReason: input.reason,
+        })),
+      ),
     );
   } catch (err) {
-    if (pgErrorCode(err) === PG_UNIQUE_VIOLATION) {
-      throw new BookingError(
-        `${site.name} is already booked, held or blocked for some of those nights.`,
+    if (pgErrorCode(err) !== PG_UNIQUE_VIOLATION) throw err;
+    // Only to name the sites in the message; the insert already decided.
+    const taken = await db
+      .selectDistinct({ siteId: bookingNights.siteId })
+      .from(bookingNights)
+      .where(
+        and(
+          inArray(bookingNights.siteId, siteIds),
+          gte(bookingNights.night, input.from),
+          lt(bookingNights.night, input.to),
+        ),
       );
-    }
-    throw err;
+    const takenIds = new Set(taken.map((t) => t.siteId));
+    const names = sites.filter((s) => takenIds.has(s.id)).map((s) => s.name);
+    const who = names.length > 0 ? listNames(names) : "A site";
+    throw new BookingError(
+      `${who} ${names.length > 1 ? "are" : "is"} already booked, held or blocked for some of those nights. Nothing was blocked.`,
+    );
   }
+}
+
+/** "A", "A and B", "A, B and C". */
+function listNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
 /** Put blocked nights back on sale. Booked nights are never touched. */

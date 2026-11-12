@@ -1,6 +1,6 @@
 "use client";
 
-import { BanIcon } from "lucide-react";
+import { BanIcon, CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,18 @@ import type { Campsite } from "@/lib/services/campground-service";
 import { blockNightsSchema } from "@/lib/types/campground-schemas";
 import { blockSiteNights } from "../actions";
 
-/** Take a site's nights off sale, for repairs, staff use and so on. */
+/** Take nights off sale on one or more sites, for repairs, staff use etc. */
 export function BlockNightsDialog({ sites }: { sites: Campsite[] }) {
   const [open, setOpen] = useState(false);
+  const activeIds = sites.filter((s) => s.isActive).map((s) => s.id);
 
   const form = useAppForm({
-    defaultValues: { siteId: "", firstNight: "", lastNight: "", reason: "" },
+    defaultValues: {
+      siteIds: [] as string[],
+      firstNight: "",
+      lastNight: "",
+      reason: "",
+    },
     validators: { onSubmit: blockNightsSchema },
     onSubmit: async ({ value, formApi }) => {
       const result = await blockSiteNights(value);
@@ -33,7 +39,10 @@ export function BlockNightsDialog({ sites }: { sites: Campsite[] }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Nights blocked");
+      const count = new Set(value.siteIds).size;
+      toast.success(
+        count > 1 ? `Nights blocked on ${count} sites` : "Nights blocked",
+      );
       formApi.reset();
       setOpen(false);
     },
@@ -89,23 +98,60 @@ export function BlockNightsDialog({ sites }: { sites: Campsite[] }) {
             </DialogHeader>
 
             <FieldSet className="gap-4 py-4">
-              <form.AppField name="siteId">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="block-siteId">Site *</FieldLabel>
-                    <field.WithErrors>
-                      <field.Select
-                        id="block-siteId"
-                        options={sites.map((s) => ({
-                          value: s.id,
-                          name: s.isActive ? s.name : `${s.name} (inactive)`,
-                        }))}
-                        placeholder="Pick a site"
-                        className="w-full"
-                      />
-                    </field.WithErrors>
-                  </Field>
-                )}
+              <form.AppField name="siteIds">
+                {(field) => {
+                  const selected = field.state.value;
+                  const toggle = (id: string) =>
+                    field.handleChange(
+                      selected.includes(id)
+                        ? selected.filter((s) => s !== id)
+                        : [...selected, id],
+                    );
+                  const allActive =
+                    activeIds.length > 0 &&
+                    activeIds.every((id) => selected.includes(id));
+                  return (
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-medium mb-2">
+                        Sites *
+                      </legend>
+                      <field.WithErrors>
+                        <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                          {sites.map((s) => {
+                            const on = selected.includes(s.id);
+                            return (
+                              <Button
+                                key={s.id}
+                                type="button"
+                                size="sm"
+                                variant={on ? "default" : "outline"}
+                                aria-pressed={on}
+                                onClick={() => toggle(s.id)}
+                                onBlur={field.handleBlur}
+                              >
+                                {on && (
+                                  <CheckIcon className="size-3.5" aria-hidden />
+                                )}
+                                {s.isActive ? s.name : `${s.name} (inactive)`}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </field.WithErrors>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0"
+                        onClick={() =>
+                          field.handleChange(allActive ? [] : activeIds)
+                        }
+                      >
+                        {allActive ? "Clear sites" : "Select all active sites"}
+                      </Button>
+                    </fieldset>
+                  );
+                }}
               </form.AppField>
               <div className="grid grid-cols-2 gap-4">
                 {dateField("firstNight", "First night *")}

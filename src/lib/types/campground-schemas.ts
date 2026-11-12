@@ -229,7 +229,10 @@ export type AdminBookingData = z.input<typeof adminBookingSchema>;
 // Nights taken off sale. `lastNight` is inclusive, as people think of it.
 export const blockNightsSchema = z
   .object({
-    siteId: z.string().min(1, "Pick a site"),
+    siteIds: z
+      .array(z.string().min(1))
+      .min(1, "Pick at least one site")
+      .transform((ids) => [...new Set(ids)]),
     firstNight: pickDate("Pick the first night"),
     lastNight: pickDate("Pick the last night"),
     reason: z

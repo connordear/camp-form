@@ -106,10 +106,10 @@ export const blockSiteNights = adminAction(
         error: parsed.error.issues[0]?.message ?? "Check the dates.",
       };
     }
-    const { siteId, firstNight, lastNight, reason } = parsed.data;
+    const { siteIds, firstNight, lastNight, reason } = parsed.data;
     try {
       await blockNights({
-        siteId,
+        siteIds,
         from: firstNight,
         to: addDays(lastNight, 1),
         reason,
