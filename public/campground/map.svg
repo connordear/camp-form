@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="img" aria-labelledby="t">
+  <title id="t">Campground map: the loop road, with the campsites along its east side</title>
+  <!-- Replaceable: markers are placed by percentage, so any 5:3 drawing works. -->
+  <defs>
+    <pattern id="grass" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="#e8ecdc"/>
+      <path d="M8 30l2-6 2 6M26 14l2-6 2 6" stroke="#cdd6b8" stroke-width="1.5" fill="none"/>
+    </pattern>
+    <g id="tree">
+      <circle r="16" fill="#b9c9a3"/>
+      <circle r="10" cx="-4" cy="-4" fill="#c8d6b3"/>
+    </g>
+  </defs>
+
+  <rect width="1000" height="600" fill="url(#grass)"/>
+
+  <!-- Trees -->
+  <g opacity="0.9">
+    <use href="#tree" x="160" y="90"/><use href="#tree" x="200" y="140"/>
+    <use href="#tree" x="140" y="470"/><use href="#tree" x="190" y="520"/>
+    <use href="#tree" x="410" y="230"/><use href="#tree" x="470" y="270"/>
+    <use href="#tree" x="520" y="330"/><use href="#tree" x="430" y="350"/>
+    <use href="#tree" x="380" y="300"/><use href="#tree" x="560" y="250"/>
+    <use href="#tree" x="900" y="200"/><use href="#tree" x="930" y="420"/>
+    <use href="#tree" x="880" y="520"/><use href="#tree" x="960" y="300"/>
+  </g>
+
+  <!-- Range Rd 281 -->
+  <rect x="50" y="0" width="34" height="600" fill="#d3ccbb"/>
+  <line x1="67" y1="0" x2="67" y2="600" stroke="#f7f4ec" stroke-width="2" stroke-dasharray="14 12"/>
+  <text x="38" y="300" transform="rotate(-90 38 300)" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="18" fill="#5b5547" letter-spacing="1">RANGE RD 281</text>
+
+  <!-- Access road -->
+  <path d="M84 300 H232" stroke="#d3ccbb" stroke-width="24" fill="none"/>
+  <text x="158" y="282" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#5b5547">Access road</text>
+
+  <!-- Loop road -->
+  <ellipse cx="470" cy="300" rx="240" ry="190" fill="#dfe6cf" stroke="#d3ccbb" stroke-width="24"/>
+  <text x="470" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6b7a58" font-style="italic">Loop road</text>
+
+  <!-- To camp office / waterfront -->
+  <path d="M300 440 Q260 520 250 600" stroke="#d3ccbb" stroke-width="20" fill="none"/>
+  <g font-family="Arial, sans-serif" font-size="16" fill="#5b5547">
+    <text x="280" y="560">To camp office</text>
+    <text x="280" y="580">and waterfront ↓</text>
+  </g>
+
+  <!-- North arrow -->
+  <g transform="translate(940 80)" font-family="Arial, sans-serif">
+    <circle r="30" fill="#f7f4ec" stroke="#8a8270" stroke-width="2"/>
+    <path d="M0 -22 L9 8 L0 2 L-9 8 Z" fill="#082616"/>
+    <text y="24" text-anchor="middle" font-size="14" font-weight="bold" fill="#082616">N</text>
+  </g>
+</svg>

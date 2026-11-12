@@ -69,3 +69,6 @@ export function firstSelectableDate(
 ): string {
   return seasonStart && seasonStart > today ? seasonStart : today;
 }
+
+/** Id of a site's row in the list; the map links to it with a URL hash. */
+export const siteRowId = (siteId: string) => `site-${siteId}`;

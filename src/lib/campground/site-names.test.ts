@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { duplicateSiteName } from "./site-names";
+import {
+  clampMapPercent,
+  duplicateSiteName,
+  siteMarkerLabel,
+} from "./site-names";
 
 describe("duplicateSiteName", () => {
   test("increments a trailing number", () => {
@@ -38,5 +42,21 @@ describe("duplicateSiteName", () => {
 
   test("ignores surrounding spaces", () => {
     expect(duplicateSiteName("  Site 1 ", ["Site 1"])).toBe("Site 2");
+  });
+});
+
+describe("siteMarkerLabel", () => {
+  test("uses the site number, or the start of the name", () => {
+    expect(siteMarkerLabel("Site 7")).toBe("7");
+    expect(siteMarkerLabel("Site 09")).toBe("9");
+    expect(siteMarkerLabel("Lakeside")).toBe("Lak");
+  });
+});
+
+describe("clampMapPercent", () => {
+  test("keeps markers on the map", () => {
+    expect(clampMapPercent(-3)).toBe(0);
+    expect(clampMapPercent(104)).toBe(100);
+    expect(clampMapPercent(33.333)).toBe(33.3);
   });
 });

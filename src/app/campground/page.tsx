@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FeatureIcons } from "@/components/campground/feature-icons";
 import { PolicyTable } from "@/components/campground/policy-table";
+import type { MarkerState } from "@/components/campground/site-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,12 +30,14 @@ import {
   getActiveSites,
   getCampgroundSettings,
 } from "@/lib/services/campground-service";
+import { CampgroundMap } from "./components/campground-map";
 import { CampgroundSearch } from "./components/campground-search";
 import {
   campgroundHref,
   firstSelectableDate,
   lastSelectableDate,
   parseCampgroundSearch,
+  siteRowId,
 } from "./search-params";
 
 export const metadata: Metadata = { title: "Campground booking" };
@@ -77,6 +80,19 @@ export default async function CampgroundPage({ searchParams }: PageProps) {
   const visible = rows.filter((r) =>
     search.features.every((f) => r.site.features.includes(f)),
   );
+  const markerStates: Record<string, MarkerState> = Object.fromEntries(
+    visible.map((r) => [
+      r.site.id,
+      !r.checked
+        ? "neutral"
+        : r.takenNights.length === 0
+          ? "available"
+          : "unavailable",
+    ]),
+  );
+  const mappedCount = visible.filter(
+    (r) => r.site.mapX !== null && r.site.mapY !== null,
+  ).length;
   const availableCount = visible.filter(
     (r) => r.checked && r.takenNights.length === 0,
   ).length;
@@ -143,6 +159,14 @@ export default async function CampgroundPage({ searchParams }: PageProps) {
           </p>
         </div>
 
+        {mappedCount > 0 && (
+          <CampgroundMap
+            sites={visible.map((r) => r.site)}
+            states={markerStates}
+            hasDates={nights !== null && settings.isBookingOpen}
+          />
+        )}
+
         {visible.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center py-10 text-center">
@@ -162,7 +186,13 @@ export default async function CampgroundPage({ searchParams }: PageProps) {
             {visible.map(({ site, takenNights, checked }) => {
               const available = checked && takenNights.length === 0;
               return (
-                <li key={site.id}>
+                <li
+                  key={site.id}
+                  id={siteRowId(site.id)}
+                  data-site-id={site.id}
+                  tabIndex={-1}
+                  className="scroll-mt-24 rounded-xl outline-none target:ring-4 target:ring-amber-400"
+                >
                   <Card
                     className={checked && !available ? "opacity-70" : undefined}
                   >

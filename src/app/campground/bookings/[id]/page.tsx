@@ -10,6 +10,7 @@ import { notFound, redirect } from "next/navigation";
 import { BookingStatusBadge } from "@/components/campground/booking-status";
 import { FeatureIcons } from "@/components/campground/feature-icons";
 import { PolicyTable } from "@/components/campground/policy-table";
+import { SiteLocationMap } from "@/components/campground/site-location-map";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,7 +33,10 @@ import {
   type BookingWithSite,
   getUserBooking,
 } from "@/lib/services/booking-service";
-import { getCampgroundSettings } from "@/lib/services/campground-service";
+import {
+  getActiveSites,
+  getCampgroundSettings,
+} from "@/lib/services/campground-service";
 import { stripe } from "@/lib/stripe";
 import { campgroundHref } from "../../search-params";
 
@@ -89,7 +93,14 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     booking = (await getUserBooking(session.user.id, id)) ?? booking;
   }
 
-  const settings = await getCampgroundSettings();
+  const [settings, activeSites] = await Promise.all([
+    getCampgroundSettings(),
+    getActiveSites(),
+  ]);
+  // The booked site is shown even if it has since been made inactive.
+  const mapSites = activeSites.some((s) => s.id === booking.siteId)
+    ? activeSites
+    : [...activeSites, booking.site];
   const nights = daysUntil(booking.checkOut, booking.checkIn);
   const stay = formatStayRange(booking.checkIn, booking.checkOut);
   const retryHref = campgroundHref("/campground", {
@@ -236,6 +247,10 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
           </dl>
         </CardContent>
       </Card>
+
+      {(booking.status === "confirmed" || booking.status === "pending") && (
+        <SiteLocationMap sites={mapSites} siteId={booking.siteId} />
+      )}
 
       {booking.status === "confirmed" && (
         <Card>

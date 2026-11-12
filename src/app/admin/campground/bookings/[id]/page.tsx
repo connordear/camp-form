@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BookingStatusBadge } from "@/components/campground/booking-status";
 import { FeatureIcons } from "@/components/campground/feature-icons";
 import { PolicyTable } from "@/components/campground/policy-table";
+import { SiteLocationMap } from "@/components/campground/site-location-map";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +20,7 @@ import { CAMPGROUND_TIMEZONE, daysUntil } from "@/lib/campground/dates";
 import { formatCents } from "@/lib/campground/money";
 import { getAdminBooking } from "@/lib/services/booking-admin-service";
 import { policyRefund } from "@/lib/services/booking-service";
+import { getAllSites } from "@/lib/services/campground-service";
 import { AdminNotesForm } from "./components/admin-notes-form";
 import { CancelBookingDialog } from "./components/cancel-booking-dialog";
 
@@ -47,8 +49,14 @@ function Row({
 
 async function AdminBookingPage({ params }: PageProps) {
   const { id } = await params;
-  const booking = await getAdminBooking(id);
+  const [booking, allSites] = await Promise.all([
+    getAdminBooking(id),
+    getAllSites(),
+  ]);
   if (!booking) notFound();
+  const mapSites = allSites.filter(
+    (s) => s.isActive || s.id === booking.siteId,
+  );
 
   const nights = daysUntil(booking.checkOut, booking.checkIn);
   const stay = formatStayRange(booking.checkIn, booking.checkOut);
@@ -207,6 +215,8 @@ async function AdminBookingPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <SiteLocationMap sites={mapSites} siteId={booking.siteId} />
 
       <Card>
         <CardHeader>

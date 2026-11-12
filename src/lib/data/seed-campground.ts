@@ -3,6 +3,25 @@ import { db } from "./db";
 import type { CampsiteFeature } from "./schema";
 import * as schema from "./schema";
 
+// Marker positions on public/campground/map.svg (percent from left and top):
+// the 13 sites along the outside of the east side of the loop, north to south.
+// Admins can move them on the Sites page.
+const PLACEHOLDER_MAP_POSITIONS = [
+  [54.8, 10.6],
+  [60.9, 13.8],
+  [66.3, 18.7],
+  [70.8, 25.1],
+  [74.2, 32.7],
+  [76.3, 41.2],
+  [77.0, 50.0],
+  [76.3, 58.8],
+  [74.2, 67.3],
+  [70.8, 74.9],
+  [66.3, 81.3],
+  [60.9, 86.2],
+  [54.8, 89.4],
+].map(([mapX, mapY]) => ({ mapX, mapY }));
+
 // Placeholder sites. The owner will supply real names, features and rates.
 // Rates are cents per night, before tax.
 const PLACEHOLDER_SITES: Array<typeof schema.campsites.$inferInsert> = [
@@ -29,7 +48,11 @@ const PLACEHOLDER_SITES: Array<typeof schema.campsites.$inferInsert> = [
     nightlyRate: 5500,
     maxOccupancy: 6,
   })),
-].map((site, i) => ({ ...site, sortOrder: i + 1 }));
+].map((site, i) => ({
+  ...site,
+  sortOrder: i + 1,
+  ...PLACEHOLDER_MAP_POSITIONS[i],
+}));
 
 /**
  * Safe to run against any database, including production: creates the
