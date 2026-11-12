@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 
 /** The illustrated background. Swap the file to change the drawing. */
 export const MAP_IMAGE = "/campground/map.svg";
+/** Width / height of the drawing's viewBox. Markers are placed by percent. */
+const MAP_ASPECT = "1130 / 500";
 
 export type MapSite = {
   id: string;
@@ -155,9 +157,11 @@ export function SiteMap({
         {/* biome-ignore lint/a11y/useKeyWithClickEvents: see above */}
         <div
           className={cn(
-            "relative aspect-[5/3] min-w-[560px]",
+            // Wide enough that the 13 markers along the loop don't overlap.
+            "relative min-w-[820px]",
             onMapClick && "cursor-crosshair",
           )}
+          style={{ aspectRatio: MAP_ASPECT }}
           onClick={handleMapClick}
         >
           {/* biome-ignore lint/performance/noImgElement: a static SVG; next/image adds nothing here */}
