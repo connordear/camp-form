@@ -67,13 +67,7 @@ export function CampgroundSearch({
       router.replace(campgroundHref("/campground", next), { scroll: false }),
     );
 
-  const handleSelect = (next: DateRange | undefined, clicked: Date) => {
-    // With a whole stay already chosen, a click starts a new one rather than
-    // stretching the old one (react-day-picker's default).
-    if (range?.from && range.to) {
-      setRange({ from: clicked, to: undefined });
-      return;
-    }
+  const handleSelect = (next: DateRange | undefined) => {
     setRange(next);
     if (next?.from && next.to && next.to > next.from) {
       setOpen(false);
@@ -124,6 +118,7 @@ export function CampgroundSearch({
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
+              resetOnSelect
               selected={range}
               onSelect={handleSelect}
               numberOfMonths={isMobile ? 1 : 2}
